@@ -1,0 +1,227 @@
+const STORAGE_KEY = 'babycare_user_data_v1';
+
+export interface Analysis {
+  id: string;
+  timestamp: string;
+  topCause: string;
+  probabilities: Record<string, number>;
+  parent_summary: string;
+  confidence_level: string;
+  alert: string;
+  feedback: null | 'positive' | 'negative';
+  actualCause: null | string;
+  sosModeUsed: boolean;
+  key_signals?: any[];
+  recommended_actions?: any[];
+  audio_url?: string;
+  comfort_audio_url?: string;
+  comfort_text?: string;
+}
+
+export interface DiaperEntry {
+  timestamp: string;
+  type: 'pee' | 'stool';
+}
+
+export type ParentRole = 'mother' | 'father';
+export type AgeRange = '0-3' | '3-6' | '6-12' | '1-2' | '2+';
+
+export interface ParentProfile {
+  role: ParentRole;
+  babyName?: string;
+  ageRange: AgeRange;
+}
+
+export interface VoiceProfile {
+  role: ParentRole;
+  userName: string;
+  ageRange: AgeRange;
+  audioRecorded: boolean;
+  voiceId?: string;
+}
+
+export interface UserData {
+  babyName: string;
+  createdAt: string;
+  analyses: Analysis[];
+  streak: { current: number; best: number; lastActive: string };
+  xp: number;
+  badges: string[];
+  seenBadges: string[];
+  breathingSessions: number;
+  moodLog: Array<{ timestamp: string; mood: string }>;
+  lastMeal?: string;
+  lastDiaper?: string;
+  diaperHistory: DiaperEntry[];
+  parentProfile?: ParentProfile;
+  nightMode: boolean;
+  babyphoneConnected: boolean;
+  voiceProfile?: VoiceProfile;
+}
+
+function defaultData(): UserData {
+  return {
+    babyName: '',
+    createdAt: new Date().toISOString(),
+    analyses: [],
+    streak: { current: 0, best: 0, lastActive: '' },
+    xp: 0,
+    badges: [],
+    seenBadges: [],
+    breathingSessions: 0,
+    moodLog: [],
+    diaperHistory: [],
+    nightMode: false,
+    babyphoneConnected: false,
+  };
+}
+
+export function getUserData(): UserData {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultData();
+    const parsed = { ...defaultData(), ...JSON.parse(raw) } as UserData;
+
+    // Migrate legacy French enum values from earlier app versions.
+    if (parsed.parentProfile?.role === 'maman') parsed.parentProfile.role = 'mother';
+    if (parsed.parentProfile?.role === 'papa') parsed.parentProfile.role = 'father';
+    if (parsed.voiceProfile?.role === 'maman') parsed.voiceProfile.role = 'mother';
+    if (parsed.voiceProfile?.role === 'papa') parsed.voiceProfile.role = 'father';
+    if (parsed.parentProfile?.ageRange === '1-2ans') parsed.parentProfile.ageRange = '1-2';
+    if (parsed.voiceProfile?.ageRange === '1-2ans') parsed.voiceProfile.ageRange = '1-2';
+    parsed.diaperHistory = (parsed.diaperHistory || []).map((entry) => ({
+      ...entry,
+      type: entry.type === 'urine' ? 'pee' : entry.type === 'selle' ? 'stool' : entry.type,
+    }));
+
+    return parsed;
+  } catch {
+    return defaultData();
+  }
+}
+
+export function saveUserData(data: UserData) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+export function getLevel(xp: number) {
+  return Math.floor(xp / 100) + 1;
+}
+
+export function getXpForNextLevel(xp: number) {
+  const level = getLevel(xp);
+  return level * 100;
+}
+
+export function getXpProgress(xp: number) {
+  return xp % 100;
+}
+
+function todayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function yesterdayStr() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().split('T')[0];
+}
+
+export function updateStreak(data: UserData): UserData {
+  const today = todayStr();
+  if (data.streak.lastActive === today) return data;
+  if (data.streak.lastActive === yesterdayStr()) {
+    data.streak.current += 1;
+  } else {
+    data.streak.current = 1;
+  }
+  data.streak.best = Math.max(data.streak.best, data.streak.current);
+  data.streak.lastActive = today;
+  return data;
+}
+
+export function isStreakInDanger(data: UserData): boolean {
+  return data.streak.lastActive !== todayStr() && data.streak.current > 0;
+}
+
+export function hasAnalysisToday(data: UserData): boolean {
+  return data.streak.lastActive === todayStr();
+}
+
+export function addXp(data: UserData, amount: number): UserData {
+  data.xp += amount;
+  return data;
+}
+
+export function checkNewBadges(data: UserData): string[] {
+  const newBadges: string[] = [];
+  const count = data.analyses.length;
+  const best = data.streak.best;
+  const causes = new Set(data.analyses.map(a => a.topCause));
+  const hasNightAnalysis = data.analyses.some(a => {
+    const h = new Date(a.timestamp).getHours();
+    return h >= 2 && h < 5;
+  });
+
+  const checks: [string, boolean][] = [
+    ['first_cry', count >= 1],
+    ['analyses_10', count >= 10],
+    ['analyses_50', count >= 50],
+    ['streak_3', best >= 3],
+    ['streak_7', best >= 7],
+    ['streak_30', best >= 30],
+    ['streak_50', best >= 50],
+    ['all_causes', causes.size >= 6],
+    ['breath_master', data.breathingSessions >= 10],
+    ['night_owl', hasNightAnalysis],
+  ];
+
+  for (const [id, met] of checks) {
+    if (met && !data.badges.includes(id)) {
+      data.badges.push(id);
+      newBadges.push(id);
+    }
+  }
+
+  return newBadges;
+}
+
+export function getGreeting(): { text: string; emoji: string } {
+  const h = new Date().getHours();
+  if (h >= 22 || h < 6) return { text: 'Still awake?', emoji: '🌙' };
+  if (h < 12) return { text: 'Good morning', emoji: '👋' };
+  if (h < 18) return { text: 'Good afternoon', emoji: '👋' };
+  return { text: 'Good evening', emoji: '👋' };
+}
+
+export function getDailyAffirmation(): string {
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+  const AFFIRMATIONS = [
+    "Your calm is one of the best gifts you can give your baby.",
+    "Every hard night is a proof of love.",
+    "You do not need to be perfect, just present.",
+    "A parent who tries to understand is already a good parent.",
+    "Crying is a language. You are learning to speak it.",
+    "Asking for help is strength, not weakness.",
+    "Your baby is lucky to have you.",
+    "Even experienced midwives sometimes have doubts.",
+  ];
+  return AFFIRMATIONS[dayOfYear % AFFIRMATIONS.length];
+}
+
+export function formatRelativeDate(iso: string): string {
+  const now = Date.now();
+  const then = new Date(iso).getTime();
+  const diff = now - then;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks === 1) return '1 week ago';
+  return `${weeks} weeks ago`;
+}

@@ -1,0 +1,90 @@
+{
+  "model_name": "xgboost",
+  "feature_columns": [
+    "RMS_Mean",
+    "ZCR_Mean",
+    "SC_Mean",
+    "SBAN_Mean",
+    "SCON_Mean",
+    "MFCCs13Mean",
+    "MFCCs1",
+    "MFCCs2",
+    "MFCCs3",
+    "MFCCs4",
+    "MFCCs5",
+    "MFCCs6",
+    "MFCCs7",
+    "MFCCs8",
+    "MFCCs9",
+    "MFCCs10",
+    "MFCCs11",
+    "MFCCs12",
+    "MFCCs13"
+  ],
+  "class_names": [
+    "belly_pain",
+    "burping",
+    "discomfort",
+    "hungry",
+    "tired"
+  ],
+  "label_id_to_name": {
+    "0": "belly_pain",
+    "1": "burping",
+    "2": "discomfort",
+    "3": "hungry",
+    "4": "tired"
+  },
+  "metrics": {
+    "accuracy": 0.8260869565217391,
+    "macro_f1": 0.18095238095238095,
+    "weighted_f1": 0.7572463768115942
+  },
+  "classification_report": {
+    "0": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 3.0
+    },
+    "1": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 2.0
+    },
+    "2": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 5.0
+    },
+    "3": {
+      "precision": 0.8351648351648352,
+      "recall": 0.987012987012987,
+      "f1-score": 0.9047619047619048,
+      "support": 77.0
+    },
+    "4": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 5.0
+    },
+    "accuracy": 0.8260869565217391,
+    "macro avg": {
+      "precision": 0.16703296703296705,
+      "recall": 0.1974025974025974,
+      "f1-score": 0.18095238095238095,
+      "support": 92.0
+    },
+    "weighted avg": {
+      "precision": 0.6989966555183946,
+      "recall": 0.8260869565217391,
+      "f1-score": 0.7572463768115942,
+      "support": 92.0
+    }
+  },
+  "dataset_path": "\\\\wsl.localhost\\Ubuntu-24.04\\home\\utharushan\\Projects\\Alan-Mistral-Hackaton\\donateacry-corpus_features_final.csv",
+  "num_samples": 457
+}

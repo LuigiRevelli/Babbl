@@ -1,0 +1,224 @@
+"""
+Babycare backend — Flask API.
+
+Endpoints:
+- POST /api/analyze    : multipart form with `audio` file + `context` JSON string
+- GET  /api/audio/<f>  : serves the generated TTS mp3
+- GET  /api/health     : health check
+"""
+
+import json
+import os
+import traceback
+import uuid
+
+from dotenv import load_dotenv
+from flask import Flask, jsonify, request, send_from_directory
+from flask_cors import CORS
+
+from audio_analysis import extract_features
+from comfort_messages import generate_comfort_message
+from elevenlabs_client import clone_voice, text_to_speech
+from ml_model import predict_probabilities
+from mistral_client import analyze_with_mistral
+from triage_rules import apply_context_rules, reliability_score
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Load .env from project root (one level up from backend/)
+load_dotenv(os.path.join(BASE_DIR, "..", ".env"), override=True)
+
+TMP_DIR = os.path.join(BASE_DIR, "tmp")
+os.makedirs(TMP_DIR, exist_ok=True)
+
+app = Flask(__name__)
+CORS(app)
+
+
+@app.get("/api/health")
+def health():
+    return jsonify({"status": "ok"})
+
+
+@app.post("/api/voice/clone")
+def voice_clone():
+    """Create an ElevenLabs Instant Voice Clone from a short sample."""
+    if "audio" not in request.files:
+        return jsonify({"error": "missing audio file"}), 400
+
+    audio_file = request.files["audio"]
+    name = request.form.get("name", "Babycare parent")
+
+    request_id = uuid.uuid4().hex
+    ext = os.path.splitext(audio_file.filename or "")[1] or ".webm"
+    sample_path = os.path.join(TMP_DIR, f"voice_{request_id}{ext}")
+    audio_file.save(sample_path)
+
+    try:
+        voice_id = clone_voice(name=name, audio_path=sample_path)
+    except Exception as e:
+        traceback.print_exc()
+        msg = str(e) or type(e).__name__
+        if "missing_permissions" in msg or "create_instant_voice_clone" in msg:
+            return jsonify({
+                "error": (
+                    "Your ElevenLabs API key does not have permission to clone a voice. "
+                    "Go to elevenlabs.io → Settings → API Keys and enable 'Voices: Write' "
+                    "(or 'Create Instant Voice Clone')."
+                )
+            }), 403
+        return jsonify({"error": f"voice clone failed: {msg}"}), 500
+
+    return jsonify({"voice_id": voice_id, "name": name})
+
+
+@app.post("/api/analyze")
+def analyze():
+    if "audio" not in request.files:
+        return jsonify({"error": "missing audio file"}), 400
+
+    audio_file = request.files["audio"]
+    context_raw = request.form.get("context", "{}")
+    try:
+        context = json.loads(context_raw)
+    except json.JSONDecodeError:
+        return jsonify({"error": "invalid context JSON"}), 400
+
+    voice_id = request.form.get("voice_id") or context.get("voiceId") or context.get("voice_id") or None
+    parent_label = request.form.get("parent_label") or context.get("parentLabel") or context.get("parent_label") or "father"
+    try:
+        baby_age_months = int(
+            request.form.get("baby_age_months")
+            or context.get("babyAgeMonths")
+            or context.get("baby_age_months")
+            or 3
+        )
+    except ValueError:
+        baby_age_months = 3
+
+    # Save the upload (browsers usually send webm/ogg; librosa can handle most)
+    request_id = uuid.uuid4().hex
+    ext = os.path.splitext(audio_file.filename or "")[1] or ".webm"
+    audio_path = os.path.join(TMP_DIR, f"{request_id}{ext}")
+    audio_file.save(audio_path)
+
+    # 1. Extract acoustic features
+    try:
+        features = extract_features(audio_path)
+    except Exception as e:
+        traceback.print_exc()
+        msg = str(e) or type(e).__name__
+        return jsonify({"error": f"audio analysis failed: {msg}"}), 500
+
+    # 2. Predict with the supervised ML model (if available)
+    ml = None
+    try:
+        ml = predict_probabilities(features)
+    except Exception as e:
+        print(f"[ml] inference failed: {e}")
+
+    if ml:
+        base_probs = ml["app_probabilities"]
+        raw_probs = ml["raw_model_probabilities"]
+    else:
+        base_probs = None
+        raw_probs = None
+
+    # 3. Ask Mistral for triage explanation and caregiver-friendly guidance
+    try:
+        triage = analyze_with_mistral(features, context, model_probabilities=base_probs)
+    except Exception as e:
+        traceback.print_exc()
+        if base_probs:
+            top_cause = max(base_probs, key=base_probs.get)
+            triage = {
+                "probabilities": base_probs,
+                "key_signals": [
+                    {
+                        "signal": "Prediction based on extracted acoustic features (MFCCs, energy, spectrum).",
+                        "source": "audio",
+                        "impact": "high",
+                    }
+                ],
+                "recommended_actions": [
+                    {
+                        "priority": 1,
+                        "action": "Observe the baby for 5 to 10 minutes and try one targeted soothing action.",
+                        "reasoning": "The model indicates a dominant cause, but a quick contextual check is still useful.",
+                    }
+                ],
+                "confidence_level": "medium",
+                "alert": "monitor",
+                "parent_summary": f"The most likely cause is {top_cause}. Try one action that matches this hypothesis first, then reassess if the cry continues.",
+                "model_source": "ml_fallback",
+            }
+        else:
+            msg = str(e) or type(e).__name__
+            return jsonify({"error": f"mistral failed: {msg}", "features": features}), 500
+
+    adjusted_probs, rule_notes = apply_context_rules(triage.get("probabilities", {}), context)
+    triage["probabilities"] = adjusted_probs
+    triage["rule_notes"] = rule_notes
+
+    score, label, reliability_notes = reliability_score(features, adjusted_probs, context)
+    triage["reliability_score"] = score
+    triage["reliability_label"] = label
+    triage["reliability_notes"] = reliability_notes
+
+    if ml:
+        triage["ml_raw_probabilities"] = raw_probs
+        triage["ml_model_name"] = ml["model_name"]
+        triage["ml_train_metrics"] = ml["train_metrics"]
+
+    # 4. Generate spoken outputs (best-effort, non-blocking failure)
+    audio_url = None
+    try:
+        summary = triage.get("parent_summary", "")
+        if summary:
+            mp3_bytes = text_to_speech(summary)
+            mp3_name = f"{request_id}.mp3"
+            with open(os.path.join(TMP_DIR, mp3_name), "wb") as f:
+                f.write(mp3_bytes)
+            audio_url = f"/api/audio/{mp3_name}"
+    except Exception as e:
+        # Don't fail the whole request just because TTS broke
+        print(f"[elevenlabs] failed: {e}")
+
+    comfort_audio_url = None
+    comfort_text = None
+    if voice_id:
+        try:
+            probs = triage.get("probabilities", {})
+            top_cause = max(probs.items(), key=lambda kv: kv[1])[0] if probs else "need_for_comfort"
+            comfort_text = generate_comfort_message(
+                top_cause=top_cause,
+                age_months=baby_age_months,
+                parent_label=parent_label,
+            )
+            comfort_bytes = text_to_speech(comfort_text, voice_id=voice_id)
+            comfort_name = f"{request_id}_comfort.mp3"
+            with open(os.path.join(TMP_DIR, comfort_name), "wb") as f:
+                f.write(comfort_bytes)
+            comfort_audio_url = f"/api/audio/{comfort_name}"
+        except Exception as e:
+            print(f"[elevenlabs comfort] failed: {e}")
+
+    return jsonify(
+        {
+            "features": features,
+            "context": context,
+            **triage,
+            "audio_url": audio_url,
+            "comfort_audio_url": comfort_audio_url,
+            "comfort_text": comfort_text,
+        }
+    )
+
+
+@app.get("/api/audio/<path:filename>")
+def get_audio(filename):
+    return send_from_directory(TMP_DIR, filename, mimetype="audio/mpeg")
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5001))
+    app.run(host="0.0.0.0", port=port, debug=True)

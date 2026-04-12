@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 49 100% 95%;
+    --foreground: 0 20% 15%;
+
+    --card: 49 60% 98%;
+    --card-foreground: 0 20% 15%;
+
+    --popover: 49 60% 98%;
+    --popover-foreground: 0 20% 15%;
+
+    --primary: 0 100% 74%;
+    --primary-foreground: 0 0% 100%;
+
+    --primary-strong: 0 85% 62%;
+    --primary-soft: 0 100% 92%;
+
+    --secondary: 40 50% 92%;
+    --secondary-foreground: 0 20% 15%;
+
+    --muted: 40 40% 90%;
+    --muted-foreground: 0 10% 45%;
+
+    --accent: 40 50% 92%;
+    --accent-foreground: 0 20% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 137 28% 63%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 40 30% 87%;
+    --input: 40 30% 87%;
+    --ring: 0 100% 74%;
+
+    --radius: 1.375rem;
+
+    --sidebar-background: 49 60% 97%;
+    --sidebar-foreground: 0 15% 25%;
+    --sidebar-primary: 0 100% 74%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 50% 94%;
+    --sidebar-accent-foreground: 0 15% 25%;
+    --sidebar-border: 40 25% 88%;
+    --sidebar-ring: 0 100% 74%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Fraunces', serif;
+  }
+}
+
+@layer utilities {
+  .font-serif {
+    font-family: 'Fraunces', serif;
+  }
+  .font-sans {
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+/* Flame animation */
+@keyframes flame-dance {
+  0%, 100% { transform: scaleY(1) scaleX(1); }
+  25% { transform: scaleY(1.1) scaleX(0.95); }
+  50% { transform: scaleY(0.9) scaleX(1.05); }
+  75% { transform: scaleY(1.08) scaleX(0.97); }
+}
+
+.animate-flame {
+  animation: flame-dance 1.5s ease-in-out infinite;
+}
+
+/* Pulse orange */
+@keyframes pulse-orange {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.animate-pulse-orange {
+  animation: pulse-orange 2s ease-in-out infinite;
+  color: hsl(0 100% 74%);
+}
+
+/* Breathing orb */
+@keyframes breathe-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(255,120,120,0.2); }
+  50% { transform: scale(1.15); box-shadow: 0 0 40px rgba(255,120,120,0.4); }
+}
+.animate-breathe {
+  animation: breathe-pulse 3s ease-in-out infinite;
+}
+
+/* Confetti */
+@keyframes confetti-fall {
+  0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* Badge bounce */
+@keyframes badge-bounce {
+  0% { transform: translateY(-20px); opacity: 0; }
+  60% { transform: translateY(5px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.animate-badge-bounce {
+  animation: badge-bounce 0.6s ease-out;
+}
+
+/* XP toast slide */
+@keyframes slide-in-top {
+  0% { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+  100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+@keyframes slide-out-top {
+  0% { transform: translateX(-50%) translateY(0); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+}
+
+/* Recording pulse */
+@keyframes rec-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,120,120,0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(255,120,120,0); }
+}
+.animate-rec-pulse {
+  animation: rec-pulse 1.5s ease-in-out infinite;
+}
+
+/* Progress bar fill */
+@keyframes fill-bar {
+  from { width: 0%; }
+}

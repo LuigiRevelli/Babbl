@@ -2,15 +2,6 @@
 
 > Understand your baby's cries in 10 seconds and soothe them with your own cloned voice.
 
-## Team
-
-| Name | LinkedIn Profile Link |
-| --- | --- |
-| Luigi REVELLI CARACCIOLO | https://www.linkedin.com/in/luigi-revelli/ |
-| Matthias LEE | https://www.linkedin.com/in/matthias-lee-59b996218/ |
-| Célestin HERRENSCHMIDT | https://www.linkedin.com/in/c%C3%A9lestin-herrenschmidt-27a8932b9/ |
-| Jérémie DEBRAS | https://www.linkedin.com/in/jeremie-debras/ |
-| Tharushan UTHAYAKUMAR | https://www.linkedin.com/in/utharushan/ |
 
 ## The Problem
 

@@ -86,7 +86,7 @@ Un parent filme son bébé qui s'endort avec une berceuse IA dans sa voix et pos
 
 ## Feature Principale : Babbl Nuit — Baby Phone IA Autonome
 
-Le parent pose le téléphone dans la chambre du bébé. L'app devient une nounou de nuit autonome qui combine toutes les features.
+Le parent pose le baby phone dans la chambre du bébé. L'app devient une nounou de nuit autonome qui combine toutes les features.
 
 **Comment ça marche :**
 1. Écoute en continu (mode basse consommation batterie)

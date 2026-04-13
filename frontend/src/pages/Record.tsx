@@ -137,7 +137,7 @@ export default function Record() {
         </h1>
         <p className="text-sm text-muted-foreground text-center mb-10">
           {isAnalyzing
-            ? 'BabyCare is listening carefully to the cry'
+            ? 'Babbl is listening carefully to the cry'
             : isRecording
             ? `Press stop when you are done`
             : 'Hold the phone close and start recording'}

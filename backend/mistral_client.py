@@ -10,7 +10,7 @@ import requests
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_MODEL = "claude-sonnet-4-20250514"
 
-SYSTEM_PROMPT = """You are BabycareAI, a clinical-grade infant cry triage system.
+SYSTEM_PROMPT = """You are BabblAI, a clinical-grade infant cry triage system.
 You receive two inputs:
 1. Acoustic features extracted from a baby's cry audio (scientifically measured, not subjective)
 2. Caregiver-reported context (feeding schedule, sleep schedule, diaper status, posture)

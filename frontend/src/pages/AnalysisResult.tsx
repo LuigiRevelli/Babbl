@@ -80,7 +80,7 @@ export default function AnalysisResult() {
       {/* Header */}
       <div className="text-center mb-6 pt-2 animate-fade-in">
         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Result</p>
-        <h1 className="font-serif text-2xl font-bold">According to BabyCare</h1>
+        <h1 className="font-serif text-2xl font-bold">According to Babbl</h1>
       </div>
 
       {/* Main cause */}

@@ -1,5 +1,5 @@
 /**
- * BabyCare API client.
+ * Babbl API client.
  *
  * The backend base URL defaults to http://localhost:5001 in development.
  * Override via the VITE_API_URL env var.

@@ -1,4 +1,4 @@
-# BabyCare
+# Babbl
 
 > Understand your baby's cries in 10 seconds and soothe them with your own cloned voice.
 
@@ -16,11 +16,11 @@ The consequences of this guessing game are severely underestimated in public hea
 
 **This isn't a lack of love. It's a lack of information.**
 
-BabyCare tackles a silent public health crisis that sits at the intersection of maternal mental health, infant safety, and parental well-being — and has until now been left entirely to intuition.
+Babbl tackles a silent public health crisis that sits at the intersection of maternal mental health, infant safety, and parental well-being — and has until now been left entirely to intuition.
 
 ## What It Does
 
-BabyCare is a mobile-first web app that helps parents understand why their baby is crying in under 10 seconds, and comforts the baby with the parent's own cloned voice.
+Babbl is a mobile-first web app that helps parents understand why their baby is crying in under 10 seconds, and comforts the baby with the parent's own cloned voice.
 
 ### User journey
 
@@ -28,7 +28,7 @@ BabyCare is a mobile-first web app that helps parents understand why their baby 
 
 2. **Recording.** When the baby cries, the parent opens the app, presses the record button, and holds the phone near the baby for 5 to 15 seconds.
 
-3. **Analysis.** Under the hood, BabyCare extracts 19 acoustic descriptors with *librosa* (pitch, energy, spectral features, MFCCs), feeds them into a trained *XGBoost* classifier, then sends everything to *Claude Sonnet* which reasons over the audio features, ML predictions, and parent context to return:
+3. **Analysis.** Under the hood, Babbl extracts 19 acoustic descriptors with *librosa* (pitch, energy, spectral features, MFCCs), feeds them into a trained *XGBoost* classifier, then sends everything to *Claude Sonnet* which reasons over the audio features, ML predictions, and parent context to return:
    - Weighted probabilities across cry causes (hunger, fatigue, discomfort, pain, overstimulation, need for comfort)
    - Key signals that drove the decision (traceable, not a black box)
    - Prioritized recommended actions
@@ -43,7 +43,7 @@ BabyCare is a mobile-first web app that helps parents understand why their baby 
 
 ### A note on accuracy
 
-The current model achieves 82.6% accuracy on the Donate-a-Cry dataset, but macro F1 is limited (18.1%) due to heavy class imbalance (the dataset is dominated by the "hungry" class). BabyCare is a **triage-support tool**, not a clinical diagnostic, and the in-app confidence score always reflects that transparently.
+The current model achieves 82.6% accuracy on the Donate-a-Cry dataset, but macro F1 is limited (18.1%) due to heavy class imbalance (the dataset is dominated by the "hungry" class). Babbl is a **triage-support tool**, not a clinical diagnostic, and the in-app confidence score always reflects that transparently.
 
 ## Tech Stack
 
@@ -96,4 +96,4 @@ Expand beyond French: clone voices and adapt comfort messages across 30+ languag
 
 ---
 
-*BabyCare exists so that no parent ever feels alone at 3 a.m. again.*
+*Babbl exists so that no parent ever feels alone at 3 a.m. again.*

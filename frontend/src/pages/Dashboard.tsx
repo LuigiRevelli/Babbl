@@ -57,7 +57,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="mb-5 animate-fade-in">
         <p className="text-sm text-muted-foreground">{greeting.text}</p>
-        <h1 className="font-serif text-2xl font-bold tracking-tight">Babycare</h1>
+        <h1 className="font-serif text-2xl font-bold tracking-tight">Babbl</h1>
       </div>
 
       {/* CTA Card */}

@@ -44,7 +44,7 @@ def clone_voice(name: str, audio_path: str, description: str = "") -> str:
     headers = {"xi-api-key": _api_key()}
     data = {
         "name": name,
-        "description": description or f"Babycare cloned voice: {name}",
+        "description": description or f"Babbl cloned voice: {name}",
     }
     with open(audio_path, "rb") as f:
         files = [("files", (os.path.basename(audio_path), f, "audio/mpeg"))]

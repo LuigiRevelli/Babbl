@@ -1,5 +1,5 @@
 """
-Babycare backend — Flask API.
+Babbl backend — Flask API.
 
 Endpoints:
 - POST /api/analyze    : multipart form with `audio` file + `context` JSON string
@@ -46,7 +46,7 @@ def voice_clone():
         return jsonify({"error": "missing audio file"}), 400
 
     audio_file = request.files["audio"]
-    name = request.form.get("name", "Babycare parent")
+    name = request.form.get("name", "Babbl parent")
 
     request_id = uuid.uuid4().hex
     ext = os.path.splitext(audio_file.filename or "")[1] or ".webm"

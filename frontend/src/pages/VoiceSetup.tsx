@@ -89,7 +89,7 @@ export default function VoiceSetup() {
       const allBlobs = audioBlobs.filter((b): b is Blob => b !== null);
       const merged = new Blob(allBlobs, { type: 'audio/webm' });
 
-      const { voice_id } = await cloneVoice(merged, userName || 'BabyCare parent');
+      const { voice_id } = await cloneVoice(merged, userName || 'Babbl parent');
 
       const updated = {
         ...getUserData(),
@@ -302,7 +302,7 @@ export default function VoiceSetup() {
           </div>
           <h2 className="font-serif text-2xl font-bold mb-2">Your voice is ready!</h2>
           <p className="text-sm text-muted-foreground mb-8 max-w-xs">
-            In night mode, BabyCare can now use a voice like yours to comfort your baby.
+            In night mode, Babbl can now use a voice like yours to comfort your baby.
           </p>
 
           <button

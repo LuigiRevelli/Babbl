@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'babycare_user_data_v1';
+const STORAGE_KEY = 'babbl_user_data_v1';
 
 export interface Analysis {
   id: string;

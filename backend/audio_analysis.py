@@ -1,5 +1,5 @@
 """
-Audio feature extraction for Babycare.
+Audio feature extraction for Babbl.
 
 We extract a small set of objective acoustic descriptors from a baby's cry
 using librosa. These features are not interpretation — interpretation is left

@@ -210,7 +210,7 @@ export default function NightMode() {
         }}
       >
         <p className="text-xs opacity-60 leading-relaxed">
-          💡 When the baby monitor detects crying, BabyCare can automatically
+          💡 When the baby monitor detects crying, Babbl can automatically
           comfort your baby with a gentle voice. Customize the voice in settings.
         </p>
       </div>

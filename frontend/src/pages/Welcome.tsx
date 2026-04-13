@@ -10,7 +10,7 @@ export default function Welcome() {
       <BabyIllustration size={180} />
 
       <h1 className="font-serif text-[44px] font-extrabold text-foreground mt-6 leading-tight">
-        Babycare
+        Babbl
       </h1>
 
       <p className="text-lg text-foreground mt-3 leading-relaxed max-w-[340px]">

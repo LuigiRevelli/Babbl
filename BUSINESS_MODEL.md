@@ -46,13 +46,59 @@ Pourquoi ce prix : 6.99€ = moins qu'un café par semaine. Le prix annuel (49.9
 
 - Tout Babbl+
 - Voice cloning (2 voix : maman + papa)
-- Night mode auto-détection
+- Night mode auto-détection (Babbl Nuit — baby phone intégré)
 - Messages de réconfort avec la voix du parent
+- Babbl Lullaby — berceuses IA personnalisées dans la voix du parent
+- Babbl Nuit — baby phone autonome : détecte, analyse, soothe, alerte
 - Analyse prioritaire (plus rapide)
 - Alerte pédiatre (triage haute urgence)
-- Rapport hebdo envoyé par email
+- Rapport matinal (résumé de la nuit)
 
-Pourquoi ça marchera : la voix clonée est LA feature killer. Aucun concurrent ne l'a. C'est émotionnel, unique, et ça coûte cher à fournir (ElevenLabs) donc ça justifie le premium. Un parent qui entend son bébé se calmer avec SA voix clonée ne cancel jamais cet abonnement.
+Pourquoi ça marchera : la voix clonée + les berceuses IA + le baby phone autonome forment un trio imbattable. Aucun concurrent n'a ça. Un parent qui entend son bébé se calmer avec SA voix ne cancel jamais.
+
+---
+
+## Features Signature
+
+### Babbl Lullaby — Berceuse IA Personnalisée
+
+L'IA compose une berceuse unique pour le bébé, chantée dans la voix clonée du parent.
+
+Ce qui rend la berceuse unique :
+- Utilise le prénom du bébé dans les paroles
+- Chantée dans la voix de maman ou papa (clonée via ElevenLabs)
+- S'adapte à l'état détecté du bébé (douce si fatigue, rassurante si inconfort)
+- Nouvelle mélodie chaque semaine pour éviter l'habituation
+- Peut être générée dans n'importe quelle langue
+
+Comment ça marche techniquement :
+1. La voix du parent est déjà clonée (feature existante)
+2. Claude Sonnet génère des paroles personnalisées (prénom, cause du pleur, langue, heure)
+3. Musique générée via API (Suno/Udio/ElevenLabs Music) — style berceuse acoustique, tempo lent
+4. Voix clonée chante les paroles sur la mélodie via ElevenLabs
+5. Audio final servi au parent (cacheable, réutilisable)
+
+Coût estimé par berceuse : ~0.15-0.25€
+Fréquence : 1 nouvelle berceuse par semaine = ~1€/mois/user
+
+Pourquoi c'est la feature la plus virale :
+Un parent filme son bébé qui s'endort avec une berceuse IA dans sa voix et poste sur TikTok/Instagram. C'est du contenu viral natif, chaque parent qui utilise la feature crée potentiellement une pub gratuite pour Babbl. Budget marketing nécessaire : 0€.
+
+### Babbl Nuit — Baby Phone IA Autonome
+
+Le parent pose le téléphone dans la chambre du bébé. L'app devient une nounou de nuit autonome :
+
+1. Écoute en continu (mode basse consommation)
+2. Détecte les pleurs instantanément
+3. Analyse le type de cri en temps réel (faim, fatigue, inconfort, douleur)
+4. Décide de la réponse adaptée :
+   - Si fatigue ou réconfort → lance une Babbl Lullaby dans la voix du parent
+   - Si faim ou douleur → alerte le parent avec la cause et l'action recommandée, joue la voix clonée en attendant
+5. Surveille si le bébé se calme
+6. Rapport matinal : "Cette nuit : 2 réveils. 1 était de la fatigue (berceuse jouée, rendormi en 4 min). 1 était de la faim (alerté à 3h47)."
+
+Pourquoi c'est la feature qui retient les utilisateurs :
+On vend littéralement du sommeil aux parents. La douleur n°1 des nouveaux parents. Les parents paieraient n'importe quoi pour dormir 2h de plus par nuit.
 
 ---
 
@@ -80,8 +126,10 @@ Le parent voit que ça marche, il voit la cause, il veut COMPRENDRE et AGIR. C'e
 | Moyenne 30 analyses/mois par user payant | 0.12€ |
 | ElevenLabs TTS (résumé vocal) | ~0.01€/analyse soit 0.30€/mois |
 | ElevenLabs Voice Clone (une fois) | ~0.05€ |
+| Babbl Lullaby (1 berceuse/semaine) | ~0.20€/berceuse soit ~0.80€/mois |
 | Hébergement serveur | ~0.10€/user |
-| **Total coût/user payant/mois** | **~0.55€** |
+| **Total coût/user Babbl+/mois** | **~0.55€** |
+| **Total coût/user Babbl Voice/mois** | **~1.35€** |
 
 ## Marges par Palier
 
@@ -89,7 +137,7 @@ Le parent voit que ça marche, il voit la cause, il veut COMPRENDRE et AGIR. C'e
 |---|---|---|---|
 | Free (pub) | ~0.15€ (CPM baby ads) | ~0.05€ | 67% |
 | Babbl+ | 6.99€ (mensuel) / 4.17€ (annuel) | 0.42€ | 90-94% |
-| Babbl Voice | 9.99€ (mensuel) / 5.83€ (annuel) | 0.55€ | 91-94% |
+| Babbl Voice | 9.99€ (mensuel) / 5.83€ (annuel) | 1.35€ | 77-86% |
 
 ---
 
@@ -145,10 +193,15 @@ Dashboard partagé entre 2 parents. Les deux doivent avoir un compte. Double pot
 | Hush | Freemium + sub | 5.99$/mois | Nouveau |
 | **Babbl** | Freemium 3 tiers | 6.99-9.99€/mois | Lancement |
 
-Avantage compétitif : la voice clone. Personne ne l'a. C'est ce qui justifie le tier Voice et ce qui différencie Babbl de tous les concurrents.
+Avantage compétitif : la voice clone + Babbl Lullaby + Babbl Nuit. Personne n'a ce trio. La berceuse IA dans la voix du parent est la feature la plus virale (croissance), le baby phone autonome est la feature qui retient (rétention).
 
 ---
 
 ## Résumé
 
-Babbl donne le résultat gratuitement pour créer l'habitude, puis vend la compréhension détaillée (Babbl+) et l'émotion de la voix clonée (Babbl Voice) au moment exact où le parent en a le plus besoin.
+Babbl donne le résultat gratuitement pour créer l'habitude, puis vend la compréhension détaillée (Babbl+) et l'émotion de la voix clonée + berceuses IA + baby phone autonome (Babbl Voice) au moment exact où le parent en a le plus besoin.
+
+Les 3 features signature forment un écosystème :
+- Babbl Lullaby attire (viralité TikTok/Instagram, croissance organique)
+- Babbl Nuit retient (valeur quotidienne, les parents ne cancel jamais)
+- Voice Clone différencie (barrière technologique, impossible à copier vite)

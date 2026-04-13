@@ -1,6 +1,6 @@
 # Babbl — Toutes les Features
 
-## 3 Features Signature
+## 4 Features Signature
 
 ### 1. Babbl Cry — Analyse de Pleurs IA
 
@@ -84,23 +84,77 @@ Un parent filme son bébé qui s'endort avec une berceuse IA dans sa voix et pos
 
 ---
 
-## Feature Principale : Babbl Nuit — Baby Phone IA Autonome
+### 4. Babbl Monitor — Le Baby Phone Physique Connecté
 
-Le parent pose le baby phone dans la chambre du bébé. L'app devient une nounou de nuit autonome qui combine toutes les features.
+Un vrai appareil hardware conçu et commercialisé par Babbl, placé dans la chambre du bébé. Pas un téléphone posé à côté — un produit dédié, optimisé pour cette mission.
 
-**Comment ça marche :**
-1. Écoute en continu (mode basse consommation batterie)
-2. Détecte les pleurs instantanément
-3. Analyse le type de cri en temps réel (faim, fatigue, inconfort, douleur)
+**Le produit physique :**
+- Micro haute sensibilité optimisé pour capter les pleurs avec précision
+- Haut-parleur intégré pour diffuser la voix clonée et les berceuses
+- Veilleuse douce intégrée (intensité réglable, couleur chaude)
+- Capteur de température et humidité de la chambre
+- Connexion WiFi → communique directement avec l'app Babbl sur le téléphone du parent
+- Design doux et arrondi, matériaux baby-safe, sans écran (pas de lumière bleue)
+- Batterie de secours en cas de coupure de courant
+- Compact et portable (fonctionne aussi en voyage)
+
+**Comment ça marche avec l'app :**
+1. Le Babbl Monitor écoute en continu dans la chambre (micro dédié, bien meilleur qu'un téléphone)
+2. Détecte les pleurs instantanément et envoie l'audio au backend Babbl
+3. L'IA analyse le type de cri en temps réel (faim, fatigue, inconfort, douleur)
 4. Décide de la réponse automatiquement :
-   - Si fatigue ou besoin de réconfort → lance une Babbl Lullaby dans la voix du parent
-   - Si faim ou douleur → alerte le parent avec la cause + action recommandée, joue la voix clonée en attendant qu'il arrive
-5. Surveille si le bébé se calme après l'intervention
+   - Si fatigue ou besoin de réconfort → le Monitor diffuse une Babbl Lullaby dans la voix du parent
+   - Si faim ou douleur → le Monitor joue la voix clonée en attendant + l'app alerte le parent avec la cause et l'action recommandée
+5. Le Monitor surveille si le bébé se calme après l'intervention
 6. Si le bébé ne se calme pas → escalade : notification push au parent avec diagnostic complet
-7. Rapport matinal : résumé complet de la nuit (nombre de réveils, causes, durées, interventions)
+7. Rapport matinal sur l'app : résumé complet de la nuit
 
 **Exemple de rapport matinal :**
-"Cette nuit : 2 réveils. 22h30 — fatigue (berceuse jouée, rendormi en 4 min). 3h47 — faim (alerté, vous êtes intervenu)."
+"Cette nuit : 2 réveils. 22h30 — fatigue (berceuse jouée via Monitor, rendormi en 4 min). 3h47 — faim (alerté, vous êtes intervenu). Température chambre : 21°C stable. Humidité : 45%."
+
+**Pourquoi un produit physique et pas juste le téléphone :**
+- Le micro est optimisé pour la captation de pleurs (directivité, filtrage bruit ambiant) → analyse plus précise
+- Le haut-parleur est optimisé pour la voix douce → meilleure qualité de berceuse
+- Pas besoin de laisser son téléphone dans la chambre du bébé toute la nuit (batterie, notifications, etc.)
+- Le parent garde son téléphone avec lui et reçoit les alertes dessus
+- La veilleuse et les capteurs environnementaux ajoutent de la valeur
+- Un objet dédié = le parent n'oublie jamais de le mettre en place (habitude)
+- C'est un produit CADEAU parfait pour une baby shower ou une naissance
+
+**Business model hardware :**
+- Prix de vente : 79-129€ (positionnement mid-premium, moins cher que Nanit à 299€)
+- Coût de fabrication estimé : 25-40€ (micro + speaker + WiFi + capteurs + boîtier)
+- Marge brute hardware : ~60-70%
+- L'appareil NÉCESSITE un abonnement Babbl Voice pour fonctionner → revenue récurrent garanti
+- Chaque Monitor vendu = un abonné Babbl Voice à 9.99€/mois pendant 12+ mois
+- Revenue total par Monitor vendu : 129€ (hardware) + 120€ (abonnement annuel) = ~249€ par client
+
+**Pourquoi c'est stratégiquement puissant :**
+- Crée une barrière d'entrée physique (un concurrent software ne peut pas copier ça facilement)
+- Le parent qui a acheté le Monitor ne va JAMAIS chez un concurrent (coût d'investissement + habitude)
+- Revenu mixte hardware + software = valorisation startup beaucoup plus élevée
+- Possibilité de vendre en retail (Fnac, Amazon, pharmacies, magasins bébé)
+- Le Monitor est un objet visible dans la chambre = marketing physique permanent
+
+**Roadmap hardware :**
+- Phase 1 : L'app utilise le téléphone comme baby phone (mode Babbl Nuit — ce qu'on a déjà)
+- Phase 2 : Conception et prototypage du Babbl Monitor (3D print + Raspberry Pi pour le MVP)
+- Phase 3 : Production série et commercialisation (partenariat fabricant ou crowdfunding Kickstarter)
+
+---
+
+## Babbl Nuit — Le Mode Baby Phone (via téléphone ou Monitor)
+
+Que ce soit avec le Babbl Monitor ou simplement avec le téléphone posé dans la chambre, le mode Babbl Nuit transforme l'appareil en nounou de nuit autonome.
+
+**Fonctionnement identique sur les deux supports :**
+1. Écoute en continu
+2. Détecte et analyse les pleurs en temps réel
+3. Répond automatiquement (berceuse ou voix clonée selon la cause)
+4. Alerte le parent si intervention nécessaire
+5. Rapport matinal
+
+La différence : le Babbl Monitor offre une meilleure qualité audio (captation et diffusion), les capteurs environnementaux, la veilleuse, et libère le téléphone du parent.
 
 **Pourquoi c'est la feature qui retient les utilisateurs :**
 On vend du sommeil. La douleur n°1 des nouveaux parents. Un parent qui gagne 2h de sommeil par nuit grâce à Babbl Nuit ne cancel jamais son abonnement.
@@ -155,14 +209,17 @@ On vend du sommeil. La douleur n°1 des nouveaux parents. Un parent qui gagne 2h
               ↓
          Babbl Lullaby (apaiser)
               ↓
-         Babbl Nuit (automatiser)
+         Babbl Monitor (le hardware dédié)
+              ↓
+         Babbl Nuit (automatiser le tout)
 ```
 
-Les 4 features s'empilent :
+Les features s'empilent :
 - Cry analyse le problème
 - Voice répond avec la voix du parent
 - Lullaby endort le bébé
-- Nuit fait tourner les 3 automatiquement pendant que le parent dort
+- Monitor capte, diffuse et surveille avec un matériel optimisé
+- Nuit fait tourner le tout automatiquement pendant que le parent dort
 
 ---
 
@@ -194,7 +251,8 @@ Les 4 features s'empilent :
 | Night mode | Non | Manuel | Auto-détection |
 | Voice clone | Non | Non | 2 voix (maman + papa) |
 | Babbl Lullaby | Non | Non | Oui |
-| Babbl Nuit (baby phone) | Non | Non | Oui |
+| Babbl Nuit (via téléphone) | Non | Non | Oui |
+| Babbl Monitor (hardware) | Non | Non | Compatible (vendu séparément) |
 | Rapport matinal | Non | Non | Oui |
 | Alerte pédiatre | Non | Non | Oui |
 | Publicité | Oui | Non | Non |

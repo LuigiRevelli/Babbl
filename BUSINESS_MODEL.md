@@ -158,6 +158,55 @@ Hypothèses : distribution standard freemium baby app (85% free, 10% Plus, 5% Vo
 
 ---
 
+## Revenue Stream Hardware : Babbl Monitor
+
+### Le produit
+
+Baby phone physique connecté conçu par Babbl. Micro haute sensibilité, haut-parleur pour berceuses et voix clonée, veilleuse, capteurs température/humidité, WiFi.
+
+### Pricing hardware
+
+| | Estimation |
+|---|---|
+| Prix de vente | 79-129€ |
+| Coût de fabrication | 25-40€ |
+| Marge brute hardware | 60-70% |
+| Positionnement | Mid-premium (Nanit = 299€, Owlet = 399€) |
+
+### Le combo hardware + software
+
+Chaque Babbl Monitor nécessite un abonnement Babbl Voice pour fonctionner. Revenue par client Monitor :
+- Hardware : 129€ (one-shot)
+- Abonnement Babbl Voice : 9.99€/mois × 12 mois = 120€/an
+- **Revenue total par client 1ère année : ~249€**
+- **Revenue année 2+ : 120€/an** (que du récurrent)
+
+### Projections Monitor (Phase 2-3, à partir du mois 12)
+
+| Métrique | 12 mois | 18 mois | 24 mois |
+|---|---|---|---|
+| Monitors vendus (cumulé) | 500 | 2 000 | 5 000 |
+| Revenue hardware (cumulé) | 64K€ | 258K€ | 645K€ |
+| Abonnés Voice via Monitor | 500 | 2 000 | 5 000 |
+| MRR additionnel (Monitor users) | 5 000€ | 20 000€ | 50 000€ |
+
+### Canaux de distribution
+
+- Site web Babbl (direct, meilleure marge)
+- Amazon (volume, visibilité)
+- Fnac / Boulanger (retail France)
+- Pharmacies et magasins bébé (Aubert, Bébé 9)
+- Kickstarter pour le lancement (financement + marketing + early adopters)
+
+### Pourquoi le hardware change la valorisation
+
+- Hardware + SaaS = catégorie "connected device" comme Nanit (valorisé 250M$+), Owlet (côté en bourse)
+- Le Monitor crée un lock-in physique : le parent qui a l'objet ne part pas chez un concurrent
+- Revenue mixte hardware + recurring = modèle préféré des investisseurs
+- Le Monitor est un cadeau de naissance parfait = canal d'acquisition gratuit
+
+---
+
 ## Revenue Streams Additionnels (Phase 2-3)
 
 ### 1. Abonnement Cadeau — "Offrir Babbl"

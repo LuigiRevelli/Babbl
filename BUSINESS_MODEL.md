@@ -207,6 +207,48 @@ Chaque Babbl Monitor nécessite un abonnement Babbl Voice pour fonctionner. Reve
 
 ---
 
+## Revenue Stream Santé : Babbl Alert
+
+### Marketplace de téléconsultation pédiatrique
+
+Quand l'IA détecte une alerte orange ou rouge, Babbl connecte le parent directement avec le bon professionnel.
+
+### Revenue côté parents
+
+| Service | Prix |
+|---|---|
+| Téléconsultation Babbl Pro | 25-35€/consultation |
+| Pack 3 téléconsultations | 59€ |
+| Téléconsultations illimitées (add-on) | 14.99€/mois en plus de Babbl Voice |
+| Commission Babbl par consultation | 20-25% (5-8€/consult) |
+
+### Revenue côté professionnels
+
+| Service | Prix |
+|---|---|
+| Inscription Babbl Pro | Gratuit |
+| Dashboard avancé + analytics | 49€/mois |
+| Visibilité prioritaire | 99€/mois |
+
+### Projections Alert (Phase 2-3)
+
+| Métrique | 12 mois | 24 mois |
+|---|---|---|
+| Téléconsultations/mois | 500 | 5 000 |
+| Commission moyenne | 6€ | 6€ |
+| Revenue consults/mois | 3 000€ | 30 000€ |
+| Abonnements pro (50 → 300 médecins) | 2 450€/mois | 14 700€/mois |
+| **Revenue Alert/mois** | **5 450€** | **44 700€** |
+| **Revenue Alert ARR** | **65K€** | **536K€** |
+
+### Roadmap
+
+- Phase 1 : Redirection vers Doctolib (pas de revenue direct, mais valeur ajoutée pour les parents)
+- Phase 2 : Réseau Babbl Pro avec commission sur téléconsultations
+- Phase 3 : Conventionnement ARS pour remboursement sécu des téléconsultations via Babbl
+
+---
+
 ## Revenue Streams Additionnels (Phase 2-3)
 
 ### 1. Abonnement Cadeau — "Offrir Babbl"
@@ -242,15 +284,37 @@ Dashboard partagé entre 2 parents. Les deux doivent avoir un compte. Double pot
 | Hush | Freemium + sub | 5.99$/mois | Nouveau |
 | **Babbl** | Freemium 3 tiers | 6.99-9.99€/mois | Lancement |
 
-Avantage compétitif : la voice clone + Babbl Lullaby + Babbl Nuit. Personne n'a ce trio. La berceuse IA dans la voix du parent est la feature la plus virale (croissance), le baby phone autonome est la feature qui retient (rétention).
+Avantage compétitif : 5 features signature que personne n'a ensemble. Babbl est le seul à couvrir toute la chaîne : comprendre → réconforter → apaiser → surveiller → connecter au médecin.
+
+---
+
+## Revenue Total Consolidé (Projection 24 mois)
+
+| Source de revenue | ARR à 24 mois |
+|---|---|
+| Abonnements app (Babbl+ et Voice) | 2.63M€ |
+| Hardware (Babbl Monitor) | 645K€ (cumulé) + MRR récurrent |
+| Babbl Alert (téléconsultations + abos pro) | 536K€ |
+| B2B (maternités + mutuelles) | 2.4M€ |
+| Autres (cadeaux, affiliés, co-parenting) | ~200K€ |
+| **Total estimé à 24 mois** | **~6.4M€ ARR** |
 
 ---
 
 ## Résumé
 
-Babbl donne le résultat gratuitement pour créer l'habitude, puis vend la compréhension détaillée (Babbl+) et l'émotion de la voix clonée + berceuses IA + baby phone autonome (Babbl Voice) au moment exact où le parent en a le plus besoin.
+Babbl a 4 sources de revenue qui se renforcent mutuellement :
 
-Les 3 features signature forment un écosystème :
-- Babbl Lullaby attire (viralité TikTok/Instagram, croissance organique)
-- Babbl Nuit retient (valeur quotidienne, les parents ne cancel jamais)
-- Voice Clone différencie (barrière technologique, impossible à copier vite)
+1. **Abonnements app** (Babbl+, Babbl Voice) — le coeur récurrent
+2. **Hardware** (Babbl Monitor) — lock-in physique + abonnement garanti
+3. **Santé** (Babbl Alert) — marketplace de téléconsultation pédiatrique
+4. **B2B** (maternités, mutuelles) — volume institutionnel
+
+Les 5 features signature forment un écosystème complet :
+- **Babbl Cry** comprend le problème
+- **Babbl Voice** réconforte avec la voix du parent
+- **Babbl Lullaby** endort le bébé (viralité TikTok)
+- **Babbl Monitor** surveille avec un hardware dédié (lock-in)
+- **Babbl Alert** connecte au bon médecin quand nécessaire (marketplace santé)
+
+Le parent n'a jamais besoin de quitter l'écosystème Babbl. Du premier pleur à la consultation pédiatrique, tout passe par nous.

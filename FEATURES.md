@@ -1,6 +1,6 @@
 # Babbl — Toutes les Features
 
-## 4 Features Signature
+## 5 Features Signature
 
 ### 1. Babbl Cry — Analyse de Pleurs IA
 
@@ -143,6 +143,205 @@ Un vrai appareil hardware conçu et commercialisé par Babbl, placé dans la cha
 
 ---
 
+### 5. Babbl Alert — Connexion Directe au Bon Professionnel de Santé
+
+Quand l'IA détecte quelque chose d'anormal, elle ne dit pas juste "consultez un médecin". Elle connecte le parent DIRECTEMENT avec le bon professionnel, au bon moment, avec toutes les données déjà prêtes.
+
+**Le problème que ça résout :**
+Il est 3h du matin. Le bébé hurle de douleur depuis 45 minutes. Le parent a analysé 3 fois avec Babbl, la douleur persiste. Il est paniqué. Qu'est-ce qu'il fait ? Il appelle le 15 (SAMU) et attend 20 minutes en ligne ? Il cherche un pédiatre sur Doctolib à 3h du mat ? Il va aux urgences avec un bébé qui hurle en voiture ?
+
+Babbl Alert résout ça : un bouton, une connexion, un professionnel qui a DÉJÀ les données du bébé.
+
+---
+
+#### Le Système d'Alerte à 4 Niveaux
+
+**🟢 Vert — Normal (aucune alerte)**
+- L'analyse est standard, cause identifiée, confiance haute
+- Actions recommandées suffisent
+- "Votre bébé a faim, voici quoi faire"
+
+**🟡 Jaune — Attention (surveillance)**
+- Pattern légèrement inhabituel ou confiance basse
+- Recommandation : re-analyser dans 1h, surveiller
+- "Certains signaux sont inhabituels. Relancez une analyse dans 1h. Si ça persiste, Babbl vous proposera un professionnel."
+- L'app programme un rappel automatique
+
+**🟠 Orange — Consultation recommandée (sous 24h)**
+- Pattern anormal détecté mais pas d'urgence immédiate
+- Exemples : pleurs récurrents de douleur sur 3+ analyses, pattern compatible avec coliques, otite, reflux
+- Babbl propose de prendre RDV avec un pédiatre
+- → Connexion Doctolib / réseau Babbl Pro pour RDV dans les 24h
+- Le professionnel reçoit le Babbl Report avant la consultation
+
+**🔴 Rouge — Urgent (intervention immédiate)**
+- Signaux de détresse aiguë, douleur intense persistante, patterns neurologiques anormaux
+- Babbl propose immédiatement :
+  - 1. Téléconsultation pédiatrique instantanée (via réseau Babbl Pro)
+  - 2. Appel direct au 15 (SAMU) — pré-rempli avec localisation
+  - 3. Itinéraire vers les urgences pédiatriques les plus proches (GPS)
+- Le professionnel reçoit le Babbl Report en temps réel
+
+---
+
+#### Le Babbl Report — Le Dossier que le Médecin Reçoit
+
+Quand un parent se connecte avec un professionnel via Babbl Alert, le médecin ne part pas de zéro. Il reçoit un rapport structuré :
+
+**Données incluses dans le Babbl Report :**
+- Historique des pleurs des dernières 24h à 7 jours (fréquence, durées, causes détectées)
+- Courbes de tendance des causes (la douleur augmente-t-elle ?)
+- Caractéristiques acoustiques des pleurs (pitch, énergie, patterns spectraux anormaux)
+- Contexte parental (alimentation, sommeil, changes, température si Monitor)
+- Données environnementales du Babbl Monitor (température chambre, humidité)
+- Niveau de triage IA avec explication des signaux qui ont déclenché l'alerte
+- Âge du bébé, informations pertinentes du profil
+
+**Pourquoi c'est révolutionnaire pour le médecin :**
+- Il a un "dossier patient" AVANT que le parent ouvre la bouche
+- Les données objectives (acoustique) complètent le ressenti subjectif du parent
+- Il gagne 5-10 minutes de consultation (pas besoin de poser "depuis quand ?", "combien de fois ?", "à quelle heure ?")
+- Il peut comparer avec les données des consultations précédentes
+- C'est un outil d'aide à la décision, pas un diagnostic concurrent
+
+---
+
+#### Le Réseau Babbl Pro — La Marketplace Santé
+
+**Phase 1 : Partenariat Doctolib (lancement)**
+
+Intégration via l'API Doctolib pour :
+- Rechercher les pédiatres disponibles près du parent (géolocalisation)
+- Filtrer par disponibilité (urgent = aujourd'hui, recommandé = cette semaine)
+- Pré-remplir le motif de consultation avec le résumé Babbl
+- Le parent réserve en 2 taps sans quitter l'app Babbl
+- Doctolib gère le paiement et la téléconsultation
+
+Avantages : base de médecins massive (380 000+ praticiens en France), confiance établie, pas de recrutement nécessaire.
+Inconvénient : pas de commission pour Babbl (Doctolib ne partage pas), dépendance.
+
+**Phase 2 : Réseau Babbl Pro (propre plateforme, à partir du mois 12-18)**
+
+Babbl recrute son propre réseau de professionnels certifiés :
+
+**Qui sont les Babbl Pros :**
+- Pédiatres libéraux
+- Pédiatres hospitaliers (en garde)
+- Sages-femmes
+- Infirmières puéricultrices
+- Pédopsychiatres (pour le volet santé mentale parentale)
+- Médecins ORL pédiatriques (otites = cause majeure de pleurs)
+- Gastro-pédiatres (coliques, reflux)
+
+**Pourquoi les professionnels VEULENT être sur Babbl Pro :**
+- Ils reçoivent le Babbl Report avant chaque consultation (gain de temps)
+- Flux de patients qualifiés (pas des parents anxieux pour rien — l'IA a déjà filtré)
+- Visibilité auprès de jeunes parents (la démographie la plus active en recherche de pédiatre)
+- Outil de suivi à distance entre les consultations
+- Dashboard professionnel avec données anonymisées agrégées
+- Badge "Babbl Pro Certified" = crédibilité et confiance
+
+**Pourquoi les parents préfèrent un Babbl Pro :**
+- Le médecin a DÉJÀ toutes les données du bébé (pas besoin de tout réexpliquer)
+- Le médecin connaît l'app et sait interpréter les données
+- Disponibilité garantie pour les alertes orange et rouge
+- Téléconsultation intégrée directement dans l'app (pas de redirection)
+- Suivi continu : le médecin voit l'évolution entre les consultations
+
+---
+
+#### Fonctionnement de la Téléconsultation Babbl Pro
+
+1. Alerte orange ou rouge déclenchée
+2. Le parent appuie sur "Parler à un professionnel"
+3. L'app propose les Babbl Pros disponibles (triés par : spécialité adaptée à la cause détectée → proximité → disponibilité → note)
+4. Le parent choisit un professionnel
+5. Le Babbl Report est envoyé automatiquement au médecin
+6. Téléconsultation vidéo ou audio directement dans l'app Babbl
+7. Le médecin peut voir en temps réel les données du Monitor (température, audio)
+8. À la fin : le médecin laisse des notes dans le Babbl Report, prescrit si nécessaire
+9. Ordonnance envoyée par email, parent redirigé vers pharmacie de garde si besoin
+
+**Pour les alertes de nuit (le cas critique) :**
+- Réseau de médecins de garde inscrits sur Babbl Pro
+- Rotation par timezone et disponibilité
+- Temps de réponse cible : moins de 10 minutes pour une alerte rouge
+- Si aucun Babbl Pro dispo → fallback automatique vers le 15 (SAMU) avec transfert du Babbl Report
+
+---
+
+#### Business Model Babbl Alert
+
+**Pour les parents :**
+
+| Service | Prix | Inclus dans |
+|---|---|---|
+| Alertes automatiques (détection) | Gratuit | Tous les paliers |
+| Prise de RDV Doctolib (Phase 1) | Gratuit (Doctolib gère) | Babbl+ et Voice |
+| Téléconsultation Babbl Pro | 25-35€/consultation | Pay-per-use |
+| Pack 3 téléconsultations | 59€ (économie ~30%) | Pay-per-use |
+| Téléconsultations illimitées | 14.99€/mois en add-on | Add-on sur Babbl Voice |
+
+**Pour les professionnels :**
+
+| Service | Prix |
+|---|---|
+| Inscription Babbl Pro (de base) | Gratuit |
+| Dashboard avancé + analytics patients | 49€/mois |
+| Visibilité prioritaire (mis en avant) | 99€/mois |
+| Commission par téléconsultation | 20-25% (Babbl prend 5-8€ par consult de 25-35€) |
+
+**Revenue estimé :**
+
+| Métrique | 12 mois | 24 mois |
+|---|---|---|
+| Téléconsultations/mois | 500 | 5 000 |
+| Commission moyenne/consult | 6€ | 6€ |
+| Revenue téléconsult/mois | 3 000€ | 30 000€ |
+| Abonnements pro (50 → 300 médecins) | 2 450€/mois | 14 700€/mois |
+| **Revenue Alert total/mois** | **5 450€** | **44 700€** |
+| **Revenue Alert ARR** | **65K€** | **536K€** |
+
+---
+
+#### Intégration avec le Babbl Monitor
+
+Le Babbl Monitor rend les alertes encore plus puissantes :
+
+- Le micro HD capte des nuances que le téléphone manquerait → alertes plus précises
+- Le capteur de température détecte si la chambre est trop chaude/froide → contexte pour le médecin
+- Le capteur d'humidité ajoute des données environnementales au Babbl Report
+- Pendant la téléconsultation, le médecin peut écouter le bébé EN DIRECT via le Monitor
+- Le médecin peut envoyer un message vocal via le Monitor pour rassurer le parent/bébé
+
+---
+
+#### Aspects Réglementaires
+
+**Ce que Babbl Alert N'EST PAS :**
+- Pas un dispositif médical (pas de diagnostic)
+- Pas un service de télémédecine (c'est une marketplace qui connecte)
+- Pas un substitut au 15/SAMU pour les urgences vitales
+
+**Ce que Babbl Alert EST :**
+- Un outil de triage intelligent qui SUGGÈRE de consulter
+- Une marketplace de mise en relation parent-professionnel
+- Un facilitateur de transmission de données de santé
+
+**Conformité nécessaire :**
+- RGPD strict (données de santé = catégorie sensible)
+- Hébergement HDS (Hébergeur de Données de Santé agréé — OVH Health, AWS HDS, etc.)
+- Consentement explicite du parent pour le partage de données avec le professionnel
+- Droit à l'effacement des données médicales
+- Pas de conservation des données de téléconsultation au-delà du nécessaire
+
+**Roadmap réglementaire :**
+- Phase 1 : Redirection Doctolib (pas de données santé hébergées par Babbl)
+- Phase 2 : Certification HDS pour héberger les Babbl Reports
+- Phase 3 : Discussions avec l'ARS pour conventionnement potentiel (remboursement sécu des téléconsultations via Babbl)
+
+---
+
 ## Babbl Nuit — Le Mode Baby Phone (via téléphone ou Monitor)
 
 Que ce soit avec le Babbl Monitor ou simplement avec le téléphone posé dans la chambre, le mode Babbl Nuit transforme l'appareil en nounou de nuit autonome.
@@ -194,32 +393,35 @@ On vend du sommeil. La douleur n°1 des nouveaux parents. Un parent qui gagne 2h
 - Interface simple : boutons rapides pour logger "vient de manger", "couche changée", etc.
 
 ### Alerte Pédiatre
-- Si l'analyse détecte un triage haute urgence (douleur persistante, patterns anormaux)
-- Notification spéciale : "Ces signaux méritent l'avis d'un professionnel"
-- Pas de diagnostic médical, mais un signal d'alerte intelligent
+Voir Feature Signature n°5 : Babbl Alert
 
 ---
 
 ## Résumé de l'Écosystème
 
 ```
-         Babbl Cry (comprendre)
+         Babbl Cry (comprendre le pleur)
               ↓
-         Babbl Voice (réconforter)
+         Babbl Voice (réconforter le bébé)
               ↓
-         Babbl Lullaby (apaiser)
+         Babbl Lullaby (apaiser et endormir)
               ↓
-         Babbl Monitor (le hardware dédié)
+         Babbl Monitor (le hardware dans la chambre)
               ↓
-         Babbl Nuit (automatiser le tout)
+         Babbl Nuit (automatiser le tout la nuit)
+              ↓
+         Babbl Alert (connecter au médecin si nécessaire)
 ```
 
-Les features s'empilent :
+Les features forment une chaîne complète :
 - Cry analyse le problème
 - Voice répond avec la voix du parent
 - Lullaby endort le bébé
 - Monitor capte, diffuse et surveille avec un matériel optimisé
 - Nuit fait tourner le tout automatiquement pendant que le parent dort
+- Alert intervient quand l'IA détecte que ce n'est plus du ressort de l'app mais d'un professionnel
+
+Babbl couvre l'intégralité du parcours : de la compréhension du pleur jusqu'à la connexion médicale. Le parent n'a jamais besoin de quitter l'écosystème.
 
 ---
 
@@ -254,7 +456,10 @@ Les features s'empilent :
 | Babbl Nuit (via téléphone) | Non | Non | Oui |
 | Babbl Monitor (hardware) | Non | Non | Compatible (vendu séparément) |
 | Rapport matinal | Non | Non | Oui |
-| Alerte pédiatre | Non | Non | Oui |
+| Babbl Alert (détection auto) | Basique | Oui (4 niveaux) | Oui (4 niveaux) |
+| Babbl Alert (connexion Doctolib) | Non | Oui | Oui |
+| Babbl Alert (téléconsult Babbl Pro) | Non | Non | Pay-per-use ou add-on |
+| Babbl Report (envoyé au médecin) | Non | Non | Oui |
 | Publicité | Oui | Non | Non |
 
 ---

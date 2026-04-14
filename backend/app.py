@@ -43,10 +43,10 @@ def health():
 def voice_clone():
     """Create an ElevenLabs Instant Voice Clone from a short sample."""
     if "audio" not in request.files:
-        return jsonify({"error": "missing audio file"}), 400
+        return jsonify({"error": "Fichier audio manquant"}), 400
 
     audio_file = request.files["audio"]
-    name = request.form.get("name", "Babbl parent")
+    name = request.form.get("name", "Parent Babbl")
 
     request_id = uuid.uuid4().hex
     ext = os.path.splitext(audio_file.filename or "")[1] or ".webm"
@@ -61,12 +61,12 @@ def voice_clone():
         if "missing_permissions" in msg or "create_instant_voice_clone" in msg:
             return jsonify({
                 "error": (
-                    "Your ElevenLabs API key does not have permission to clone a voice. "
-                    "Go to elevenlabs.io → Settings → API Keys and enable 'Voices: Write' "
-                    "(or 'Create Instant Voice Clone')."
+                    "Votre clé API ElevenLabs n'a pas la permission de cloner une voix. "
+                    "Allez sur elevenlabs.io → Settings → API Keys et activez 'Voices: Write' "
+                    "(ou 'Create Instant Voice Clone')."
                 )
             }), 403
-        return jsonify({"error": f"voice clone failed: {msg}"}), 500
+        return jsonify({"error": f"Le clonage vocal a échoué : {msg}"}), 500
 
     return jsonify({"voice_id": voice_id, "name": name})
 
@@ -74,14 +74,14 @@ def voice_clone():
 @app.post("/api/analyze")
 def analyze():
     if "audio" not in request.files:
-        return jsonify({"error": "missing audio file"}), 400
+        return jsonify({"error": "Fichier audio manquant"}), 400
 
     audio_file = request.files["audio"]
     context_raw = request.form.get("context", "{}")
     try:
         context = json.loads(context_raw)
     except json.JSONDecodeError:
-        return jsonify({"error": "invalid context JSON"}), 400
+        return jsonify({"error": "JSON de contexte invalide"}), 400
 
     voice_id = request.form.get("voice_id") or context.get("voiceId") or context.get("voice_id") or None
     parent_label = request.form.get("parent_label") or context.get("parentLabel") or context.get("parent_label") or "father"
@@ -107,7 +107,7 @@ def analyze():
     except Exception as e:
         traceback.print_exc()
         msg = str(e) or type(e).__name__
-        return jsonify({"error": f"audio analysis failed: {msg}"}), 500
+        return jsonify({"error": f"L'analyse audio a échoué : {msg}"}), 500
 
     # 2. Predict with the supervised ML model (if available)
     ml = None
@@ -134,7 +134,7 @@ def analyze():
                 "probabilities": base_probs,
                 "key_signals": [
                     {
-                        "signal": "Prediction based on extracted acoustic features (MFCCs, energy, spectrum).",
+                        "signal": "Prédiction basée sur les caractéristiques acoustiques extraites (MFCCs, énergie, spectre).",
                         "source": "audio",
                         "impact": "high",
                     }
@@ -142,18 +142,18 @@ def analyze():
                 "recommended_actions": [
                     {
                         "priority": 1,
-                        "action": "Observe the baby for 5 to 10 minutes and try one targeted soothing action.",
-                        "reasoning": "The model indicates a dominant cause, but a quick contextual check is still useful.",
+                        "action": "Observe le bébé pendant 5 à 10 minutes et essaie une action ciblée pour le calmer.",
+                        "reasoning": "Le modèle indique une cause dominante, mais une vérification contextuelle rapide reste utile.",
                     }
                 ],
                 "confidence_level": "medium",
                 "alert": "monitor",
-                "parent_summary": f"The most likely cause is {top_cause}. Try one action that matches this hypothesis first, then reassess if the cry continues.",
+                "parent_summary": f"La cause la plus probable est {top_cause}. Essaie d'abord une action qui correspond à cette hypothèse, puis réévalue si les pleurs continuent.",
                 "model_source": "ml_fallback",
             }
         else:
             msg = str(e) or type(e).__name__
-            return jsonify({"error": f"mistral failed: {msg}", "features": features}), 500
+            return jsonify({"error": f"L'analyse IA a échoué : {msg}", "features": features}), 500
 
     adjusted_probs, rule_notes = apply_context_rules(triage.get("probabilities", {}), context)
     triage["probabilities"] = adjusted_probs

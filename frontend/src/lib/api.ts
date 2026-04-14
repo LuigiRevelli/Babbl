@@ -31,7 +31,7 @@ export async function analyzeAudio(
   const res = await fetch(apiUrl('/api/analyze'), { method: 'POST', body: form });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error ?? 'Analysis failed');
+    throw new Error(err.error ?? "L'analyse a échoué");
   }
   return res.json();
 }
@@ -48,7 +48,7 @@ export async function cloneVoice(audioBlob: Blob, name: string) {
   const res = await fetch(apiUrl('/api/voice/clone'), { method: 'POST', body: form });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error ?? 'Voice cloning failed');
+    throw new Error(err.error ?? "Le clonage vocal a échoué");
   }
   return res.json() as Promise<{ voice_id: string; name: string }>;
 }

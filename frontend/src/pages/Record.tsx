@@ -114,7 +114,7 @@ export default function Record() {
       saveUserData(userData);
       navigate(`/analysis/${analysis.id}`);
     } catch (err: any) {
-      alert(err?.message ?? "Analysis failed. Please try again.");
+      alert(err?.message ?? "L'analyse a échoué. Veuillez réessayer.");
       setIsAnalyzing(false);
     }
   };

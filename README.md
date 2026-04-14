@@ -1,99 +1,89 @@
 # Babbl
 
-> Understand your baby's cries in 10 seconds and soothe them with your own cloned voice.
+> Comprends les pleurs de ton bébé en 10 secondes et apaise-le avec ta propre voix clonée.
 
-**Founded by Luigi Revelli Caracciolo** — [LinkedIn](https://www.linkedin.com/in/luigi-revelli/)
+**Fondé par Luigi Revelli Caracciolo** — [LinkedIn](https://www.linkedin.com/in/luigi-revelli/)
 
-## The Problem
+## Le Problème
 
-Infant crying is one of the most universal and most isolating experiences of early parenthood. Babies cry between 1 and 3 hours a day, and until they can speak, a cry is their only language. Parents are left guessing: hunger? fatigue? pain? a wet diaper? overstimulation?
+Les pleurs de nourrisson sont l'une des expériences les plus universelles et les plus isolantes de la parentalité. Les bébés pleurent entre 1 et 3 heures par jour, et tant qu'ils ne peuvent pas parler, un pleur est leur seul langage. Les parents devinent : faim ? fatigue ? douleur ? couche mouillée ? surstimulation ?
 
-The consequences of this guessing game are severely underestimated in public health:
+Les conséquences de ce jeu de devinettes sont gravement sous-estimées en santé publique :
 
-- **1 in 7 mothers in France** develops postpartum depression (Sante Publique France), and unresolved crying episodes are one of the top triggers.
-- **80% of new parents** report feeling "completely helpless" in front of a crying baby (WHO, 2022).
-- Chronic sleep deprivation caused by cry-decoding at night is clinically linked to maternal burnout, couple breakdown, and in extreme cases shaken baby syndrome, which affects around 200 infants every year in France alone.
+- **1 mère sur 7 en France** développe une dépression post-partum (Santé Publique France), et les épisodes de pleurs non résolus sont l'un des principaux déclencheurs.
+- **80% des nouveaux parents** déclarent se sentir « complètement démunis » face à un bébé qui pleure (OMS, 2022).
+- La privation chronique de sommeil causée par le décodage des pleurs la nuit est cliniquement liée au burnout maternel, aux ruptures de couple, et dans les cas extrêmes au syndrome du bébé secoué, qui touche environ 200 nourrissons chaque année en France.
 
-**This isn't a lack of love. It's a lack of information.**
+**Ce n'est pas un manque d'amour. C'est un manque d'information.**
 
-Babbl tackles a silent public health crisis that sits at the intersection of maternal mental health, infant safety, and parental well-being — and has until now been left entirely to intuition.
+Babbl s'attaque à une crise silencieuse de santé publique qui se situe à l'intersection de la santé mentale maternelle, de la sécurité infantile et du bien-être parental — et qui jusqu'ici était laissée entièrement à l'intuition.
 
-## What It Does
+## Ce que fait Babbl
 
-Babbl is a mobile-first web app that helps parents understand why their baby is crying in under 10 seconds, and comforts the baby with the parent's own cloned voice.
+Babbl est une application web mobile-first qui aide les parents à comprendre pourquoi leur bébé pleure en moins de 10 secondes, et réconforte le bébé avec la voix clonée du parent.
 
-### User journey
+### Parcours utilisateur
 
-1. **Onboarding.** The parent sets up their profile once: baby's age, and optionally records 20 seconds of their own voice which is cloned with ElevenLabs. That cloned voice becomes the baby's personalized comforter.
+1. **Onboarding.** Le parent configure son profil une fois : âge du bébé, et enregistre optionnellement 20 secondes de sa voix qui est clonée avec ElevenLabs. Cette voix clonée devient le réconfort personnalisé du bébé.
 
-2. **Recording.** When the baby cries, the parent opens the app, presses the record button, and holds the phone near the baby for 5 to 15 seconds.
+2. **Enregistrement.** Quand le bébé pleure, le parent ouvre l'app, appuie sur le bouton d'enregistrement, et approche le téléphone du bébé pendant 5 à 15 secondes.
 
-3. **Analysis.** Under the hood, Babbl extracts 19 acoustic descriptors with *librosa* (pitch, energy, spectral features, MFCCs), feeds them into a trained *XGBoost* classifier, then sends everything to *Claude Sonnet* which reasons over the audio features, ML predictions, and parent context to return:
-   - Weighted probabilities across cry causes (hunger, fatigue, discomfort, pain, overstimulation, need for comfort)
-   - Key signals that drove the decision (traceable, not a black box)
-   - Prioritized recommended actions
-   - A confidence level and an alert field that escalates to "seek medical advice" when needed
-   - A warm parent summary
+3. **Analyse.** En coulisses, Babbl extrait 19 descripteurs acoustiques avec *librosa* (pitch, énergie, features spectrales, MFCCs), les passe dans un classifieur *XGBoost* entraîné, puis envoie le tout à *Claude Sonnet* qui raisonne sur les features audio, les prédictions ML et le contexte parental pour retourner :
+   - Des probabilités pondérées pour chaque cause de pleur (faim, fatigue, inconfort, douleur, surstimulation, besoin de réconfort)
+   - Les signaux clés qui ont guidé la décision (traçable, pas une boîte noire)
+   - Des actions recommandées priorisées
+   - Un niveau de confiance et un champ d'alerte qui escalade vers « consulter un professionnel » si nécessaire
+   - Un résumé chaleureux pour le parent
 
-4. **Result.** The parent sees a calm result screen with probability bars, the top cause highlighted, actions to try, and two audio buttons:
-   - **"Listen to the summary"**: a warm voice (ElevenLabs) speaks the result to the parent.
-   - **"Comfort my baby with my voice"**: the parent's cloned voice speaks an age-adapted comfort message matched to the detected cause.
+4. **Résultat.** Le parent voit un écran de résultat calme avec les barres de probabilité, la cause principale mise en avant, les actions à essayer, et deux boutons audio :
+   - **« Écouter le résumé »** : une voix douce (ElevenLabs) lit le résultat au parent.
+   - **« Réconforter mon bébé avec ma voix »** : la voix clonée du parent prononce un message de réconfort adapté à l'âge et à la cause détectée.
 
-5. **Dashboard.** Returning users land on a gamified dashboard: streaks, XP, levels, badges, daily affirmations, a guided breathing exercise for overwhelmed parents, and a full history of past analyses.
+5. **Dashboard.** Les utilisateurs réguliers arrivent sur un tableau de bord gamifié : séries, XP, niveaux, badges, affirmations quotidiennes, exercice de respiration guidé pour les parents submergés, et historique complet des analyses passées.
 
-### A note on accuracy
+### Note sur la précision
 
-The current model achieves 82.6% accuracy on the Donate-a-Cry dataset, but macro F1 is limited (18.1%) due to heavy class imbalance (the dataset is dominated by the "hungry" class). Babbl is a **triage-support tool**, not a clinical diagnostic, and the in-app confidence score always reflects that transparently.
+Le modèle actuel atteint 82.6% de précision sur le dataset Donate-a-Cry, mais le macro F1 est limité (18.1%) à cause d'un fort déséquilibre de classes (le dataset est dominé par la classe « faim »). Babbl est un **outil d'aide au triage**, pas un diagnostic clinique, et le score de confiance dans l'app reflète toujours cela de manière transparente.
 
-## Tech Stack
+## Stack Technique
 
 ### Frontend
 - React (Vite), TypeScript, mobile-first (max-width 480px)
-- Tailwind CSS + shadcn/ui component library
-- Fraunces serif + Inter sans typography, warm cream/orange design system
-- MediaRecorder API for audio capture
-- localStorage for gamification state and user data
+- Tailwind CSS + shadcn/ui
+- Typographie Fraunces serif + Inter sans, design system crème/corail
+- API MediaRecorder pour la capture audio
+- localStorage pour la gamification et les données utilisateur
+- Système i18n centralisé (français)
 
 ### Backend
 - Python 3, Flask, Flask-CORS
-- *librosa* for acoustic feature extraction (19 features: RMS, ZCR, spectral centroid/bandwidth/rolloff, MFCC 1-13, duration, silence ratio)
-- *XGBoost* classifier (multi:softprob, trained on Donate-a-Cry with stratified split and class weighting)
-- Context-aware triage rules that adjust predictions based on feeding/diaper/sleep schedules
+- *librosa* pour l'extraction de features acoustiques (19 features : RMS, ZCR, centroïde/bandwidth/rolloff spectral, MFCC 1-13, durée, ratio de silence)
+- Classifieur *XGBoost* (multi:softprob, entraîné sur Donate-a-Cry avec split stratifié et pondération de classes)
+- Règles de triage contextuel qui ajustent les prédictions selon les horaires de repas/change/sommeil
 
-### AI & APIs
-- **Claude Sonnet** (Anthropic) — structured JSON reasoning over ML features + parent context, with temperature 0.3 and a system prompt enforcing warm tone and transparent signal attribution
-- **ElevenLabs** — eleven_multilingual_v2 for TTS, and Instant Voice Cloning for the signature feature: cloning the parent's voice from a short sample to comfort the baby
+### IA & APIs
+- **Claude Sonnet** (Anthropic) — raisonnement JSON structuré sur features ML + contexte parental, temperature 0.3, prompt système imposant un ton chaleureux et une attribution transparente des signaux. Réponses en français.
+- **ElevenLabs** — eleven_multilingual_v2 pour le TTS, et Instant Voice Cloning pour la feature signature : cloner la voix du parent pour réconforter le bébé.
 
-### Scientific grounding
-Feature set aligned with the Frontiers / IEEE / MDPI literature on infant cry analysis (F0, energy, spectral descriptors, MFCCs are the standard markers in academic classification).
+### Base scientifique
+Jeu de features aligné avec la littérature Frontiers / IEEE / MDPI sur l'analyse des pleurs de nourrisson (F0, énergie, descripteurs spectraux, MFCCs sont les marqueurs standard en classification académique).
 
-## Roadmap
+## Les 5 Features Signature
 
-### 1. Improve model accuracy
-Collect and label minority-class samples (pain, burping, discomfort, fatigue), apply data augmentation (pitch shift, time stretch, noise injection), and target a macro F1 above 60%. Validate on external datasets (Baby Chillanto, real hospital recordings).
+1. **Babbl Cry** — Analyse IA des pleurs (XGBoost + Claude Sonnet)
+2. **Babbl Voice** — Voix clonée du parent pour réconforter le bébé
+3. **Babbl Lullaby** — Berceuses IA personnalisées chantées dans la voix du parent
+4. **Babbl Monitor** — Baby phone hardware connecté (micro HD, veilleuse, capteurs)
+5. **Babbl Alert** — Connexion directe au bon pédiatre en cas d'urgence
 
-### 2. On-device inference
-Replace hand-crafted features with a dedicated audio model running on-device via WebAssembly + ONNX, so parents never upload audio. This would unlock anomaly detection for conditions like colic, reflux, or neurological distress.
+## Documents
 
-### 3. Open dataset of annotated infant cries
-Partner with maternity hospitals to collect a multi-thousand-sample dataset annotated by pediatricians. Release under an open license to advance global research on infant communication and early detection.
-
-### 4. Clinical certification
-Pursue CE medical device certification (Class IIa) to become the first cry-analysis tool prescribable by pediatricians and reimbursable by health insurance.
-
-### 5. Community & professional layer
-- Parent forum moderated by certified midwives and pediatric nurses
-- "Ask a pediatrician" in one tap for high-alert analyses
-- Night mode with baby monitor pairing (Nanit, Owlet) for automatic nighttime analysis
-
-### 6. Parental mental health
-- Weekly parental stress index with proactive partner alerts
-- Co-parenting view to share the mental load
-- Direct routing to professional support for at-risk parents
-
-### 7. Global reach, local voice
-Expand beyond French: clone voices and adapt comfort messages across 30+ languages. A baby should always hear home.
+| Document | Description |
+|---|---|
+| [FEATURES.md](FEATURES.md) | Détail des 5 features signature + features complémentaires |
+| [BUSINESS_MODEL.md](BUSINESS_MODEL.md) | Pricing, projections financières, unit economics, concurrence |
+| [TODO.md](TODO.md) | Suivi complet de l'avancement du projet (Phase 0 à 5) |
 
 ---
 
-*Babbl exists so that no parent ever feels alone at 3 a.m. again.*
+*Babbl existe pour qu'aucun parent ne se sente plus jamais seul à 3h du matin.*

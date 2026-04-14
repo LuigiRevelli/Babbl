@@ -3,7 +3,8 @@ import MobileLayout from '@/components/MobileLayout';
 
 import BackButton from '@/components/BackButton';
 import { getUserData, formatRelativeDate } from '@/lib/userData';
-import { CAUSE_LABELS, CAUSE_EMOJIS } from '@/lib/constants';
+import { CAUSE_EMOJIS } from '@/lib/constants';
+import { t, translateCause } from '@/lib/i18n';
 
 type Period = 'week' | 'month' | 'all';
 
@@ -39,7 +40,7 @@ export default function History() {
       const nightCauses: Record<string, number> = {};
       nightAnalyses.forEach(a => { nightCauses[a.topCause] = (nightCauses[a.topCause] || 0) + 1; });
       const topNight = Object.entries(nightCauses).sort(([, a], [, b]) => b - a)[0];
-      return `Cries are more frequent between 2 a.m. and 5 a.m. Main nighttime cause: ${CAUSE_LABELS[topNight[0]] || topNight[0]}.`;
+      return `Les pleurs sont plus fréquents entre 2h et 5h du matin. Cause principale nocturne : ${translateCause(topNight[0])}.`;
     }
     return null;
   }, [data.analyses]);
@@ -47,15 +48,15 @@ export default function History() {
   return (
       <MobileLayout>
         <BackButton to="/dashboard" />
-        <h1 className="font-serif text-2xl font-bold mb-4">History</h1>
+        <h1 className="font-serif text-2xl font-bold mb-4">{t('historyTitle')}</h1>
 
         {/* Stats */}
         <div className="bg-card rounded-lg p-4 shadow-sm mb-4 text-center">
           <p className="font-serif text-4xl font-bold">{data.analyses.length}</p>
-          <p className="text-sm text-muted-foreground">total analyses</p>
+          <p className="text-sm text-muted-foreground">{t('totalAnalyses')}</p>
           {data.analyses.length >= 5 && (
             <p className="text-xs text-muted-foreground mt-2">
-              Your response time is improving week after week 💪
+              {t('responseImproving')}
             </p>
           )}
         </div>
@@ -63,13 +64,13 @@ export default function History() {
         {/* Most frequent causes */}
         {causeCounts.length > 0 && (
           <div className="mb-4">
-            <p className="text-sm text-muted-foreground mb-2">Most frequent causes</p>
+            <p className="text-sm text-muted-foreground mb-2">{t('mostFrequentCauses')}</p>
             <div className="flex gap-2 overflow-x-auto pb-2">
               {causeCounts.map(([cause, count]) => (
                 <div key={cause} className="flex items-center gap-1 bg-primary-soft rounded-pill px-3 py-1.5 text-sm whitespace-nowrap">
                   <span>{CAUSE_EMOJIS[cause]}</span>
-                  <span className="font-medium">{CAUSE_LABELS[cause]}</span>
-                  <span className="text-muted-foreground">×{count}</span>
+                  <span className="font-medium">{translateCause(cause)}</span>
+                  <span className="text-muted-foreground">x{count}</span>
                 </div>
               ))}
             </div>
@@ -79,14 +80,14 @@ export default function History() {
         {/* Pattern */}
         {pattern && (
           <div className="bg-primary-soft rounded-lg p-4 mb-4">
-            <p className="text-sm font-semibold mb-1">📊 Pattern detected</p>
+            <p className="text-sm font-semibold mb-1">{t('patternDetected')}</p>
             <p className="text-sm text-foreground">{pattern}</p>
           </div>
         )}
 
         {/* Period filter */}
         <div className="flex gap-2 mb-4">
-          {([['week', 'This week'], ['month', 'This month'], ['all', 'All']] as [Period, string][]).map(([key, label]) => (
+          {([['week', t('thisWeek')], ['month', t('thisMonth')], ['all', t('all')]] as [Period, string][]).map(([key, label]) => (
             <button
               key={key}
               onClick={() => setPeriod(key)}
@@ -105,7 +106,7 @@ export default function History() {
         {filtered.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-4xl mb-3">🧸</p>
-            <p className="text-sm text-muted-foreground">Your history is still empty. Start your first analysis 🧡</p>
+            <p className="text-sm text-muted-foreground">{t('historyEmpty')}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -121,7 +122,7 @@ export default function History() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="font-semibold text-sm">{CAUSE_LABELS[a.topCause] || a.topCause}</p>
+                      <p className="font-semibold text-sm">{translateCause(a.topCause)}</p>
                       {a.feedback === 'positive' && <span className="text-xs">✅</span>}
                       {a.feedback === 'negative' && <span className="text-xs">❌</span>}
                     </div>

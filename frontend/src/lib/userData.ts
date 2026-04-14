@@ -1,3 +1,5 @@
+import { t } from '@/lib/i18n';
+
 const STORAGE_KEY = 'babbl_user_data_v1';
 
 export interface Analysis {
@@ -188,23 +190,23 @@ export function checkNewBadges(data: UserData): string[] {
 
 export function getGreeting(): { text: string; emoji: string } {
   const h = new Date().getHours();
-  if (h >= 22 || h < 6) return { text: 'Still awake?', emoji: '🌙' };
-  if (h < 12) return { text: 'Good morning', emoji: '👋' };
-  if (h < 18) return { text: 'Good afternoon', emoji: '👋' };
-  return { text: 'Good evening', emoji: '👋' };
+  if (h >= 22 || h < 6) return { text: t('greetingNight'), emoji: '🌙' };
+  if (h < 12) return { text: t('greetingMorning'), emoji: '👋' };
+  if (h < 18) return { text: t('greetingAfternoon'), emoji: '👋' };
+  return { text: t('greetingEvening'), emoji: '👋' };
 }
 
 export function getDailyAffirmation(): string {
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
   const AFFIRMATIONS = [
-    "Your calm is one of the best gifts you can give your baby.",
-    "Every hard night is a proof of love.",
-    "You do not need to be perfect, just present.",
-    "A parent who tries to understand is already a good parent.",
-    "Crying is a language. You are learning to speak it.",
-    "Asking for help is strength, not weakness.",
-    "Your baby is lucky to have you.",
-    "Even experienced midwives sometimes have doubts.",
+    t('affirmation1'),
+    t('affirmation2'),
+    t('affirmation3'),
+    t('affirmation4'),
+    t('affirmation5'),
+    t('affirmation6'),
+    t('affirmation7'),
+    t('affirmation8'),
   ];
   return AFFIRMATIONS[dayOfYear % AFFIRMATIONS.length];
 }
@@ -214,14 +216,14 @@ export function formatRelativeDate(iso: string): string {
   const then = new Date(iso).getTime();
   const diff = now - then;
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins} min ago`;
+  if (mins < 1) return t('justNow');
+  if (mins < 60) return `${mins} ${t('minAgo')}`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return `${hours}${t('hAgo')}`;
   const days = Math.floor(hours / 24);
-  if (days === 1) return 'Yesterday';
-  if (days < 7) return `${days} days ago`;
+  if (days === 1) return t('yesterday');
+  if (days < 7) return `${days} ${t('daysAgo')}`;
   const weeks = Math.floor(days / 7);
-  if (weeks === 1) return '1 week ago';
-  return `${weeks} weeks ago`;
+  if (weeks === 1) return t('weekAgo');
+  return `${weeks} ${t('weeksAgo')}`;
 }

@@ -5,6 +5,7 @@ import MobileLayout from '@/components/MobileLayout';
 import BackButton from '@/components/BackButton';
 import { getUserData, saveUserData } from '@/lib/userData';
 import { analyzeAudio as apiAnalyze } from '@/lib/api';
+import { t } from '@/lib/i18n';
 
 export default function Record() {
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ export default function Record() {
       setSeconds(0);
       timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
     } catch {
-      alert("Unable to access the microphone. Please check permissions.");
+      alert(t('micError'));
     }
   }, []);
 
@@ -129,18 +130,18 @@ export default function Record() {
       <BackButton />
       <div className="flex-1 flex flex-col items-center justify-center px-2">
         <p className="text-muted-foreground text-sm mb-1">
-          {profile?.role === 'mother' ? 'Mom' : profile?.role === 'father' ? 'Dad' : 'Hello'}
-          {profile?.babyName ? ` of ${profile.babyName}` : ''} 👋
+          {profile?.role === 'mother' ? t('mom') : profile?.role === 'father' ? t('dad') : t('hello')}
+          {profile?.babyName ? ` de ${profile.babyName}` : ''} 👋
         </p>
         <h1 className="font-serif text-2xl font-bold mb-2 text-center">
-          {isAnalyzing ? 'Analyzing...' : isRecording ? 'Recording...' : 'Ready to listen'}
+          {isAnalyzing ? t('analyzing') : isRecording ? t('recording') : t('readyToListen')}
         </h1>
         <p className="text-sm text-muted-foreground text-center mb-10">
           {isAnalyzing
-            ? 'Babbl is listening carefully to the cry'
+            ? t('babblListening')
             : isRecording
-            ? `Press stop when you are done`
-            : 'Hold the phone close and start recording'}
+            ? t('pressStop')
+            : t('holdPhone')}
         </p>
 
         {(isRecording || isAnalyzing) && (
@@ -175,7 +176,7 @@ export default function Record() {
         )}
 
         {!isRecording && !isAnalyzing && (
-          <p className="mt-6 text-base font-bold text-primary">Record cry</p>
+          <p className="mt-6 text-base font-bold text-primary">{t('recordCry')}</p>
         )}
       </div>
     </MobileLayout>

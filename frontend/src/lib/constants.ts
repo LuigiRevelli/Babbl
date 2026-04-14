@@ -1,10 +1,10 @@
 export const CAUSE_LABELS: Record<string, string> = {
-  hunger: 'Hunger',
+  hunger: 'Faim',
   fatigue: 'Fatigue',
-  discomfort: 'Discomfort',
-  pain: 'Pain',
-  overstimulation: 'Overstimulation',
-  need_for_comfort: 'Need for comfort',
+  discomfort: 'Inconfort',
+  pain: 'Douleur',
+  overstimulation: 'Surstimulation',
+  need_for_comfort: 'Besoin de réconfort',
 };
 
 export const CAUSE_EMOJIS: Record<string, string> = {

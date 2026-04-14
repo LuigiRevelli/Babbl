@@ -6,6 +6,7 @@ import {
   getUserData, getGreeting, isStreakInDanger, formatRelativeDate, saveUserData,
   DiaperEntry,
 } from '@/lib/userData';
+import { t } from '@/lib/i18n';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -48,7 +49,7 @@ export default function Dashboard() {
   };
 
   const formatTime = (iso?: string) => {
-    if (!iso) return 'Not set';
+    if (!iso) return t('notSet');
     return formatRelativeDate(iso);
   };
 
@@ -57,7 +58,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="mb-5 animate-fade-in">
         <p className="text-sm text-muted-foreground">{greeting.text}</p>
-        <h1 className="font-serif text-2xl font-bold tracking-tight">Babbl</h1>
+        <h1 className="font-serif text-2xl font-bold tracking-tight">{t('dashboardTitle')}</h1>
       </div>
 
       {/* CTA Card */}
@@ -72,11 +73,11 @@ export default function Dashboard() {
         <div className="absolute top-3 right-3 w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
           <Droplets className="w-6 h-6 text-white" strokeWidth={1.5} />
         </div>
-        <p className="text-white/80 text-sm mb-1">Listen & analyze</p>
-        <h2 className="font-serif text-white text-xl font-bold mb-3 transition-transform duration-200 group-active:translate-x-0.5">My baby is crying</h2>
+        <p className="text-white/80 text-sm mb-1">{t('listenAnalyze')}</p>
+        <h2 className="font-serif text-white text-xl font-bold mb-3 transition-transform duration-200 group-active:translate-x-0.5">{t('myBabyCrying')}</h2>
         <div className="flex items-baseline gap-1">
           <span className="text-white text-3xl font-bold font-serif">{totalCries}</span>
-          <span className="text-white/70 text-sm">recorded episode{totalCries !== 1 ? 's' : ''}</span>
+          <span className="text-white/70 text-sm">{totalCries !== 1 ? t('recordedEpisodes') : t('recordedEpisode')}</span>
         </div>
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
       </div>
@@ -95,8 +96,8 @@ export default function Dashboard() {
           <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mb-3">
             <Clock className="w-5 h-5 text-primary" strokeWidth={1.5} />
           </div>
-          <p className="text-xs text-muted-foreground mb-0.5">Last cry</p>
-          <p className="text-sm font-bold leading-tight">{lastCry || 'None'}</p>
+          <p className="text-xs text-muted-foreground mb-0.5">{t('lastCry')}</p>
+          <p className="text-sm font-bold leading-tight">{lastCry || t('none')}</p>
         </div>
 
         <div
@@ -106,13 +107,13 @@ export default function Dashboard() {
           <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center mb-3">
             <Flame className="w-5 h-5 text-destructive animate-flame" strokeWidth={1.5} />
           </div>
-          <p className="text-xs text-muted-foreground mb-0.5">Streak</p>
+          <p className="text-xs text-muted-foreground mb-0.5">{t('streak')}</p>
           <div className="flex items-baseline gap-1">
             <span className="text-2xl font-bold font-serif">{data.streak.current}</span>
-            <span className="text-xs text-muted-foreground">day{data.streak.current !== 1 ? 's' : ''}</span>
+            <span className="text-xs text-muted-foreground">{data.streak.current !== 1 ? t('days') : t('day')}</span>
           </div>
           {streakDanger && (
-            <p className="text-[10px] animate-pulse-orange mt-1">Keep it alive!</p>
+            <p className="text-[10px] animate-pulse-orange mt-1">{t('keepItAlive')}</p>
           )}
         </div>
       </div>
@@ -127,7 +128,7 @@ export default function Dashboard() {
             <Utensils className="w-5 h-5 text-success" strokeWidth={1.5} />
           </div>
           <div className="text-left">
-            <p className="text-xs text-muted-foreground">Last meal</p>
+            <p className="text-xs text-muted-foreground">{t('lastMeal')}</p>
             <p className="text-sm font-semibold">{formatTime(data.lastMeal)}</p>
           </div>
         </div>
@@ -150,7 +151,7 @@ export default function Dashboard() {
             <Baby className="w-5 h-5 text-primary" strokeWidth={1.5} />
           </div>
           <div className="text-left">
-            <p className="text-xs text-muted-foreground">Diaper change</p>
+            <p className="text-xs text-muted-foreground">{t('diaperChange')}</p>
             <p className="text-sm font-semibold">{formatTime(data.lastDiaper)}</p>
           </div>
         </div>
@@ -179,8 +180,8 @@ export default function Dashboard() {
           <div className="w-10 h-10 rounded-full bg-yellow-300/20 flex items-center justify-center mb-3">
             <Moon className="w-5 h-5 text-yellow-300" strokeWidth={1.5} />
           </div>
-          <p className="text-xs text-white/60 mb-0.5">Baby monitor</p>
-          <p className="text-sm font-bold text-white leading-tight">Night mode</p>
+          <p className="text-xs text-white/60 mb-0.5">{t('babyMonitor')}</p>
+          <p className="text-sm font-bold text-white leading-tight">{t('nightMode')}</p>
         </div>
 
         <div
@@ -195,8 +196,8 @@ export default function Dashboard() {
           <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mb-3">
             <Mic className="w-5 h-5 text-primary" strokeWidth={1.5} />
           </div>
-          <p className="text-xs text-muted-foreground mb-0.5">Clone my voice</p>
-          <p className="text-sm font-bold leading-tight">Customize</p>
+          <p className="text-xs text-muted-foreground mb-0.5">{t('cloneMyVoice')}</p>
+          <p className="text-sm font-bold leading-tight">{t('customize')}</p>
         </div>
       </div>
 
@@ -211,7 +212,7 @@ export default function Dashboard() {
           <div className="fixed bottom-0 left-0 right-0 z-50 animate-in slide-in-from-bottom duration-300">
             <div className="max-w-[480px] mx-auto bg-card rounded-t-3xl p-6 pb-10 shadow-2xl border-t border-border/50">
               <div className="w-10 h-1 rounded-full bg-muted mx-auto mb-5" />
-              <h3 className="font-serif text-lg font-bold mb-4 text-center">Diaper type</h3>
+              <h3 className="font-serif text-lg font-bold mb-4 text-center">{t('diaperType')}</h3>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => handleLogDiaper('pee')}
@@ -220,7 +221,7 @@ export default function Dashboard() {
                   <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center">
                     <Droplet className="w-7 h-7 text-blue-400" strokeWidth={1.5} />
                   </div>
-                  <span className="text-sm font-semibold">Pee</span>
+                  <span className="text-sm font-semibold">{t('pee')}</span>
                 </button>
                 <button
                   onClick={() => handleLogDiaper('stool')}
@@ -229,7 +230,7 @@ export default function Dashboard() {
                   <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center">
                     <span className="text-2xl">💩</span>
                   </div>
-                  <span className="text-sm font-semibold">Stool</span>
+                  <span className="text-sm font-semibold">{t('stool')}</span>
                 </button>
               </div>
             </div>

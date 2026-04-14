@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
+import { t } from '@/lib/i18n';
 
 export default function BackButton({ to }: { to?: string }) {
   const navigate = useNavigate();
@@ -9,7 +10,7 @@ export default function BackButton({ to }: { to?: string }) {
       className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors py-2"
     >
       <ChevronLeft className="w-5 h-5" />
-      <span className="text-sm font-medium">Back</span>
+      <span className="text-sm font-medium">{t('back')}</span>
     </button>
   );
 }

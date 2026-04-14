@@ -2,13 +2,14 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MobileLayout from '@/components/MobileLayout';
 import { getUserData, saveUserData, addXp, checkNewBadges, updateStreak } from '@/lib/userData';
+import { t } from '@/lib/i18n';
 
 
 const PHASES = [
-  { label: 'Inhale', duration: 4, scale: 1.6, color: 'text-foreground' },
-  { label: 'Hold', duration: 4, scale: 1.6, color: 'text-muted-foreground' },
-  { label: 'Exhale', duration: 6, scale: 1.0, color: 'text-primary' },
-  { label: 'Pause', duration: 2, scale: 1.0, color: 'text-muted-foreground' },
+  { label: t('inhale'), duration: 4, scale: 1.6, color: 'text-foreground' },
+  { label: t('hold'), duration: 4, scale: 1.6, color: 'text-muted-foreground' },
+  { label: t('exhale'), duration: 6, scale: 1.0, color: 'text-primary' },
+  { label: t('pause'), duration: 2, scale: 1.0, color: 'text-muted-foreground' },
 ];
 
 const TOTAL_DURATION = 60;
@@ -29,12 +30,10 @@ export default function Breathing() {
     if (!started || done) return 1;
     const phase = PHASES[phaseIdx];
     if (phaseIdx === 0) {
-      // Inspirez: scale 1.0 → 1.6
       return 1 + (0.6 * phaseTime / phase.duration);
     } else if (phaseIdx === 1) {
       return 1.6;
     } else if (phaseIdx === 2) {
-      // Expirez: scale 1.6 → 1.0
       return 1.6 - (0.6 * phaseTime / phase.duration);
     }
     return 1;
@@ -87,17 +86,17 @@ export default function Breathing() {
       <>
         <MobileLayout className="flex flex-col items-center justify-center min-h-screen text-center">
           <span className="text-5xl animate-badge-bounce">🌸</span>
-          <h1 className="font-serif text-2xl font-bold mt-4">Well done</h1>
-          <p className="text-muted-foreground mt-2">You just took care of yourself. That matters.</p>
-          <p className="text-sm text-primary font-semibold mt-2">+5 XP</p>
+          <h1 className="font-serif text-2xl font-bold mt-4">{t('wellDone')}</h1>
+          <p className="text-muted-foreground mt-2">{t('breathingDone')}</p>
+          <p className="text-sm text-primary font-semibold mt-2">{t('xpGained')}</p>
           <button
             onClick={() => navigate('/dashboard')}
             className="w-full h-14 bg-primary text-primary-foreground rounded-pill font-semibold text-lg mt-8 hover:bg-primary-strong transition-colors"
           >
-            Back to dashboard
+            {t('backToDashboard')}
           </button>
         </MobileLayout>
-        
+
       </>
     );
   }
@@ -112,7 +111,7 @@ export default function Breathing() {
         ✕
       </button>
 
-      <p className="text-sm text-muted-foreground mb-8">Breathing exercise</p>
+      <p className="text-sm text-muted-foreground mb-8">{t('breathingExercise')}</p>
 
       {!started ? (
         <>
@@ -123,13 +122,13 @@ export default function Breathing() {
               boxShadow: '0 0 40px rgba(255,120,120,0.3)',
             }}
           />
-          <h2 className="font-serif text-2xl font-bold mt-6">Ready?</h2>
-          <p className="text-muted-foreground mt-2">1 minute to recenter yourself</p>
+          <h2 className="font-serif text-2xl font-bold mt-6">{t('ready')}</h2>
+          <p className="text-muted-foreground mt-2">{t('oneMinute')}</p>
           <button
             onClick={() => setStarted(true)}
             className="mt-8 h-14 px-8 bg-primary text-primary-foreground rounded-pill font-semibold text-lg hover:bg-primary-strong transition-colors"
           >
-            Start
+            {t('start')}
           </button>
         </>
       ) : (
@@ -147,7 +146,7 @@ export default function Breathing() {
             }}
           />
 
-          <p className="text-lg font-medium mt-8">{secondsLeft}s left</p>
+          <p className="text-lg font-medium mt-8">{secondsLeft}{t('secondsLeft')}</p>
 
           {/* Progress bar */}
           <div className="w-full h-1 bg-primary-soft rounded-full mt-6 overflow-hidden">

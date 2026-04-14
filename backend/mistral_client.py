@@ -25,8 +25,8 @@ Your job is to produce a probabilistic triage assessment. You must:
 - Never claim medical diagnosis — you are a decision-support tool
 
 IMPORTANT: All human-readable text (key_signals descriptions, recommended_actions,
-reasoning, parent_summary) MUST be written in ENGLISH. Use a warm, gentle,
-reassuring tone.
+reasoning, parent_summary) MUST be written in FRENCH. Use a warm, gentle,
+reassuring tone ("tu" form, as if speaking to a tired parent at 3 AM).
 
 Respond ONLY in this exact JSON format, no markdown, no prose around it:
 {
@@ -46,7 +46,7 @@ Respond ONLY in this exact JSON format, no markdown, no prose around it:
   ],
   "confidence_level": "high|medium|low",
   "alert": "none|monitor|seek_medical_advice",
-  "parent_summary": "A warm and reassuring 2-3 sentence summary in ENGLISH, explaining the most likely cause and what to try first. Write as if speaking directly to a tired parent at 3 AM."
+  "parent_summary": "Un résumé chaleureux et rassurant de 2-3 phrases en FRANÇAIS, expliquant la cause la plus probable et quoi essayer en premier. Écris comme si tu parlais directement à un parent fatigué à 3h du matin, en le tutoyant."
 }
 """
 

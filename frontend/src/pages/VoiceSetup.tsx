@@ -4,21 +4,22 @@ import { ArrowLeft, Mic, Square, Check, Play, Volume2, Loader2 } from 'lucide-re
 import MobileLayout from '@/components/MobileLayout';
 import { getUserData, saveUserData, ParentRole, AgeRange } from '@/lib/userData';
 import { cloneVoice } from '@/lib/api';
+import { t } from '@/lib/i18n';
 
 const AGE_OPTIONS: { value: AgeRange; label: string }[] = [
-  { value: '0-3', label: '0-3 months' },
-  { value: '3-6', label: '3-6 months' },
-  { value: '6-12', label: '6-12 months' },
-  { value: '1-2', label: '1-2 years' },
-  { value: '2+', label: '2+ years' },
+  { value: '0-3', label: t('age0_3') },
+  { value: '3-6', label: t('age3_6') },
+  { value: '6-12', label: t('age6_12') },
+  { value: '1-2', label: t('age1_2') },
+  { value: '2+', label: t('age2plus') },
 ];
 
 const PHRASES = [
-  "Everything is okay, I'm here with you.",
-  "Shh... sleep well my baby, I'm watching over you.",
-  "You are safe, I love you so much.",
-  "Calm down my angel, everything will be okay.",
-  "Good night little treasure, sweet dreams.",
+  t('phrase1'),
+  t('phrase2'),
+  t('phrase3'),
+  t('phrase4'),
+  t('phrase5'),
 ];
 
 type Step = 'profile' | 'recording' | 'result';
@@ -70,7 +71,7 @@ export default function VoiceSetup() {
       mediaRef.current = mr;
       setIsRecording(true);
     } catch {
-      alert("Unable to access the microphone.");
+      alert(t('micError'));
     }
   };
 
@@ -89,7 +90,7 @@ export default function VoiceSetup() {
       const allBlobs = audioBlobs.filter((b): b is Blob => b !== null);
       const merged = new Blob(allBlobs, { type: 'audio/webm' });
 
-      const { voice_id } = await cloneVoice(merged, userName || 'Babbl parent');
+      const { voice_id } = await cloneVoice(merged, userName || t('babblParent'));
 
       const updated = {
         ...getUserData(),
@@ -104,20 +105,18 @@ export default function VoiceSetup() {
       saveUserData(updated);
       setStep('result');
     } catch (err: any) {
-      setCloneError(err?.message ?? 'Voice cloning failed. Please try again.');
+      setCloneError(err?.message ?? t('voiceCloneFailed'));
     } finally {
       setCloning(false);
     }
   };
 
   const handlePreview = () => {
-    // TODO: Replace with cloned voice TTS API call
-    // POST /api/tts-preview { voiceId, text: PHRASES[0] }
     setPlaying(true);
     const utt = new SpeechSynthesisUtterance(
-      `${role === 'mother' ? 'Mom' : 'Dad'} is here, everything is okay baby.`
+      `${role === 'mother' ? t('mom') : t('dad')} est là, tout va bien bébé.`
     );
-    utt.lang = 'en-US';
+    utt.lang = 'fr-FR';
     utt.rate = 0.85;
     utt.onend = () => setPlaying(false);
     speechSynthesis.speak(utt);
@@ -138,18 +137,18 @@ export default function VoiceSetup() {
         >
           <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
         </button>
-        <h1 className="font-serif text-xl font-bold">Customize voice</h1>
+        <h1 className="font-serif text-xl font-bold">{t('customizeVoice')}</h1>
       </div>
 
       {/* STEP 1: Profile */}
       {step === 'profile' && (
         <div className="flex-1 flex flex-col animate-fade-in">
           <p className="text-sm text-muted-foreground mb-6">
-            To create a voice that sounds like you, we need a few details.
+            {t('voiceIntro')}
           </p>
 
           {/* Role */}
-          <label className="text-xs font-semibold text-muted-foreground mb-2">You are</label>
+          <label className="text-xs font-semibold text-muted-foreground mb-2">{t('youAre')}</label>
           <div className="grid grid-cols-2 gap-3 mb-5">
             {(['mother', 'father'] as ParentRole[]).map((r) => (
               <button
@@ -161,22 +160,22 @@ export default function VoiceSetup() {
                     : 'bg-card border-border/50 text-foreground'
                 }`}
               >
-                {r === 'mother' ? '👩 Mom' : '👨 Dad'}
+                {r === 'mother' ? t('momLabel') : t('dadLabel')}
               </button>
             ))}
           </div>
 
           {/* Name */}
-          <label className="text-xs font-semibold text-muted-foreground mb-2">Your name</label>
+          <label className="text-xs font-semibold text-muted-foreground mb-2">{t('yourName')}</label>
           <input
             value={userName}
             onChange={(e) => setUserName(e.target.value)}
-            placeholder="e.g. Marie"
+            placeholder={t('namePlaceholder')}
             className="w-full rounded-xl border border-border/50 bg-card px-4 py-3 text-sm mb-5 focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
 
           {/* Age */}
-          <label className="text-xs font-semibold text-muted-foreground mb-2">Baby age</label>
+          <label className="text-xs font-semibold text-muted-foreground mb-2">{t('babyAge')}</label>
           <div className="flex flex-wrap gap-2 mb-8">
             {AGE_OPTIONS.map((opt) => (
               <button
@@ -199,7 +198,7 @@ export default function VoiceSetup() {
               disabled={!userName.trim()}
               className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-bold text-base transition-all duration-200 active:scale-[0.98] disabled:opacity-40"
             >
-              Record a few phrases
+              {t('recordPhrases')}
             </button>
           </div>
         </div>
@@ -209,7 +208,7 @@ export default function VoiceSetup() {
       {step === 'recording' && (
         <div className="flex-1 flex flex-col animate-fade-in">
           <p className="text-sm text-muted-foreground mb-2">
-            Read each sentence out loud. Speak naturally, as if you were talking to your baby.
+            {t('readAloud')}
           </p>
 
           {/* Progress */}
@@ -226,7 +225,7 @@ export default function VoiceSetup() {
 
           {/* Current phrase */}
           <div className="rounded-2xl bg-card border border-border/50 p-6 mb-6 text-center">
-            <p className="text-xs text-muted-foreground mb-2">Sentence {currentPhrase + 1}/{PHRASES.length}</p>
+            <p className="text-xs text-muted-foreground mb-2">{t('sentence')} {currentPhrase + 1}/{PHRASES.length}</p>
             <p className="font-serif text-lg font-bold leading-relaxed">
               « {PHRASES[currentPhrase]} »
             </p>
@@ -255,7 +254,7 @@ export default function VoiceSetup() {
           {recorded[currentPhrase] && (
             <div className="flex items-center justify-center gap-2 text-success text-sm font-semibold mb-4 animate-fade-in">
               <Check className="w-4 h-4" strokeWidth={2} />
-              Recorded!
+              {t('recorded')}
             </div>
           )}
 
@@ -266,7 +265,7 @@ export default function VoiceSetup() {
                 onClick={() => setCurrentPhrase(currentPhrase - 1)}
                 className="flex-1 py-3 rounded-xl border border-border/50 text-sm font-semibold transition-all active:scale-[0.98]"
               >
-                Previous
+                {t('previous')}
               </button>
             )}
             {currentPhrase < PHRASES.length - 1 ? (
@@ -275,7 +274,7 @@ export default function VoiceSetup() {
                 disabled={!recorded[currentPhrase]}
                 className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-40"
               >
-                Next
+                {t('next')}
               </button>
             ) : (
               <button
@@ -283,7 +282,7 @@ export default function VoiceSetup() {
                 disabled={!allRecorded || cloning}
                 className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-40 flex items-center justify-center gap-2"
               >
-                {cloning ? <><Loader2 className="w-4 h-4 animate-spin" /> Cloning voice...</> : 'Finish ✨'}
+                {cloning ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('cloningVoice')}</> : t('finish')}
               </button>
             )}
           </div>
@@ -300,9 +299,9 @@ export default function VoiceSetup() {
           <div className="w-20 h-20 rounded-full bg-success/15 flex items-center justify-center mb-5">
             <Volume2 className="w-10 h-10 text-success" strokeWidth={1.5} />
           </div>
-          <h2 className="font-serif text-2xl font-bold mb-2">Your voice is ready!</h2>
+          <h2 className="font-serif text-2xl font-bold mb-2">{t('voiceReady')}</h2>
           <p className="text-sm text-muted-foreground mb-8 max-w-xs">
-            In night mode, Babbl can now use a voice like yours to comfort your baby.
+            {t('voiceReadyDesc')}
           </p>
 
           <button
@@ -311,14 +310,14 @@ export default function VoiceSetup() {
             className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-bold text-base flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 mb-4"
           >
             <Play className="w-5 h-5" strokeWidth={1.5} />
-            {playing ? 'Playing...' : 'Listen to a preview'}
+            {playing ? t('playing') : t('listenPreview')}
           </button>
 
           <button
             onClick={() => { setStep('profile'); setRecorded(PHRASES.map(() => false)); setCurrentPhrase(0); }}
             className="text-sm text-muted-foreground underline"
           >
-            Record again
+            {t('recordAgain')}
           </button>
         </div>
       )}

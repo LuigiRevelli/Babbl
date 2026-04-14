@@ -1,9 +1,10 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { t } from '@/lib/i18n';
 
 const tabs = [
-  { path: '/dashboard', label: 'Home', icon: '🏠' },
-  { path: '/history', label: 'History', icon: '📖' },
-  { path: '/badges', label: 'Badges', icon: '🏆' },
+  { path: '/dashboard', labelKey: 'home' as const, icon: '🏠' },
+  { path: '/history', labelKey: 'history' as const, icon: '📖' },
+  { path: '/badges', labelKey: 'badges' as const, icon: '🏆' },
 ];
 
 export default function BottomTabBar() {
@@ -25,7 +26,7 @@ export default function BottomTabBar() {
               }`}
             >
               <span className="text-xl">{tab.icon}</span>
-              <span className="text-[11px] font-medium">{tab.label}</span>
+              <span className="text-[11px] font-medium">{t(tab.labelKey)}</span>
             </button>
           );
         })}

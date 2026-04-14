@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Moon, Sun, Radio, Wifi, WifiOff, Volume2, Baby, ArrowLeft } from 'lucide-react';
 import MobileLayout from '@/components/MobileLayout';
 import { getUserData, saveUserData } from '@/lib/userData';
+import { t } from '@/lib/i18n';
 
 const EVENTS = [
   { time: 3000, type: 'listening' as const },
@@ -26,7 +27,6 @@ export default function NightMode() {
       return;
     }
     setStatus('listening');
-    // TODO: Replace with real WebSocket/API connection to babyphone
     const timers = EVENTS.map(e =>
       setTimeout(() => setStatus(e.type), e.time)
     );
@@ -45,7 +45,6 @@ export default function NightMode() {
   const toggleBabyphone = () => {
     if (!connected) {
       setConnecting(true);
-      // TODO: Replace with real babyphone pairing API call
       setTimeout(() => {
         setConnecting(false);
         setConnected(true);
@@ -62,11 +61,11 @@ export default function NightMode() {
   };
 
   const statusLabel: Record<string, { text: string; color: string }> = {
-    idle: { text: 'Disconnected', color: 'text-muted-foreground' },
-    listening: { text: 'Listening...', color: 'text-success' },
-    detected: { text: '👶 Cry detected!', color: 'text-destructive' },
-    comforting: { text: '🎵 Comfort sent', color: 'text-primary' },
-    calm: { text: '😴 Baby soothed', color: 'text-success' },
+    idle: { text: t('statusDisconnected'), color: 'text-muted-foreground' },
+    listening: { text: t('statusListening'), color: 'text-success' },
+    detected: { text: t('statusCryDetected'), color: 'text-destructive' },
+    comforting: { text: t('statusComfortSent'), color: 'text-primary' },
+    calm: { text: t('statusBabySoothed'), color: 'text-success' },
   };
 
   const current = statusLabel[status];
@@ -84,7 +83,7 @@ export default function NightMode() {
         >
           <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
         </button>
-        <h1 className="font-serif text-xl font-bold">Night Mode</h1>
+        <h1 className="font-serif text-xl font-bold">{t('nightModeTitle')}</h1>
       </div>
 
       {/* Night toggle */}
@@ -106,8 +105,8 @@ export default function NightMode() {
             }
           </div>
           <div>
-            <p className="font-semibold text-sm">{nightOn ? 'Night mode enabled' : 'Night mode disabled'}</p>
-            <p className="text-xs opacity-60">Dimmed nighttime atmosphere</p>
+            <p className="font-semibold text-sm">{nightOn ? t('nightModeEnabled') : t('nightModeDisabled')}</p>
+            <p className="text-xs opacity-60">{t('dimmedAtmosphere')}</p>
           </div>
         </div>
         <button
@@ -137,7 +136,7 @@ export default function NightMode() {
               <Radio className="w-5 h-5 text-primary" strokeWidth={1.5} />
             </div>
             <div>
-              <p className="font-semibold text-sm">Baby monitor</p>
+              <p className="font-semibold text-sm">{t('babyMonitorLabel')}</p>
               <p className={`text-xs ${current.color}`}>{current.text}</p>
             </div>
           </div>
@@ -192,10 +191,10 @@ export default function NightMode() {
           } ${connecting ? 'opacity-60' : ''}`}
         >
           {connecting
-            ? 'Connecting...'
+            ? t('connecting')
             : connected
-              ? 'Disconnect baby monitor'
-              : 'Connect a baby monitor'
+              ? t('disconnectMonitor')
+              : t('connectMonitor')
           }
         </button>
       </div>
@@ -210,8 +209,7 @@ export default function NightMode() {
         }}
       >
         <p className="text-xs opacity-60 leading-relaxed">
-          💡 When the baby monitor detects crying, Babbl can automatically
-          comfort your baby with a gentle voice. Customize the voice in settings.
+          {t('monitorTip')}
         </p>
       </div>
     </MobileLayout>

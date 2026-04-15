@@ -65,7 +65,7 @@
 |---|---|---|
 | Babbl Lullaby | ❌ | Berceuses IA personnalisées dans la voix clonée du parent. Intégration Suno/Udio + ElevenLabs singing mode |
 | Babbl Nuit complet | ❌ | Écoute continue en arrière-plan, détection auto des pleurs, réponse automatique, rapport matinal |
-| Babbl Alert (Phase 1 — Doctolib) | ❌ | Système d'alerte 4 niveaux (vert/jaune/orange/rouge). Redirection vers Doctolib pour prise de RDV |
+| Babbl Alert (Phase 1 — Doctolib) | ✅ | Système d'alerte 4 niveaux (vert/jaune/orange/rouge) codé dans le frontend (bannières alertes, bouton Doctolib, appel 15, GPS urgences). Backend : escalade auto via triage_rules.py + baseline deviation. BabblReport.tsx génère un rapport partageable pour le médecin |
 | Notifications push | ❌ | Alertes parents quand Babbl Nuit détecte un pleur qui nécessite intervention |
 | Mode co-parenting | ❌ | Dashboard partagé entre 2 parents, synchronisation des données |
 
@@ -139,3 +139,7 @@
 - Supabase : projet "babbl" sur lttrlcemwprjmylixtee.supabase.co (région West EU Paris)
 - Les données sont protégées par Row Level Security (chaque parent ne voit que ses données)
 - Le backend utilise la service role key pour écrire en base côté serveur
+- Organisation Stripe "Babbl" créée (clés API test pas encore intégrées)
+- Babbl Baseline : apprentissage incrémental du profil acoustique unique de chaque bébé (algorithme de Welford)
+- Babbl Alert Phase 1 : bannières d'alerte dans AnalysisResult.tsx (jaune/orange/rouge), bouton Doctolib, appel SAMU 15, GPS urgences pédiatriques
+- BabblReport : composant qui génère un rapport structuré que le parent peut montrer au médecin

@@ -21,7 +21,7 @@ from comfort_messages import generate_comfort_message
 from elevenlabs_client import clone_voice, text_to_speech
 from ml_model import predict_probabilities
 from mistral_client import analyze_with_mistral
-from triage_rules import apply_context_rules, reliability_score
+from triage_rules import apply_context_rules, reliability_score, escalate_alert
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Load .env from project root (one level up from backend/)
@@ -180,6 +180,13 @@ def analyze():
     triage["reliability_score"] = score
     triage["reliability_label"] = label
     triage["reliability_notes"] = reliability_notes
+
+    # 3b. Alert escalation rules
+    escalated_alert, alert_notes = escalate_alert(
+        triage.get("alert", "none"), adjusted_probs, features, context
+    )
+    triage["alert"] = escalated_alert
+    triage["alert_notes"] = alert_notes
 
     if ml:
         triage["ml_raw_probabilities"] = raw_probs

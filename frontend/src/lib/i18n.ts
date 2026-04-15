@@ -185,6 +185,34 @@ const fr = {
   weekAgo: "1 semaine",
   weeksAgo: "semaines",
 
+  // ─── Alerts ───────────────────────────────────────
+  alertMonitorTitle: "⚠️ Surveillance recommandée",
+  alertMonitorDesc: "Certains signaux sont inhabituels. Relancez une analyse dans 1 heure. Si les pleurs persistent, consultez un professionnel.",
+  alertConsultTitle: "🟠 Consultation recommandée",
+  alertConsultDesc: "Les signaux détectés méritent l'avis d'un professionnel de santé dans les 24 heures.",
+  alertUrgentTitle: "🔴 Contactez un professionnel",
+  alertUrgentDesc: "Les signaux détectés nécessitent une attention médicale immédiate.",
+  alertReanalyzeIn1h: "Relancer une analyse dans 1h",
+  alertFindPediatrician: "Trouver un pédiatre",
+  alertCall15: "Appeler le 15 (SAMU)",
+  alertFindER: "Urgences à proximité",
+  alertShareReport: "Partager avec mon médecin",
+
+  // ─── Babbl Report ────────────────────────────────
+  reportTitle: "Rapport Babbl",
+  reportBabyName: "Bébé",
+  reportAge: "Âge",
+  reportDate: "Date",
+  reportMainCause: "Cause principale",
+  reportConfidence: "Confiance",
+  reportProbabilities: "Probabilités",
+  reportSignals: "Signaux clés",
+  reportActions: "Actions recommandées",
+  reportAlert: "Niveau d'alerte",
+  reportCopied: "Rapport copié !",
+  reportCopyFailed: "Échec de la copie",
+  reportDisclaimer: "Ce rapport est généré par Babbl, un outil d'aide au triage. Il ne constitue pas un diagnostic médical.",
+
   // ─── App title ─────────────────────────────────────
   appTitle: "Babbl — Comprendre votre bébé",
 } as const;

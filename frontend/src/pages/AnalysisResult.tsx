@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Volume2, Home, ThumbsUp, ThumbsDown, Heart } from 'lucide-react';
+import { Volume2, Home, ThumbsUp, ThumbsDown, Heart, Phone, MapPin, Stethoscope, AlertTriangle } from 'lucide-react';
 import MobileLayout from '@/components/MobileLayout';
+import BabblReport from '@/components/BabblReport';
 import { getUserData, saveUserData } from '@/lib/userData';
 import { apiUrl } from '@/lib/api';
 import { t, translateCause } from '@/lib/i18n';
@@ -33,6 +34,7 @@ export default function AnalysisResult() {
     : t('confidenceLow');
 
   const probEntries = Object.entries(analysis.probabilities).sort(([, a], [, b]) => b - a);
+  const alertLevel = analysis.alert ?? 'none';
 
   const playAudio = (url: string, onEnd: () => void) => {
     if (audioRef.current) {
@@ -51,7 +53,6 @@ export default function AnalysisResult() {
     if (analysis.audio_url) {
       playAudio(analysis.audio_url, () => setIsPlaying(false));
     } else {
-      // Fallback to browser speech synthesis if no backend audio
       const utterance = new SpeechSynthesisUtterance(analysis.parent_summary);
       utterance.lang = 'fr-FR';
       utterance.onend = () => setIsPlaying(false);
@@ -83,6 +84,80 @@ export default function AnalysisResult() {
         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t('result')}</p>
         <h1 className="font-serif text-2xl font-bold">{t('accordingToBabbl')}</h1>
       </div>
+
+      {/* ═══ ALERT BANNER ═══ */}
+      {alertLevel === 'monitor' && (
+        <div
+          className="rounded-2xl p-4 mb-4 animate-fade-in border-2"
+          style={{ background: 'hsl(45 100% 94%)', borderColor: 'hsl(45 90% 60%)' }}
+        >
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-6 h-6 shrink-0 mt-0.5" style={{ color: 'hsl(45 90% 40%)' }} />
+            <div>
+              <p className="font-bold text-sm" style={{ color: 'hsl(45 90% 30%)' }}>{t('alertMonitorTitle')}</p>
+              <p className="text-xs mt-1 leading-relaxed" style={{ color: 'hsl(45 50% 30%)' }}>{t('alertMonitorDesc')}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {alertLevel === 'consult_recommended' && (
+        <div
+          className="rounded-2xl p-4 mb-4 animate-fade-in border-2"
+          style={{ background: 'hsl(25 100% 94%)', borderColor: 'hsl(25 90% 55%)' }}
+        >
+          <div className="flex items-start gap-3">
+            <Stethoscope className="w-6 h-6 shrink-0 mt-0.5" style={{ color: 'hsl(25 90% 40%)' }} />
+            <div>
+              <p className="font-bold text-sm" style={{ color: 'hsl(25 90% 30%)' }}>{t('alertConsultTitle')}</p>
+              <p className="text-xs mt-1 leading-relaxed" style={{ color: 'hsl(25 50% 30%)' }}>{t('alertConsultDesc')}</p>
+            </div>
+          </div>
+          <a
+            href="https://www.doctolib.fr/pediatre"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 w-full py-3 rounded-xl flex items-center justify-center gap-2 font-bold text-sm text-white transition-all active:scale-[0.98]"
+            style={{ background: 'hsl(25 90% 50%)' }}
+          >
+            <Stethoscope className="w-4 h-4" />
+            {t('alertFindPediatrician')}
+          </a>
+        </div>
+      )}
+
+      {alertLevel === 'urgent' && (
+        <div
+          className="rounded-2xl p-4 mb-4 animate-fade-in border-2"
+          style={{ background: 'hsl(0 100% 95%)', borderColor: 'hsl(0 80% 50%)' }}
+        >
+          <div className="flex items-start gap-3">
+            <Phone className="w-6 h-6 shrink-0 mt-0.5 text-destructive animate-pulse" />
+            <div>
+              <p className="font-bold text-sm text-destructive">{t('alertUrgentTitle')}</p>
+              <p className="text-xs mt-1 leading-relaxed" style={{ color: 'hsl(0 50% 30%)' }}>{t('alertUrgentDesc')}</p>
+            </div>
+          </div>
+          <div className="flex gap-2 mt-3">
+            <a
+              href="tel:15"
+              className="flex-1 py-3 rounded-xl flex items-center justify-center gap-2 font-bold text-sm text-white bg-destructive transition-all active:scale-[0.98]"
+            >
+              <Phone className="w-4 h-4" />
+              {t('alertCall15')}
+            </a>
+            <a
+              href="https://maps.google.com/maps?q=urgences+p%C3%A9diatriques+pr%C3%A8s+de+moi"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 py-3 rounded-xl flex items-center justify-center gap-2 font-bold text-sm border-2 border-destructive text-destructive transition-all active:scale-[0.98]"
+            >
+              <MapPin className="w-4 h-4" />
+              {t('alertFindER')}
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Main cause */}
       <div
@@ -177,8 +252,13 @@ export default function AnalysisResult() {
         </button>
       )}
 
+      {/* Babbl Report — share with doctor */}
+      {alertLevel !== 'none' && (
+        <BabblReport analysis={analysis as any} />
+      )}
+
       {/* Feedback */}
-      <div className="rounded-2xl bg-card border border-border/50 p-4 mb-6 text-center animate-fade-in" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
+      <div className="rounded-2xl bg-card border border-border/50 p-4 mb-6 mt-4 text-center animate-fade-in" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
         <p className="text-xs text-muted-foreground mb-3">{t('feedbackQuestion')}</p>
         <div className="flex justify-center gap-4">
           <button

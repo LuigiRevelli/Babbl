@@ -45,9 +45,16 @@ Respond ONLY in this exact JSON format, no markdown, no prose around it:
     {"priority": 1, "action": "description", "reasoning": "why"}
   ],
   "confidence_level": "high|medium|low",
-  "alert": "none|monitor|seek_medical_advice",
+  "alert": "none|monitor|consult_recommended|urgent",
+  "alert_message": "Si alert != none, un court message en français expliquant pourquoi l'alerte est déclenchée et ce que le parent devrait faire.",
   "parent_summary": "Un résumé chaleureux et rassurant de 2-3 phrases en FRANÇAIS, expliquant la cause la plus probable et quoi essayer en premier. Écris comme si tu parlais directement à un parent fatigué à 3h du matin, en le tutoyant."
 }
+
+ALERT LEVELS — Use these precise rules:
+- "none": Situation standard, cause identifiée avec confiance. Pas d'inquiétude.
+- "monitor": Quelque chose d'inhabituel ou confiance faible. Le parent devrait re-analyser dans 1h. Exemples : pattern ambigu, confiance basse, pleurs prolongés mais pas alarmants.
+- "consult_recommended": Pattern anormal suggérant un problème médical potentiel. Le parent devrait consulter un pédiatre dans les 24h. Exemples : douleur récurrente, pattern compatible avec coliques sévères, otite, reflux.
+- "urgent": Signaux de détresse aiguë. Le parent devrait contacter un professionnel IMMÉDIATEMENT. Exemples : cri strident inhabituel, douleur intense persistante, pattern neurologique anormal, pleurs inconsolables depuis plus de 45 minutes.
 """
 
 

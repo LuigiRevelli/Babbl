@@ -188,3 +188,65 @@ def reliability_score(features: dict, probabilities: Dict[str, float], context: 
         notes.append("Enough context is available to refine the prediction.")
 
     return score, label, notes
+
+
+# ─── Alert escalation ────────────────────────────────────────
+
+ALERT_LEVELS = ("none", "monitor", "consult_recommended", "urgent")
+
+
+def _alert_rank(level: str) -> int:
+    """Higher = more severe."""
+    try:
+        return ALERT_LEVELS.index(level)
+    except ValueError:
+        # Backward compat: map old value
+        if level == "seek_medical_advice":
+            return 2  # consult_recommended
+        return 0
+
+
+def escalate_alert(
+    ai_alert: str,
+    probabilities: Dict[str, float],
+    features: dict,
+    context: dict,
+) -> tuple[str, list[str]]:
+    """
+    Apply rule-based escalation on top of the AI-determined alert level.
+    Returns the (potentially escalated) alert level and explanatory notes.
+    """
+    current = _alert_rank(ai_alert)
+    notes: list[str] = []
+
+    pain = float(probabilities.get("pain", 0.0))
+    discomfort = float(probabilities.get("discomfort", 0.0))
+
+    # Rule 1: high pain probability → at least monitor
+    if pain >= 0.40 and current < 1:
+        current = 1
+        notes.append("Probabilité de douleur élevée (≥40%) → surveillance recommandée.")
+
+    # Rule 2: very high pain → consult recommended
+    if pain >= 0.60 and current < 2:
+        current = 2
+        notes.append("Probabilité de douleur très élevée (≥60%) → consultation recommandée.")
+
+    # Rule 3: extreme pain → urgent
+    if pain >= 0.80 and current < 3:
+        current = 3
+        notes.append("Probabilité de douleur extrême (≥80%) → contact professionnel urgent.")
+
+    # Rule 4: high pain + high discomfort combined → escalate
+    if (pain + discomfort) >= 0.75 and current < 2:
+        current = 2
+        notes.append("Douleur + inconfort combinés élevés → consultation recommandée.")
+
+    # Rule 5: very short, high-pitch cry (potential distress signal)
+    pitch_mean = float(features.get("pitch_mean_hz", 0) or 0)
+    duration = float(features.get("duration_seconds", 0) or 0)
+    if pitch_mean > 600 and pain >= 0.30 and current < 1:
+        current = 1
+        notes.append("Pitch élevé (>600 Hz) associé à de la douleur → surveillance.")
+
+    return ALERT_LEVELS[current], notes

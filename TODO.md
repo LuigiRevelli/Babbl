@@ -31,13 +31,17 @@
 
 ---
 
-## Phase 1 — MVP Fonctionnel ❌
+## Phase 1 — MVP Fonctionnel 🔄
 
 | Tâche | Statut | Détails |
 |---|---|---|
-| Base de données + Auth (Supabase) | ❌ | Comptes utilisateurs, données persistantes. Sans ça : pas d'abonnements, données perdues si navigateur vidé |
+| Base de données Supabase (4 tables) | ✅ | profiles, analyses, context_logs, badges — avec RLS + trigger auto-création profil |
+| Authentification (inscription/connexion) | ✅ | Page /auth, AuthProvider, routes protégées, bouton déconnexion |
+| Migration localStorage → Supabase | ✅ | supabaseData.ts (8 fonctions), Record/Dashboard/VoiceSetup lisent/écrivent en base |
+| Backend → Supabase | ✅ | Le backend sauvegarde chaque analyse dans Supabase côté serveur (service role key) |
+| Nom de domaine babbl.fr | ✅ | Acheté sur OVH |
 | Déploiement en ligne (Railway/Render) | ❌ | Backend + frontend accessibles publiquement. Actuellement localhost uniquement |
-| PWA (Progressive Web App) | ❌ | Installable sur téléphone, icône sur écran d'accueil, fonctionne hors-ligne pour les pages statiques |
+| PWA (Progressive Web App) | ❌ | Installable sur téléphone, icône sur écran d'accueil |
 | Fix preview voix clonée | ❌ | VoiceSetup utilise encore le TTS navigateur pour la preview au lieu de la vraie voix clonée ElevenLabs |
 | Onboarding amélioré | ❌ | Parcours de bienvenue guidé : profil parent, nom du bébé, âge, premier enregistrement |
 
@@ -49,8 +53,7 @@
 |---|---|---|
 | Intégration Stripe | ❌ | Abonnements Babbl+ (6.99€/mois) et Babbl Voice (9.99€/mois) |
 | Paywall dans l'app | ❌ | Résultat gratuit = cause + %. Détails + actions + audio = payant |
-| Landing page (babbl.app) | ❌ | Site vitrine pour acquisition : explication produit, pricing, témoignages, CTA téléchargement |
-| Nom de domaine | ❌ | Réserver babbl.app ou babbl.io |
+| Landing page (babbl.fr) | ❌ | Site vitrine pour acquisition : explication produit, pricing, témoignages, CTA téléchargement |
 | Pages légales | ❌ | CGU, Politique de confidentialité, Mentions légales, conformité RGPD |
 
 ---
@@ -116,10 +119,11 @@
 | Audio | librosa (extraction features acoustiques) |
 | IA | Claude Sonnet (Anthropic API) |
 | TTS | ElevenLabs (text-to-speech + voice cloning) |
-| Base de données | ❌ Pas encore (localStorage actuellement) |
-| Auth | ❌ Pas encore |
-| Paiement | ❌ Pas encore |
-| Hébergement | ❌ localhost uniquement |
+| Base de données | ✅ Supabase (PostgreSQL) — 4 tables avec RLS |
+| Auth | ✅ Supabase Auth (email/password) |
+| Paiement | ❌ Pas encore (Stripe prévu Phase 2) |
+| Hébergement | ❌ localhost uniquement (Railway prévu Phase 1) |
+| Domaine | ✅ babbl.fr (acheté sur OVH) |
 
 ---
 
@@ -131,3 +135,6 @@
 - Le modèle ML est entraîné sur le dataset Donate-a-Cry (457 échantillons annotés par pédiatres)
 - Les messages de réconfort et l'IA répondent en français
 - L'interface est entièrement en français via le système i18n (src/lib/i18n.ts)
+- Supabase : projet "babbl" sur lttrlcemwprjmylixtee.supabase.co (région West EU Paris)
+- Les données sont protégées par Row Level Security (chaque parent ne voit que ses données)
+- Le backend utilise la service role key pour écrire en base côté serveur

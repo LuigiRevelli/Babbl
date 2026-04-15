@@ -35,10 +35,11 @@
 
 | Tâche | Statut | Détails |
 |---|---|---|
-| Base de données Supabase (4 tables) | ✅ | profiles, analyses, context_logs, badges — avec RLS + trigger auto-création profil |
+| Base de données Supabase (5 tables) | ✅ | profiles, analyses, context_logs, badges, baby_baselines — avec RLS + trigger auto-création profil |
 | Authentification (inscription/connexion) | ✅ | Page /auth, AuthProvider, routes protégées, bouton déconnexion |
 | Migration localStorage → Supabase | ✅ | supabaseData.ts (8 fonctions), Record/Dashboard/VoiceSetup lisent/écrivent en base |
 | Backend → Supabase | ✅ | Le backend sauvegarde chaque analyse dans Supabase côté serveur (service role key) |
+| Babbl Baseline (profil acoustique) | ✅ | Table baby_baselines, apprentissage incremental (Welford), score de deviation 0-100, escalade alerte auto si deviation > 70 apres 5+ echantillons |
 | Nom de domaine babbl.fr | ✅ | Acheté sur OVH |
 | Déploiement en ligne (Railway/Render) | ❌ | Backend + frontend accessibles publiquement. Actuellement localhost uniquement |
 | PWA (Progressive Web App) | ❌ | Installable sur téléphone, icône sur écran d'accueil |
@@ -119,7 +120,7 @@
 | Audio | librosa (extraction features acoustiques) |
 | IA | Claude Sonnet (Anthropic API) |
 | TTS | ElevenLabs (text-to-speech + voice cloning) |
-| Base de données | ✅ Supabase (PostgreSQL) — 4 tables avec RLS |
+| Base de données | ✅ Supabase (PostgreSQL) — 5 tables avec RLS |
 | Auth | ✅ Supabase Auth (email/password) |
 | Paiement | ❌ Pas encore (Stripe prévu Phase 2) |
 | Hébergement | ❌ localhost uniquement (Railway prévu Phase 1) |

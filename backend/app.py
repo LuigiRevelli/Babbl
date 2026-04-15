@@ -17,6 +17,7 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 from audio_analysis import extract_features
+from baseline import update_baseline, compute_deviation, MIN_SAMPLES_FOR_DEVIATION
 from comfort_messages import generate_comfort_message
 from elevenlabs_client import clone_voice, text_to_speech
 from ml_model import predict_probabilities
@@ -266,11 +267,52 @@ def analyze():
             except Exception as e:
                 print(f"[supabase] save analysis failed: {e}")
 
+    # ─── Babbl Baseline — apprentissage du profil acoustique ────
+    baseline_result = {
+        "baseline_deviation_score": 0,
+        "baseline_anomalies": [],
+        "baseline_sample_count": 0,
+        "baseline_active": False,
+        "baseline_message": "",
+    }
+    if user_id:
+        sb = _get_supabase()
+        if sb:
+            try:
+                update_baseline(sb, user_id, features)
+            except Exception as e:
+                print(f"[baseline] update failed: {e}")
+
+            try:
+                dev = compute_deviation(sb, user_id, features)
+                baseline_result["baseline_deviation_score"] = dev.get("deviation_score", 0)
+                baseline_result["baseline_anomalies"] = dev.get("anomalies", [])
+                baseline_result["baseline_sample_count"] = dev.get("sample_count", 0)
+                baseline_result["baseline_active"] = dev.get("baseline_active", False)
+                baseline_result["baseline_message"] = dev.get("message", "")
+
+                # Escalade si deviation > 70 ET baseline active (>= 5 echantillons)
+                if (dev.get("baseline_active")
+                        and dev.get("deviation_score", 0) > 70
+                        and dev.get("sample_count", 0) >= MIN_SAMPLES_FOR_DEVIATION):
+                    current_alert = triage.get("alert", "none")
+                    alert_priority = {"none": 0, "monitor": 1, "consult": 2, "urgent": 3}
+                    if alert_priority.get(current_alert, 0) < alert_priority.get("consult", 2):
+                        triage["alert"] = "consult"
+                        triage.setdefault("alert_notes", [])
+                        triage["alert_notes"].append(
+                            "Alerte escaladee par Babbl Baseline : deviation significative "
+                            f"({dev['deviation_score']}/100) par rapport au profil acoustique habituel."
+                        )
+            except Exception as e:
+                print(f"[baseline] deviation check failed: {e}")
+
     return jsonify(
         {
             "features": features,
             "context": context,
             **triage,
+            **baseline_result,
             "audio_url": audio_url,
             "comfort_audio_url": comfort_audio_url,
             "comfort_text": comfort_text,

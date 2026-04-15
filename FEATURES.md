@@ -342,6 +342,45 @@ Le Babbl Monitor rend les alertes encore plus puissantes :
 
 ---
 
+### 6. Babbl Baseline — Apprentissage du Profil Acoustique Unique
+
+Chaque bébé pleure différemment. Babbl Baseline apprend le profil acoustique unique de votre bébé au fil du temps, et détecte quand un pleur sort de l'ordinaire — pour CE bébé en particulier.
+
+**Comment ça marche :**
+1. À chaque analyse de pleurs, Babbl enregistre les caractéristiques acoustiques (pitch, énergie, amplitude, timbre MFCC, spectre, durée, etc.)
+2. Ces données alimentent un profil acoustique personnel via une formule de moyenne incrémentale (algorithme de Welford) — pas besoin de recalculer tout l'historique
+3. Après un minimum de 5 analyses, le profil est considéré comme fiable et Babbl Baseline s'active
+4. À chaque nouvelle analyse, Babbl compare les caractéristiques du pleur actuel au profil appris
+5. Un score de déviation (0-100) est calculé, et les caractéristiques qui dévient significativement (> 1.5 écarts-types) sont identifiées
+6. Si la déviation dépasse 70/100, le niveau d'alerte est automatiquement escaladé
+
+**Ce que le parent reçoit :**
+- Score de déviation (0-100) : à quel point ce pleur est inhabituel pour SON bébé
+- Liste des caractéristiques anormales (ex : "pitch anormalement élevé", "énergie inhabituellement forte")
+- Message contextuel en français (ex : "Ce pleur dévie significativement du profil habituel de votre bébé")
+- Compteur de progression vers l'activation de la baseline (ex : "3/5 échantillons")
+
+**Caractéristiques acoustiques suivies dans la baseline :**
+- Pitch moyen et écart-type (hauteur du cri)
+- Énergie totale et amplitude (intensité)
+- Centroïde spectral, bandwidth, rolloff (forme du spectre)
+- Taux de passages par zéro (rugosité)
+- 13 coefficients MFCC (timbre vocal unique du bébé)
+- Durée et ratio de silence
+- Pitch min/max historiques
+
+**Pourquoi c'est un avantage concurrentiel majeur :**
+- **Personnalisation profonde** : aucun concurrent ne fait de l'apprentissage par bébé individuel. Les autres apps comparent à des moyennes génériques.
+- **Plus le parent utilise l'app, plus elle devient précise** : effet volant d'inertie (flywheel) — chaque analyse rend la suivante plus pertinente
+- **Rétention naturelle** : le parent ne veut pas perdre le profil acoustique que Babbl a appris sur 50+ analyses. Coût de switching élevé.
+- **Détection précoce** : un changement soudain dans le pattern de pleurs peut signaler un problème de santé avant même que le parent ne le remarque
+- **Fonctionne avec Babbl Alert** : une déviation forte déclenche automatiquement une escalade d'alerte, ce qui accélère la mise en relation avec un professionnel de santé
+
+**Seuil de sécurité :**
+La baseline ne commence à influencer les alertes qu'après 5 analyses minimum. Avant ce seuil, le parent voit un compteur de progression. Cela évite les faux positifs sur un profil acoustique pas encore fiable.
+
+---
+
 ## Babbl Nuit — Le Mode Baby Phone (via téléphone ou Monitor)
 
 Que ce soit avec le Babbl Monitor ou simplement avec le téléphone posé dans la chambre, le mode Babbl Nuit transforme l'appareil en nounou de nuit autonome.
@@ -402,6 +441,8 @@ Voir Feature Signature n°5 : Babbl Alert
 ```
          Babbl Cry (comprendre le pleur)
               ↓
+         Babbl Baseline (apprendre le profil unique du bébé)
+              ↓
          Babbl Voice (réconforter le bébé)
               ↓
          Babbl Lullaby (apaiser et endormir)
@@ -415,6 +456,7 @@ Voir Feature Signature n°5 : Babbl Alert
 
 Les features forment une chaîne complète :
 - Cry analyse le problème
+- Baseline apprend le profil acoustique unique du bébé et détecte les déviations
 - Voice répond avec la voix du parent
 - Lullaby endort le bébé
 - Monitor capte, diffuse et surveille avec un matériel optimisé

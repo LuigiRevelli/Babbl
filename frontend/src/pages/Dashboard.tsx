@@ -1,19 +1,82 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Droplets, Utensils, Baby, Flame, Clock, Plus, Droplet, Moon, Mic } from 'lucide-react';
+import { Droplets, Utensils, Baby, Flame, Clock, Plus, Droplet, Moon, Mic, LogOut } from 'lucide-react';
 import MobileLayout from '@/components/MobileLayout';
 import {
   getUserData, getGreeting, isStreakInDanger, formatRelativeDate, saveUserData,
   DiaperEntry,
 } from '@/lib/userData';
 import { t } from '@/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
+import { fetchAnalyses, fetchProfile } from '@/lib/supabaseData';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [data, setData] = useState(getUserData());
   const [diaperPulse, setDiaperPulse] = useState(false);
   const [mealPulse, setMealPulse] = useState(false);
   const [showDiaperMenu, setShowDiaperMenu] = useState(false);
+
+  // Hydrate from Supabase when logged in, fall back to localStorage
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const [sbAnalyses, sbProfile] = await Promise.all([
+          fetchAnalyses(user.id),
+          fetchProfile(user.id),
+        ]);
+
+        if (cancelled) return;
+
+        const local = getUserData();
+
+        // Merge Supabase analyses into local data (Supabase is source of truth when available)
+        if (sbAnalyses && sbAnalyses.length > 0) {
+          const mapped = sbAnalyses.map((a: any) => ({
+            id: a.id,
+            timestamp: a.created_at,
+            topCause: a.top_cause ?? 'unknown',
+            probabilities: a.probabilities ?? {},
+            parent_summary: a.parent_summary ?? '',
+            confidence_level: a.confidence_level ?? 'medium',
+            alert: a.alert ?? 'none',
+            feedback: null,
+            actualCause: null,
+            sosModeUsed: false,
+            key_signals: a.key_signals ?? [],
+            recommended_actions: a.recommended_actions ?? [],
+            audio_url: a.audio_url,
+            comfort_audio_url: a.comfort_audio_url,
+            comfort_text: a.comfort_text,
+          }));
+          local.analyses = mapped;
+        }
+
+        // Merge profile data
+        if (sbProfile) {
+          if (sbProfile.baby_name) local.babyName = sbProfile.baby_name;
+          if (sbProfile.role || sbProfile.age_range) {
+            local.parentProfile = {
+              role: sbProfile.role ?? local.parentProfile?.role ?? 'father',
+              babyName: sbProfile.baby_name ?? local.parentProfile?.babyName,
+              ageRange: sbProfile.age_range ?? local.parentProfile?.ageRange ?? '0-3',
+            };
+          }
+        }
+
+        saveUserData(local);
+        setData({ ...local });
+      } catch (e) {
+        console.warn('[supabase] Chargement échoué, utilisation de localStorage :', e);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   const greeting = getGreeting();
   const streakDanger = isStreakInDanger(data);
@@ -56,9 +119,19 @@ export default function Dashboard() {
   return (
     <MobileLayout className="flex flex-col min-h-screen">
       {/* Header */}
-      <div className="mb-5 animate-fade-in">
-        <p className="text-sm text-muted-foreground">{greeting.text}</p>
-        <h1 className="font-serif text-2xl font-bold tracking-tight">{t('dashboardTitle')}</h1>
+      <div className="mb-5 animate-fade-in flex items-start justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">{greeting.text}</p>
+          <h1 className="font-serif text-2xl font-bold tracking-tight">{t('dashboardTitle')}</h1>
+        </div>
+        <button
+          onClick={() => signOut()}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mt-1"
+          title="Se d\u00e9connecter"
+        >
+          <LogOut className="w-4 h-4" strokeWidth={1.5} />
+          <span className="hidden sm:inline">D\u00e9connexion</span>
+        </button>
       </div>
 
       {/* CTA Card */}

@@ -6,9 +6,12 @@ import BackButton from '@/components/BackButton';
 import { getUserData, saveUserData } from '@/lib/userData';
 import { analyzeAudio as apiAnalyze } from '@/lib/api';
 import { t } from '@/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
+import { saveAnalysis as saveAnalysisToSupabase } from '@/lib/supabaseData';
 
 export default function Record() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const data = getUserData();
   const profile = data.parentProfile;
 
@@ -112,6 +115,28 @@ export default function Record() {
       };
       userData.analyses.push(analysis);
       saveUserData(userData);
+
+      // Persist to Supabase (best-effort, localStorage is the fallback)
+      if (user?.id) {
+        try {
+          await saveAnalysisToSupabase(user.id, {
+            id: analysis.id,
+            top_cause: analysis.topCause,
+            probabilities: analysis.probabilities,
+            parent_summary: analysis.parent_summary,
+            confidence_level: analysis.confidence_level,
+            alert: analysis.alert,
+            key_signals: analysis.key_signals,
+            recommended_actions: analysis.recommended_actions,
+            audio_url: analysis.audio_url ?? null,
+            comfort_audio_url: analysis.comfort_audio_url ?? null,
+            comfort_text: analysis.comfort_text ?? null,
+          });
+        } catch (e) {
+          console.warn('[supabase] Sauvegarde analyse échouée, localStorage utilisé :', e);
+        }
+      }
+
       navigate(`/analysis/${analysis.id}`);
     } catch (err: any) {
       alert(err?.message ?? "L'analyse a échoué. Veuillez réessayer.");

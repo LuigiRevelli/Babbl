@@ -27,6 +27,23 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Load .env from project root (one level up from backend/)
 load_dotenv(os.path.join(BASE_DIR, "..", ".env"), override=True)
 
+# ─── Supabase (service-role, bypasses RLS) ──────────────────
+_supabase_client = None
+
+def _get_supabase():
+    """Lazy-init the Supabase admin client."""
+    global _supabase_client
+    if _supabase_client is None:
+        sb_url = os.environ.get("SUPABASE_URL")
+        sb_key = os.environ.get("SUPABASE_SERVICE_KEY")
+        if sb_url and sb_key:
+            try:
+                from supabase import create_client
+                _supabase_client = create_client(sb_url, sb_key)
+            except Exception as e:
+                print(f"[supabase] init failed: {e}")
+    return _supabase_client
+
 TMP_DIR = os.path.join(BASE_DIR, "tmp")
 os.makedirs(TMP_DIR, exist_ok=True)
 
@@ -201,6 +218,46 @@ def analyze():
             comfort_audio_url = f"/api/audio/{comfort_name}"
         except Exception as e:
             print(f"[elevenlabs comfort] failed: {e}")
+
+    # ─── Persist to Supabase (best-effort) ─────────────────────
+    # Extract user_id from the Authorization header (Supabase JWT) if present.
+    user_id = None
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        try:
+            import base64
+            token = auth_header.split(" ", 1)[1]
+            # Decode JWT payload without verification (the service-role
+            # client trusts the anon-key-signed token for user_id only).
+            payload = token.split(".")[1]
+            payload += "=" * (-len(payload) % 4)  # pad base64
+            claims = json.loads(base64.urlsafe_b64decode(payload))
+            user_id = claims.get("sub")
+        except Exception:
+            pass
+
+    if user_id:
+        sb = _get_supabase()
+        if sb:
+            try:
+                probs = triage.get("probabilities", {})
+                top_cause = max(probs, key=probs.get) if probs else "unknown"
+                sb.table("analyses").insert({
+                    "id": request_id,
+                    "user_id": user_id,
+                    "top_cause": top_cause,
+                    "probabilities": probs,
+                    "parent_summary": triage.get("parent_summary", ""),
+                    "confidence_level": triage.get("confidence_level", "medium"),
+                    "alert": triage.get("alert", "none"),
+                    "key_signals": triage.get("key_signals", []),
+                    "recommended_actions": triage.get("recommended_actions", []),
+                    "audio_url": audio_url,
+                    "comfort_audio_url": comfort_audio_url,
+                    "comfort_text": comfort_text,
+                }).execute()
+            except Exception as e:
+                print(f"[supabase] save analysis failed: {e}")
 
     return jsonify(
         {

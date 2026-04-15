@@ -5,6 +5,8 @@ import MobileLayout from '@/components/MobileLayout';
 import { getUserData, saveUserData, ParentRole, AgeRange } from '@/lib/userData';
 import { cloneVoice } from '@/lib/api';
 import { t } from '@/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
+import { updateProfile } from '@/lib/supabaseData';
 
 const AGE_OPTIONS: { value: AgeRange; label: string }[] = [
   { value: '0-3', label: t('age0_3') },
@@ -26,6 +28,7 @@ type Step = 'profile' | 'recording' | 'result';
 
 export default function VoiceSetup() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const data = getUserData();
 
   const [step, setStep] = useState<Step>(data.voiceProfile?.audioRecorded ? 'result' : 'profile');
@@ -103,6 +106,21 @@ export default function VoiceSetup() {
         },
       };
       saveUserData(updated);
+
+      // Persist voice_id to Supabase profile (best-effort)
+      if (user?.id && voice_id) {
+        try {
+          await updateProfile(user.id, {
+            voice_id,
+            role,
+            baby_name: updated.babyName || userName,
+            age_range: ageRange,
+          });
+        } catch (e) {
+          console.warn('[supabase] Sauvegarde voice_id échouée :', e);
+        }
+      }
+
       setStep('result');
     } catch (err: any) {
       setCloneError(err?.message ?? t('voiceCloneFailed'));

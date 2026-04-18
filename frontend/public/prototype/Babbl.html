@@ -1,0 +1,1495 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Babbl — Comprendre votre bébé, un pleur à la fois</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ==========================================================================
+   Babbl — design tokens
+   ========================================================================== */
+:root{
+  /* Warm creamy neutrals */
+  --lait:        #FAF5EC;          /* page background */
+  --creme:       #F2E9D8;          /* warmer panels  */
+  --coquille:    #FFFDF8;          /* almost white   */
+  --ivoire:      #EFE5D2;          /* hairlines      */
+  --cafe:        #2B2320;          /* body text      */
+  --cafe-soft:   #5A4D46;          /* secondary text */
+  --cafe-mute:   #907F74;          /* tertiary text  */
+
+  /* Accents — soft editorial oklch, low chroma */
+  --terracotta:  oklch(68% 0.11 40);
+  --terracotta-2:oklch(58% 0.13 38);
+  --ocre:        oklch(78% 0.09 80);
+  --sauge:       oklch(74% 0.05 140);
+  --nuit:        oklch(32% 0.04 260);  /* blue-night for night mode accents */
+
+  /* Type */
+  --display: 'Fraunces', 'Cormorant Garamond', Georgia, serif;
+  --body:    'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+  --mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  --radius-sm: 10px;
+  --radius:    20px;
+  --radius-lg: 32px;
+  --radius-xl: 48px;
+
+  --shadow-soft: 0 1px 0 rgba(43,35,32,.04), 0 8px 24px rgba(43,35,32,.05);
+  --shadow-card: 0 2px 0 rgba(43,35,32,.05), 0 20px 60px -20px rgba(43,35,32,.12);
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+html{ scroll-behavior:smooth; }
+body{
+  background: var(--lait);
+  color: var(--cafe);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Subtle grain bg */
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:1;
+  background-image: radial-gradient(rgba(43,35,32,.035) 1px, transparent 1px);
+  background-size: 3px 3px;
+  mix-blend-mode: multiply;
+  opacity: .5;
+}
+
+/* Typography */
+h1,h2,h3,h4{ font-family: var(--display); font-weight: 400; letter-spacing:-0.02em; margin:0; color:var(--cafe); }
+h1{ font-size: clamp(56px, 9vw, 148px); line-height: .92; letter-spacing:-0.035em; }
+h2{ font-size: clamp(40px, 5.2vw, 84px); line-height: .95; }
+h3{ font-size: clamp(28px, 2.8vw, 44px); line-height: 1.05; }
+h4{ font-size: 22px; line-height: 1.2; }
+.serif-italic{ font-style: italic; font-family: var(--display); font-weight: 300; }
+.mono{ font-family: var(--mono); font-size:12px; letter-spacing:.04em; text-transform:uppercase; }
+.kicker{
+  font-family: var(--mono); font-size: 11px; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--cafe-mute);
+}
+p{ margin:0; }
+a{ color:inherit; }
+
+.container{
+  max-width: 1360px; margin: 0 auto; padding: 0 32px;
+  position: relative; z-index: 2;
+}
+.divider{ height:1px; background: var(--ivoire); border:0; margin:0; }
+
+/* Buttons */
+.btn{
+  display:inline-flex; align-items:center; gap:10px;
+  padding: 14px 22px; border-radius: 999px;
+  font-family: var(--body); font-size: 15px; font-weight: 500;
+  letter-spacing: -0.005em;
+  background: var(--cafe); color: var(--coquille);
+  border:none; cursor:pointer; text-decoration:none;
+  transition: transform .2s ease, background .2s ease;
+  white-space: nowrap;
+}
+.btn:hover{ transform: translateY(-1px); background:#1c1613; }
+.btn--ghost{ background: transparent; color: var(--cafe); border:1px solid rgba(43,35,32,.15); }
+.btn--ghost:hover{ background: var(--coquille); }
+.btn--accent{ background: var(--terracotta-2); }
+.btn--accent:hover{ background: oklch(52% 0.14 38); }
+.btn--sm{ padding: 10px 16px; font-size: 13px; }
+
+/* ==========================================================================
+   Nav
+   ========================================================================== */
+.nav{
+  position: sticky; top: 0; z-index: 20;
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  background: color-mix(in oklab, var(--lait) 80%, transparent);
+  border-bottom: 1px solid rgba(43,35,32,.06);
+}
+.nav-in{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 18px 32px; max-width: 1360px; margin: 0 auto;
+}
+.logo{ display:flex; align-items:center; gap:10px; text-decoration:none; color: var(--cafe); }
+.logo-mark{
+  width: 30px; height: 30px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff 0%, var(--terracotta) 60%, var(--terracotta-2) 100%);
+  position: relative; box-shadow: inset 0 -4px 6px rgba(0,0,0,.1);
+}
+.logo-mark::after{
+  content:""; position:absolute; inset:6px 8px auto 8px; height:4px;
+  border-radius: 4px 4px 10px 10px;
+  background: rgba(255,255,255,.7);
+}
+.logo-word{
+  font-family: var(--display); font-weight: 500; font-size: 26px;
+  letter-spacing: -0.04em;
+}
+.logo-word em{ font-style: italic; font-weight: 300; }
+
+.nav-links{ display:flex; gap: 30px; font-size: 14px; color: var(--cafe-soft); }
+.nav-links a{ text-decoration:none; }
+.nav-links a:hover{ color: var(--cafe); }
+.nav-cta{ display:flex; gap:10px; align-items:center; }
+@media (max-width: 820px){ .nav-links{ display:none; } }
+
+/* ==========================================================================
+   Hero
+   ========================================================================== */
+.hero{
+  padding: 64px 0 120px;
+  position: relative;
+}
+.hero-grid{
+  display:grid; grid-template-columns: 1.35fr 1fr;
+  gap: 48px; align-items: end;
+}
+@media (max-width: 1000px){ .hero-grid{ grid-template-columns: 1fr; gap: 56px; } }
+.hero-copy h1 .softer{ font-weight: 300; color: var(--cafe-soft); }
+.hero-copy h1 em{ font-weight: 300; color: var(--terracotta-2); }
+
+.hero-meta{
+  display:flex; gap: 24px; align-items:center;
+  margin-top: 32px; font-size: 14px; color: var(--cafe-soft);
+}
+.hero-meta .dot{ width:6px; height:6px; border-radius:50%; background: var(--terracotta); }
+.hero-ctas{
+  display:flex; gap: 14px; margin-top: 36px; flex-wrap: wrap;
+}
+
+/* hero visual — a "phone in a crib" scene, all CSS */
+.hero-visual{
+  position: relative;
+  aspect-ratio: 4/5;
+  max-width: 480px; justify-self: end;
+  width: 100%;
+}
+@media (max-width: 1000px){ .hero-visual{ justify-self: start; max-width: 360px; } }
+.hero-card{
+  position: absolute; inset: 0;
+  border-radius: 48px;
+  background: linear-gradient(165deg, var(--creme) 0%, #EAD9BA 100%);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+.hero-card::after{
+  content:""; position:absolute; inset:0;
+  background-image: radial-gradient(rgba(43,35,32,.08) 1px, transparent 1px);
+  background-size: 4px 4px;
+  opacity: .35;
+}
+.hero-wave{
+  position:absolute; inset: auto 10% 22% 10%;
+  height: 120px; display:flex; align-items:center; gap:3px;
+}
+.hero-wave span{
+  flex:1; background: var(--cafe); border-radius: 4px;
+  transform-origin: center; animation: wave 1.6s ease-in-out infinite;
+  opacity: .8;
+}
+@keyframes wave{
+  0%,100%{ transform: scaleY(.3); }
+  50%{ transform: scaleY(1); }
+}
+.hero-label{
+  position: absolute; top: 28px; left: 28px; right: 28px;
+  display:flex; justify-content:space-between; align-items:center;
+  font-family: var(--mono); font-size: 11px; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--cafe);
+}
+.hero-live{ display:flex; gap:6px; align-items:center; }
+.hero-live .pulse{
+  width:8px; height:8px; border-radius:50%;
+  background: var(--terracotta-2);
+  box-shadow: 0 0 0 0 var(--terracotta-2);
+  animation: pulse 1.8s infinite;
+}
+@keyframes pulse{
+  0%{ box-shadow: 0 0 0 0 rgba(194,82,48,.6); }
+  70%{ box-shadow: 0 0 0 14px rgba(194,82,48,0); }
+  100%{ box-shadow: 0 0 0 0 rgba(194,82,48,0); }
+}
+.hero-result{
+  position:absolute; left: 28px; right: 28px; bottom: 28px;
+  background: var(--coquille); border-radius: 20px;
+  padding: 18px 20px;
+  box-shadow: 0 10px 30px -10px rgba(43,35,32,.2);
+}
+.hero-result .r-top{
+  display:flex; justify-content:space-between; align-items:baseline;
+}
+.hero-result .r-cause{ font-family: var(--display); font-size: 28px; letter-spacing: -0.02em; }
+.hero-result .r-pct{ font-family: var(--mono); font-size: 14px; color: var(--terracotta-2); }
+.hero-result .r-sub{ font-size: 13px; color: var(--cafe-soft); margin-top: 4px; }
+.hero-result .r-bar{
+  height:4px; border-radius: 99px; background: var(--ivoire);
+  margin-top: 14px; overflow:hidden;
+}
+.hero-result .r-bar > div{
+  height:100%; width: 78%;
+  background: linear-gradient(90deg, var(--terracotta), var(--ocre));
+  border-radius: 99px;
+}
+
+.hero-stamp{
+  position:absolute; top: -22px; right: -16px;
+  width: 110px; height: 110px; border-radius: 50%;
+  background: var(--cafe); color: var(--lait);
+  display:flex; align-items:center; justify-content:center;
+  text-align:center; font-family: var(--display);
+  font-style: italic; font-size: 15px; line-height: 1.2;
+  padding: 10px;
+  transform: rotate(-8deg);
+  box-shadow: var(--shadow-soft);
+}
+
+.hero-aside{
+  display:flex; flex-direction:column; gap: 28px;
+  padding-bottom: 20px;
+}
+.hero-aside blockquote{
+  font-family: var(--display); font-style: italic; font-weight: 300;
+  font-size: 22px; line-height: 1.35; letter-spacing: -0.01em;
+  margin:0; color: var(--cafe);
+  text-wrap: pretty;
+}
+.hero-aside blockquote::before{ content:"“"; color: var(--terracotta-2); font-size: 1.2em; margin-right: 4px; }
+.hero-aside cite{
+  font-style: normal; font-size: 13px; color: var(--cafe-mute); margin-top: 10px; display:block;
+}
+
+/* running marquee */
+.marquee{
+  border-top: 1px solid var(--ivoire);
+  border-bottom: 1px solid var(--ivoire);
+  background: var(--coquille);
+  overflow: hidden;
+  padding: 22px 0;
+}
+.marquee-track{
+  display:flex; gap: 60px; white-space: nowrap;
+  animation: scroll 40s linear infinite;
+  font-family: var(--display); font-size: 26px; letter-spacing: -0.01em;
+  color: var(--cafe-soft);
+}
+.marquee-track span em{ font-style: italic; font-weight: 300; color: var(--terracotta-2); }
+.marquee-track::before{ content:""; display:block; }
+@keyframes scroll {
+  from{ transform: translateX(0); }
+  to{ transform: translateX(-50%); }
+}
+
+/* ==========================================================================
+   Section scaffold
+   ========================================================================== */
+section{ padding: 120px 0; position: relative; }
+.section-head{
+  display:grid; grid-template-columns: 1fr 2fr; gap: 48px;
+  margin-bottom: 72px; align-items: end;
+}
+@media (max-width: 820px){ .section-head{ grid-template-columns: 1fr; gap: 20px; } }
+.section-head .eyebrow{ display:flex; align-items:center; gap: 10px; }
+.section-head .eyebrow .num{
+  font-family: var(--display); font-style: italic; font-weight: 300; font-size: 46px; color: var(--terracotta-2);
+  line-height: 1;
+}
+
+/* ==========================================================================
+   Demo (the flow)
+   ========================================================================== */
+.demo{
+  background: var(--creme);
+  border-top: 1px solid var(--ivoire);
+  border-bottom: 1px solid var(--ivoire);
+}
+.demo-steps{
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 40px;
+}
+@media (max-width: 820px){ .demo-steps{ grid-template-columns: repeat(2, 1fr); } }
+.step{
+  padding: 20px; border-radius: 16px;
+  background: var(--coquille); border: 1px solid var(--ivoire);
+  cursor: pointer; transition: all .25s ease;
+}
+.step:hover{ transform: translateY(-2px); border-color: var(--terracotta); }
+.step.active{ background: var(--cafe); color: var(--lait); border-color: var(--cafe); }
+.step.active .step-num{ color: var(--ocre); }
+.step.active .step-meta{ color: rgba(250,245,236,.6); }
+.step-num{ font-family: var(--display); font-style: italic; font-size: 22px; color: var(--terracotta-2); }
+.step-title{ font-family: var(--display); font-size: 22px; margin-top: 6px; letter-spacing:-0.02em; }
+.step-meta{ font-family: var(--mono); font-size: 10px; margin-top: 8px; color: var(--cafe-mute); }
+
+.demo-stage{
+  background: var(--coquille);
+  border-radius: 32px;
+  padding: 48px;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 48px; align-items: center;
+  min-height: 420px;
+  border: 1px solid var(--ivoire);
+}
+@media (max-width: 820px){ .demo-stage{ grid-template-columns: 1fr; padding: 28px; } }
+
+.demo-visual{
+  position: relative; aspect-ratio: 1; background: var(--lait);
+  border-radius: 24px; overflow: hidden;
+  display:flex; align-items:center; justify-content:center;
+}
+.demo-visual .spinner{
+  width: 72px; height:72px; border-radius: 50%;
+  border: 3px solid rgba(43,35,32,.12);
+  border-top-color: var(--terracotta-2);
+  animation: spin 1s linear infinite;
+}
+@keyframes spin{ to{ transform: rotate(360deg); } }
+.demo-visual .bigwave{
+  display:flex; gap: 4px; align-items:center; height: 60%;
+}
+.demo-visual .bigwave span{
+  width: 6px; background: var(--cafe); border-radius: 4px;
+  animation: wave 1.4s ease-in-out infinite;
+}
+.demo-text h3{ margin-bottom: 14px; }
+.demo-text p{ color: var(--cafe-soft); font-size: 17px; }
+.demo-text .chip{
+  display:inline-flex; gap: 8px; align-items:center;
+  padding: 6px 12px; border-radius: 99px;
+  background: var(--lait); font-family: var(--mono); font-size: 11px;
+  margin-bottom: 16px; border: 1px solid var(--ivoire);
+}
+.demo-text .detail{
+  margin-top: 20px;
+  border-top: 1px dashed var(--ivoire); padding-top: 20px;
+  display: grid; gap: 10px;
+}
+.demo-text .detail .row{ display:flex; justify-content:space-between; font-size: 14px; }
+.demo-text .detail .row b{ font-weight: 500; }
+.demo-text .lock{
+  margin-top: 24px; padding: 16px 18px; border-radius: 16px;
+  background: linear-gradient(180deg, var(--creme), #ead9ba);
+  display:flex; gap: 14px; align-items:center;
+  font-size: 14px; color: var(--cafe-soft);
+}
+.demo-text .lock .icon{
+  width: 36px; height: 36px; border-radius: 8px; background: var(--cafe);
+  display:flex; align-items:center; justify-content:center; color: var(--lait);
+  flex-shrink: 0;
+}
+
+/* Cause tag (the "cause principale" big display) */
+.cause-display{
+  text-align:center; padding: 20px;
+}
+.cause-display .label{ font-family: var(--mono); font-size: 11px; color: var(--cafe-mute); margin-bottom: 8px; }
+.cause-display .name{
+  font-family: var(--display); font-size: clamp(48px, 7vw, 88px);
+  line-height: .9; letter-spacing: -0.035em;
+  color: var(--terracotta-2);
+}
+.cause-display .pct{ font-family: var(--mono); font-size: 14px; color: var(--cafe-soft); margin-top: 16px; }
+
+/* ==========================================================================
+   Features (editorial grid)
+   ========================================================================== */
+.features{ background: var(--lait); }
+.feat-grid{
+  display:grid; grid-template-columns: repeat(12, 1fr); gap: 20px;
+}
+.feat{
+  background: var(--coquille);
+  border: 1px solid var(--ivoire);
+  border-radius: var(--radius-lg);
+  padding: 36px;
+  display:flex; flex-direction:column; justify-content:space-between;
+  min-height: 380px; position: relative; overflow:hidden;
+}
+.feat:hover{ border-color: var(--terracotta); }
+.feat .f-num{ font-family: var(--display); font-style: italic; font-weight:300; color: var(--terracotta-2); font-size: 40px; }
+.feat h3{ margin-top: 6px; }
+.feat .f-desc{ color: var(--cafe-soft); font-size: 15px; margin-top: 10px; max-width: 36ch; }
+.feat .f-tier{
+  position:absolute; top: 36px; right: 36px;
+  font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 99px;
+  background: var(--lait); color: var(--cafe-soft); border: 1px solid var(--ivoire);
+}
+.feat .f-tier.voice{ background: var(--cafe); color: var(--ocre); border-color: var(--cafe); }
+.feat .f-tier.plus{ background: var(--terracotta-2); color: #fff; border-color: transparent; }
+
+.feat-cry    { grid-column: span 7; background: linear-gradient(135deg, var(--coquille), var(--creme)); }
+.feat-voice  { grid-column: span 5; background: var(--cafe); color: var(--lait); border-color: var(--cafe); }
+.feat-voice h3{ color: var(--lait); }
+.feat-voice .f-desc{ color: rgba(250,245,236,.7); }
+.feat-voice .f-num{ color: var(--ocre); }
+.feat-lullaby{ grid-column: span 5; }
+.feat-monitor{ grid-column: span 4; }
+.feat-alert  { grid-column: span 3; }
+@media (max-width: 1000px){
+  .feat-cry,.feat-voice,.feat-lullaby,.feat-monitor,.feat-alert{ grid-column: span 12; }
+}
+
+.feat-visual{
+  margin-top: 24px; position:relative; height: 160px;
+  border-radius: 18px;
+  background: var(--lait);
+  overflow: hidden;
+  display:flex; align-items:center; justify-content:center;
+  border: 1px solid var(--ivoire);
+}
+.feat-voice .feat-visual{ background: #1c1613; border-color: rgba(255,255,255,.08); }
+
+/* Waveform SVG placeholder generic */
+.feat-visual.striped{
+  background-image:
+    repeating-linear-gradient(135deg,
+      transparent 0 12px,
+      rgba(43,35,32,.05) 12px 24px);
+}
+.feat-visual .mono-caption{
+  position:absolute; bottom:10px; left:12px;
+  font-family: var(--mono); font-size: 10px; color: var(--cafe-mute);
+  letter-spacing: .1em; text-transform: uppercase;
+}
+
+/* ==========================================================================
+   Pricing
+   ========================================================================== */
+.pricing{ background: var(--creme); border-top:1px solid var(--ivoire); border-bottom:1px solid var(--ivoire); }
+.price-grid{
+  display:grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+}
+@media (max-width: 900px){ .price-grid{ grid-template-columns: 1fr; } }
+.price{
+  background: var(--coquille);
+  border-radius: 32px; padding: 40px;
+  display:flex; flex-direction: column;
+  border: 1px solid var(--ivoire);
+  position: relative;
+}
+.price.featured{
+  background: var(--cafe); color: var(--lait); border-color: var(--cafe);
+  transform: translateY(-12px);
+}
+@media (max-width: 900px){ .price.featured{ transform:none; } }
+.price .tier-name{ font-family: var(--display); font-size: 32px; letter-spacing:-0.02em; }
+.price .tier-sub{ font-size: 14px; color: var(--cafe-soft); margin-top: 4px; }
+.price.featured .tier-sub{ color: rgba(250,245,236,.7); }
+.price .amount{
+  font-family: var(--display); font-size: 72px; line-height: 1;
+  letter-spacing: -0.04em; margin: 28px 0 4px;
+}
+.price .per{ font-size: 13px; color: var(--cafe-soft); margin-bottom: 28px; }
+.price.featured .per{ color: rgba(250,245,236,.7); }
+.price ul{ list-style: none; padding: 0; margin: 0 0 28px; display:grid; gap: 10px; font-size: 14px; }
+.price ul li{ display:flex; gap: 10px; align-items: flex-start; }
+.price ul li::before{
+  content:""; width:14px; height:14px; flex-shrink:0; margin-top: 4px;
+  border-radius: 50%;
+  background: var(--ocre);
+}
+.price.featured ul li::before{ background: var(--ocre); }
+.price .cta{ margin-top:auto; }
+.price-badge{
+  position: absolute; top: -14px; right: 24px;
+  padding: 6px 14px; border-radius: 99px;
+  background: var(--ocre); color: var(--cafe);
+  font-family: var(--mono); font-size: 10px; letter-spacing: .15em; text-transform: uppercase;
+}
+
+/* ==========================================================================
+   Testimonial / Story
+   ========================================================================== */
+.story{
+  padding: 160px 0;
+  background: var(--lait);
+}
+.story-main{
+  max-width: 980px; margin: 0 auto; text-align: center;
+}
+.story-main blockquote{
+  font-family: var(--display); font-weight: 300;
+  font-size: clamp(32px, 4.5vw, 64px);
+  line-height: 1.1; letter-spacing: -0.025em;
+  margin: 0; text-wrap: balance;
+}
+.story-main blockquote em{ color: var(--terracotta-2); font-weight: 400; }
+.story-main cite{
+  font-style: normal; margin-top: 32px; display:inline-flex;
+  gap:12px; align-items:center; font-size: 14px; color: var(--cafe-soft);
+}
+.story-main .avatar{
+  width: 42px; height: 42px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--ocre), var(--terracotta));
+  display:inline-block;
+}
+
+.stats{
+  display:grid; grid-template-columns: repeat(4, 1fr);
+  gap: 40px; margin-top: 100px;
+  border-top: 1px solid var(--ivoire); padding-top: 40px;
+}
+@media (max-width: 820px){ .stats{ grid-template-columns: repeat(2, 1fr); } }
+.stat .num{ font-family: var(--display); font-size: 60px; letter-spacing: -0.03em; line-height: 1; }
+.stat .lbl{ font-size: 13px; color: var(--cafe-soft); margin-top: 8px; max-width: 24ch; }
+
+/* ==========================================================================
+   Science / how it works
+   ========================================================================== */
+.how{ background: var(--cafe); color: var(--lait); }
+.how h2{ color: var(--lait); }
+.how .kicker{ color: rgba(250,245,236,.5); }
+.how-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 56px; }
+@media (max-width: 900px){ .how-grid{ grid-template-columns: 1fr; } }
+.how-card{
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 24px;
+  padding: 32px;
+}
+.how-card .how-num{
+  font-family: var(--display); font-style: italic; font-weight: 300;
+  font-size: 60px; color: var(--ocre); line-height: 1;
+}
+.how-card h4{ color: var(--lait); font-size: 26px; margin-top: 10px; }
+.how-card p{ color: rgba(250,245,236,.7); font-size: 15px; margin-top: 10px; }
+
+/* ==========================================================================
+   Compare
+   ========================================================================== */
+.compare table{
+  width:100%; border-collapse: collapse; font-size: 15px;
+  background: var(--coquille); border-radius: 24px; overflow: hidden;
+  border: 1px solid var(--ivoire);
+}
+.compare th, .compare td{
+  padding: 18px 22px; text-align: left; border-bottom: 1px solid var(--ivoire);
+}
+.compare th{ font-weight: 500; font-size: 13px; color: var(--cafe-soft); background: var(--lait); text-transform: uppercase; letter-spacing: .08em; }
+.compare tr:last-child td{ border-bottom: none; }
+.compare .brand{ font-family: var(--display); font-size: 22px; letter-spacing: -0.02em; }
+.compare .brand.us{ color: var(--terracotta-2); }
+.compare .yes{ color: var(--cafe); }
+.compare .no{ color: var(--cafe-mute); }
+
+/* ==========================================================================
+   FAQ
+   ========================================================================== */
+.faq-list{ border-top: 1px solid var(--ivoire); }
+.faq-item{ border-bottom: 1px solid var(--ivoire); padding: 28px 0; cursor: pointer; }
+.faq-item .q{
+  display:flex; justify-content:space-between; align-items:baseline;
+  font-family: var(--display); font-size: 26px; letter-spacing: -0.02em;
+}
+.faq-item .plus{ font-size: 22px; color: var(--terracotta-2); transition: transform .3s ease; }
+.faq-item[open] .plus{ transform: rotate(45deg); }
+.faq-item .a{ color: var(--cafe-soft); margin-top: 12px; max-width: 72ch; font-size: 16px; }
+.faq-item summary{ list-style: none; }
+.faq-item summary::-webkit-details-marker{ display:none; }
+
+/* ==========================================================================
+   CTA
+   ========================================================================== */
+.cta-final{
+  padding: 140px 0;
+  text-align:center;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(234,217,186,.9), transparent 60%),
+    radial-gradient(circle at 70% 80%, rgba(194,82,48,.15), transparent 60%),
+    var(--lait);
+}
+.cta-final h2{ font-size: clamp(48px, 7vw, 120px); line-height: .95; }
+.cta-final h2 em{ color: var(--terracotta-2); font-weight:300; }
+.cta-final p{ margin-top: 24px; color: var(--cafe-soft); font-size: 18px; max-width: 52ch; margin-left:auto; margin-right:auto; text-wrap: pretty; }
+.cta-final .btn{ margin-top: 40px; padding: 18px 32px; font-size: 16px; }
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+footer{
+  background: var(--cafe); color: var(--lait);
+  padding: 80px 0 40px;
+}
+.foot-grid{ display:grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; }
+@media (max-width: 820px){ .foot-grid{ grid-template-columns: 1fr 1fr; } }
+.foot-col h5{ font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: rgba(250,245,236,.5); margin:0 0 18px; font-weight: 400; }
+.foot-col a{ display:block; color: rgba(250,245,236,.8); text-decoration:none; font-size: 15px; padding: 4px 0; }
+.foot-col a:hover{ color: var(--lait); }
+.foot-legal{
+  border-top: 1px solid rgba(255,255,255,.1);
+  margin-top: 60px; padding-top: 24px;
+  display:flex; justify-content:space-between; font-size: 12px; color: rgba(250,245,236,.4);
+}
+.foot-logo-word{ font-family: var(--display); font-size: 60px; letter-spacing:-0.04em; line-height: 1; }
+.foot-logo-word em{ font-style: italic; font-weight: 300; color: var(--ocre); }
+.foot-tag{ margin-top: 14px; color: rgba(250,245,236,.6); font-size: 14px; max-width: 36ch; }
+
+/* ==========================================================================
+   Tweaks panel
+   ========================================================================== */
+#tweaks-panel{
+  position: fixed; bottom: 20px; right: 20px;
+  width: 280px; padding: 20px; border-radius: 20px;
+  background: var(--coquille); color: var(--cafe);
+  border: 1px solid var(--ivoire);
+  box-shadow: 0 20px 60px -20px rgba(43,35,32,.25);
+  z-index: 100; display: none;
+  font-size: 13px;
+}
+#tweaks-panel.on{ display: block; }
+#tweaks-panel h6{
+  font-family: var(--mono); font-size: 10px; letter-spacing: .15em; text-transform: uppercase; margin: 0 0 14px;
+  color: var(--cafe-mute);
+}
+#tweaks-panel .tweak-row{ margin-bottom: 14px; }
+#tweaks-panel label{ display:block; margin-bottom: 6px; color: var(--cafe-soft); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; font-family: var(--mono); }
+#tweaks-panel .swatches{ display:flex; gap: 6px; }
+#tweaks-panel .swatch{
+  width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;
+}
+#tweaks-panel .swatch.active{ border-color: var(--cafe); }
+#tweaks-panel select{
+  width: 100%; padding: 8px 10px; border-radius: 8px;
+  border: 1px solid var(--ivoire); background: var(--lait); font: inherit; color: inherit;
+}
+
+/* ==========================================================================
+   NIGHT MODE (dark)
+   ========================================================================== */
+body.night{
+  --lait:        #191624;
+  --creme:       #221e2f;
+  --coquille:    #1f1b2a;
+  --ivoire:      rgba(255,255,255,.08);
+  --cafe:        #F3EADA;
+  --cafe-soft:   #B6A99A;
+  --cafe-mute:   #7E7280;
+  --terracotta:  oklch(72% 0.10 40);
+  --terracotta-2:oklch(70% 0.12 38);
+  --ocre:        oklch(82% 0.10 80);
+  --shadow-card: 0 20px 60px -20px rgba(0,0,0,.5);
+}
+body.night::before{ opacity: 0; }
+body.night .hero-card{ background: linear-gradient(165deg, #2a2538 0%, #3a2d44 100%); }
+body.night .how{ background: #0e0b16; }
+body.night .demo{ background: var(--creme); }
+body.night .pricing{ background: var(--creme); }
+body.night .price.featured{ background: var(--terracotta-2); color: #1a1424; border-color: var(--terracotta-2); }
+body.night .price.featured ul li::before{ background: #1a1424; }
+body.night .price.featured .tier-sub, body.night .price.featured .per{ color: rgba(26,20,36,.7); }
+body.night footer{ background: #0b0910; }
+body.night .marquee{ background: var(--coquille); }
+body.night .btn{ background: var(--cafe); color: var(--lait); }
+body.night .btn--ghost{ background: transparent; color: var(--cafe); border-color: var(--ivoire); }
+body.night .feat-voice{ background: #0e0b16; }
+
+.reveal{ opacity:0; transform: translateY(20px); transition: opacity .8s ease, transform .8s ease; }
+.reveal.in{ opacity:1; transform: none; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-in">
+    <a href="#" class="logo">
+      <span class="logo-mark" aria-hidden="true"></span>
+      <span class="logo-word">babb<em>l</em></span>
+    </a>
+    <div class="nav-links">
+      <a href="#comment">Comment ça marche</a>
+      <a href="#features">Fonctionnalités</a>
+      <a href="#prix">Tarifs</a>
+      <a href="#science">Science</a>
+      <a href="Babbl App.html">Démo app</a>
+    </div>
+    <div class="nav-cta">
+      <a href="#prix" class="btn btn--ghost btn--sm">Se connecter</a>
+      <a href="#prix" class="btn btn--sm">Essayer gratuitement</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <div class="kicker" style="margin-bottom: 32px;">— Bonsoir, il est 3h17.</div>
+        <h1>
+          Il pleure.<br>
+          <span class="softer">Vous ne savez pas</span><br>
+          <em>pourquoi.</em>
+        </h1>
+        <p style="margin-top: 36px; font-size: 19px; max-width: 48ch; color: var(--cafe-soft); text-wrap: pretty;">
+          Babbl écoute, comprend et vous le dit en 10 secondes —
+          <span class="serif-italic">faim, fatigue, inconfort, douleur</span>. Avec les bons gestes à faire, et,
+          si vous le souhaitez, votre propre voix pour l'apaiser.
+        </p>
+        <div class="hero-ctas">
+          <a href="#prix" class="btn">Essayer Babbl gratuitement →</a>
+          <a href="Babbl App.html" class="btn btn--ghost">Voir la démo</a>
+        </div>
+        <div class="hero-meta">
+          <div class="dot"></div>
+          <span>5 analyses gratuites / jour · sans carte bancaire · données chiffrées</span>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="hero-card">
+          <div class="hero-label">
+            <span>Babbl · écoute</span>
+            <span class="hero-live"><span class="pulse"></span> en direct</span>
+          </div>
+          <div class="hero-wave" aria-hidden="true">
+            <!-- 32 bars -->
+          </div>
+          <div class="hero-result">
+            <div class="r-top">
+              <span class="r-cause">Faim</span>
+              <span class="r-pct">78% de confiance</span>
+            </div>
+            <div class="r-sub">Pleur rythmé, pitch bas, pauses régulières.</div>
+            <div class="r-bar"><div></div></div>
+          </div>
+        </div>
+        <div class="hero-stamp">
+          On est<br>avec vous
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- MARQUEE -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track">
+    <span>faim</span><span>· fatigue ·</span><span>inconfort</span><span>· <em>douleur</em> ·</span>
+    <span>besoin de contact</span><span>· reflux ·</span><span>coliques</span><span>· <em>surstimulation</em> ·</span>
+    <span>sommeil agité</span><span>· ennui ·</span><span>chaleur</span><span>· <em>fraîcheur</em> ·</span>
+    <span>faim</span><span>· fatigue ·</span><span>inconfort</span><span>· <em>douleur</em> ·</span>
+    <span>besoin de contact</span><span>· reflux ·</span><span>coliques</span><span>· <em>surstimulation</em> ·</span>
+    <span>sommeil agité</span><span>· ennui ·</span><span>chaleur</span><span>· <em>fraîcheur</em> ·</span>
+  </div>
+</div>
+
+<!-- DEMO -->
+<section class="demo" id="demo">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">
+          <span class="num">01</span>
+          <span class="kicker">la démonstration</span>
+        </div>
+      </div>
+      <div>
+        <h2>En quelques secondes,<br><span class="serif-italic">vous savez.</span></h2>
+      </div>
+    </div>
+
+    <div class="demo-steps">
+      <div class="step active" data-step="1">
+        <div class="step-num">01</div>
+        <div class="step-title">Enregistrer</div>
+        <div class="step-meta">≈ 8 sec</div>
+      </div>
+      <div class="step" data-step="2">
+        <div class="step-num">02</div>
+        <div class="step-title">Analyser</div>
+        <div class="step-meta">≈ 2 sec</div>
+      </div>
+      <div class="step" data-step="3">
+        <div class="step-num">03</div>
+        <div class="step-title">Comprendre</div>
+        <div class="step-meta">cause + confiance</div>
+      </div>
+      <div class="step" data-step="4">
+        <div class="step-num">04</div>
+        <div class="step-title">Agir</div>
+        <div class="step-meta">geste recommandé</div>
+      </div>
+    </div>
+
+    <div class="demo-stage" id="demo-stage">
+      <!-- content swapped by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">
+          <span class="num">02</span>
+          <span class="kicker">les cinq piliers</span>
+        </div>
+      </div>
+      <div>
+        <h2>Tout ce dont vous<br>avez besoin, <span class="serif-italic">rien d'autre.</span></h2>
+        <p style="margin-top: 20px; color: var(--cafe-soft); max-width: 52ch;">
+          Du premier pleur à la consultation pédiatrique — cinq fonctionnalités pensées pour
+          s'effacer dans les moments où vous avez besoin d'elles.
+        </p>
+      </div>
+    </div>
+
+    <div class="feat-grid">
+      <!-- Cry -->
+      <article class="feat feat-cry">
+        <div>
+          <div class="f-num">01</div>
+          <h3>Babbl <span class="serif-italic">Cry</span></h3>
+          <p class="f-desc">Le cœur de Babbl. Une IA entraînée sur plus de 2 millions de pleurs qui identifie la cause en moins de 10 secondes.</p>
+        </div>
+        <div class="feat-visual">
+          <svg width="80%" height="60" viewBox="0 0 400 60" aria-hidden="true">
+            <g fill="currentColor" style="color: var(--cafe)">
+              <rect x="0"   y="22" width="6" height="16" rx="2"/>
+              <rect x="12"  y="14" width="6" height="32" rx="2"/>
+              <rect x="24"  y="6"  width="6" height="48" rx="2"/>
+              <rect x="36"  y="18" width="6" height="24" rx="2"/>
+              <rect x="48"  y="24" width="6" height="12" rx="2"/>
+              <rect x="60"  y="10" width="6" height="40" rx="2"/>
+              <rect x="72"  y="16" width="6" height="28" rx="2"/>
+              <rect x="84"  y="22" width="6" height="16" rx="2"/>
+              <rect x="96"  y="4"  width="6" height="52" rx="2"/>
+              <rect x="108" y="14" width="6" height="32" rx="2"/>
+              <rect x="120" y="20" width="6" height="20" rx="2"/>
+              <rect x="132" y="8"  width="6" height="44" rx="2"/>
+              <rect x="144" y="16" width="6" height="28" rx="2"/>
+              <rect x="156" y="22" width="6" height="16" rx="2"/>
+              <rect x="168" y="12" width="6" height="36" rx="2"/>
+              <rect x="180" y="6"  width="6" height="48" rx="2"/>
+              <rect x="192" y="18" width="6" height="24" rx="2"/>
+              <rect x="204" y="24" width="6" height="12" rx="2"/>
+              <rect x="216" y="14" width="6" height="32" rx="2"/>
+              <rect x="228" y="8"  width="6" height="44" rx="2"/>
+              <rect x="240" y="20" width="6" height="20" rx="2"/>
+              <rect x="252" y="16" width="6" height="28" rx="2"/>
+              <rect x="264" y="22" width="6" height="16" rx="2"/>
+              <rect x="276" y="10" width="6" height="40" rx="2"/>
+              <rect x="288" y="18" width="6" height="24" rx="2"/>
+              <rect x="300" y="4"  width="6" height="52" rx="2"/>
+              <rect x="312" y="14" width="6" height="32" rx="2"/>
+              <rect x="324" y="22" width="6" height="16" rx="2"/>
+              <rect x="336" y="16" width="6" height="28" rx="2"/>
+              <rect x="348" y="6"  width="6" height="48" rx="2"/>
+              <rect x="360" y="18" width="6" height="24" rx="2"/>
+              <rect x="372" y="14" width="6" height="32" rx="2"/>
+              <rect x="384" y="22" width="6" height="16" rx="2"/>
+            </g>
+          </svg>
+          <span class="mono-caption">2.4 M pleurs analysés</span>
+        </div>
+      </article>
+
+      <!-- Voice -->
+      <article class="feat feat-voice">
+        <span class="f-tier voice">Babbl Voice</span>
+        <div>
+          <div class="f-num">02</div>
+          <h3>Babbl <span class="serif-italic">Voice</span></h3>
+          <p class="f-desc">Votre voix, clonée une seule fois, pour réconforter votre bébé quand vous ne pouvez pas être là.</p>
+        </div>
+        <div class="feat-visual">
+          <svg width="85%" height="70" viewBox="0 0 400 70" aria-hidden="true">
+            <path d="M0 35 Q 50 5, 100 35 T 200 35 T 300 35 T 400 35" stroke="var(--ocre)" stroke-width="2" fill="none"/>
+            <path d="M0 35 Q 50 65, 100 35 T 200 35 T 300 35 T 400 35" stroke="rgba(243,234,218,.3)" stroke-width="1" fill="none"/>
+          </svg>
+          <span class="mono-caption" style="color: rgba(243,234,218,.5);">voix_maman_cloned.wav</span>
+        </div>
+      </article>
+
+      <!-- Lullaby -->
+      <article class="feat feat-lullaby">
+        <span class="f-tier voice">Babbl Voice</span>
+        <div>
+          <div class="f-num">03</div>
+          <h3>Babbl <span class="serif-italic">Lullaby</span></h3>
+          <p class="f-desc">Une berceuse unique, chaque semaine, chantée dans votre voix — avec le prénom de votre bébé.</p>
+        </div>
+        <div class="feat-visual striped">
+          <div style="text-align:center; font-family: var(--display); font-style: italic; font-size: 22px; color: var(--terracotta-2); letter-spacing:-0.01em;">
+            ♪ Dors, petite Lila ♪
+          </div>
+          <span class="mono-caption">berceuse_semaine_07</span>
+        </div>
+      </article>
+
+      <!-- Monitor -->
+      <article class="feat feat-monitor">
+        <span class="f-tier voice">hardware</span>
+        <div>
+          <div class="f-num">04</div>
+          <h3>Babbl <span class="serif-italic">Monitor</span></h3>
+          <p class="f-desc">Le baby phone qui comprend, réagit, et apaise tout seul.</p>
+        </div>
+        <div class="feat-visual striped">
+          <span class="mono-caption">placeholder · produit</span>
+          <div style="width: 70%; height: 80%; border-radius: 20px; border: 2px solid var(--cafe); position:relative;">
+            <div style="position:absolute; inset: 12px 12px auto 12px; height: 6px; background: var(--terracotta); border-radius: 3px;"></div>
+            <div style="position:absolute; top: 28px; left:50%; transform:translateX(-50%); width:14px; height:14px; border-radius:50%; background: var(--cafe);"></div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Alert -->
+      <article class="feat feat-alert">
+        <span class="f-tier plus">santé</span>
+        <div>
+          <div class="f-num">05</div>
+          <h3>Babbl <span class="serif-italic">Alert</span></h3>
+          <p class="f-desc">Téléconsultation pédiatrique en un clic, quand l'IA détecte un signal d'alerte.</p>
+        </div>
+        <div class="feat-visual">
+          <div style="display:flex; gap:6px; align-items:center;">
+            <div style="width:10px; height:10px; border-radius:50%; background: var(--sauge);"></div>
+            <div style="width:10px; height:10px; border-radius:50%; background: var(--ocre);"></div>
+            <div style="width:14px; height:14px; border-radius:50%; background: var(--terracotta-2); box-shadow: 0 0 0 4px rgba(194,82,48,.15);"></div>
+          </div>
+          <span class="mono-caption">orange · rouge</span>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- HOW / SCIENCE -->
+<section class="how" id="science">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">
+          <span class="num" style="color: var(--ocre);">03</span>
+          <span class="kicker">la science derrière</span>
+        </div>
+      </div>
+      <div>
+        <h2>Rigoureuse au point<br>de pouvoir <span class="serif-italic">se taire.</span></h2>
+        <p style="margin-top: 20px; color: rgba(250,245,236,.7); max-width: 52ch;">
+          Un pleur porte 12 à 18 signatures acoustiques distinctes. Babbl en lit chacune, les croise, et ne garde que ce qui compte.
+        </p>
+      </div>
+    </div>
+
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-num">i.</div>
+        <h4>Écoute fine</h4>
+        <p>Micro à 44.1 kHz · filtrage des bruits de fond · détection d'apnée entre pleurs · isolation spectrale des harmoniques propres au cri du nourrisson.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-num">ii.</div>
+        <h4>Analyse multi-modèle</h4>
+        <p>Un premier modèle local classe les 4 familles de pleurs. Claude Sonnet raffine ensuite avec le contexte (heure, dernière tétée, historique bébé).</p>
+      </div>
+      <div class="how-card">
+        <div class="how-num">iii.</div>
+        <h4>Recommandation</h4>
+        <p>Recommandations validées par un comité de pédiatres francophones. Si le signal est rouge, Babbl vous redirige vers un professionnel — et s'efface.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="prix">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">
+          <span class="num">04</span>
+          <span class="kicker">les tarifs</span>
+        </div>
+      </div>
+      <div>
+        <h2>Moins cher qu'<span class="serif-italic">un café par semaine.</span></h2>
+        <p style="margin-top: 20px; color: var(--cafe-soft); max-width: 52ch;">
+          Essayez Babbl gratuitement, sans carte. Si vous aimez, restez. Sinon, les 5 analyses par jour sont à vous pour toujours.
+        </p>
+      </div>
+    </div>
+
+    <div class="price-grid">
+      <div class="price">
+        <div class="tier-name">Babbl <span class="serif-italic">Free</span></div>
+        <div class="tier-sub">Pour découvrir.</div>
+        <div class="amount">0€</div>
+        <div class="per">pour toujours</div>
+        <ul>
+          <li>5 analyses / jour</li>
+          <li>Cause principale + % de confiance</li>
+          <li>1 action recommandée</li>
+          <li>Historique des 7 derniers jours</li>
+          <li>Exercice de respiration guidée</li>
+        </ul>
+        <a href="Babbl App.html" class="btn btn--ghost cta">Commencer gratuitement</a>
+      </div>
+
+      <div class="price featured">
+        <div class="price-badge">Le plus choisi</div>
+        <div class="tier-name">Babbl <span class="serif-italic">+</span></div>
+        <div class="tier-sub">Pour comprendre et agir.</div>
+        <div class="amount">6,99€</div>
+        <div class="per">/ mois — ou 49,99€/an (− 40%)</div>
+        <ul>
+          <li>Analyses illimitées</li>
+          <li>Explication IA détaillée — signaux acoustiques</li>
+          <li>Toutes les actions recommandées, hiérarchisées</li>
+          <li>Historique complet + tendances hebdomadaires</li>
+          <li>Mode Nuit (manuel) · sans publicité</li>
+        </ul>
+        <a href="Babbl App.html" class="btn cta" style="background: var(--ocre); color: var(--cafe);">Essayer 7 jours gratuits</a>
+      </div>
+
+      <div class="price">
+        <div class="tier-name">Babbl <span class="serif-italic">Voice</span></div>
+        <div class="tier-sub">Pour l'apaiser, même à distance.</div>
+        <div class="amount">9,99€</div>
+        <div class="per">/ mois — ou 69,99€/an</div>
+        <ul>
+          <li>Tout Babbl+ inclus</li>
+          <li>Voix clonée (maman &amp; papa)</li>
+          <li>Babbl Lullaby — berceuse IA hebdo</li>
+          <li>Babbl Nuit — baby phone autonome</li>
+          <li>Analyse prioritaire · rapport matinal</li>
+          <li>Alerte pédiatre (triage urgence)</li>
+        </ul>
+        <a href="Babbl App.html" class="btn cta">Passer à Voice</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STORY / TESTIMONIAL -->
+<section class="story">
+  <div class="container">
+    <div class="story-main">
+      <div class="kicker" style="margin-bottom: 40px;">— Une utilisatrice, 3h47 du matin</div>
+      <blockquote>
+        J'ai pleuré quand j'ai entendu <em>ma propre voix</em> calmer Lila. Je dormais dans la pièce d'à côté.
+        Babbl a compris avant moi qu'elle avait juste besoin d'être rassurée.
+      </blockquote>
+      <cite>
+        <span class="avatar" aria-hidden="true"></span>
+        Clara, maman de Lila · 4 mois
+      </cite>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="num">89<span style="font-size:.5em; color: var(--cafe-soft);">%</span></div>
+        <div class="lbl">des parents Babbl se sentent plus confiants après 2 semaines.</div>
+      </div>
+      <div class="stat">
+        <div class="num">4,8<span style="font-size:.5em; color: var(--cafe-soft);">★</span></div>
+        <div class="lbl">Note moyenne sur l'App Store France.</div>
+      </div>
+      <div class="stat">
+        <div class="num">+42<span style="font-size:.5em; color: var(--cafe-soft);">min</span></div>
+        <div class="lbl">de sommeil gagnées en moyenne par les parents Babbl Voice.</div>
+      </div>
+      <div class="stat">
+        <div class="num">2.4<span style="font-size:.5em; color: var(--cafe-soft);">M</span></div>
+        <div class="lbl">pleurs analysés pour entraîner le modèle — validés par des pédiatres.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARE -->
+<section class="compare">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">
+          <span class="num">05</span>
+          <span class="kicker">la comparaison</span>
+        </div>
+      </div>
+      <div>
+        <h2>Pourquoi Babbl,<br><span class="serif-italic">et pas un autre.</span></h2>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Analyse du pleur</th>
+          <th>Voix clonée</th>
+          <th>Berceuse IA</th>
+          <th>Baby phone autonome</th>
+          <th>Accès pédiatre</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="brand us">Babbl</td>
+          <td class="yes">●  incluse</td>
+          <td class="yes">●  incluse</td>
+          <td class="yes">●  hebdo</td>
+          <td class="yes">●  Babbl Nuit</td>
+          <td class="yes">●  marketplace</td>
+        </tr>
+        <tr>
+          <td class="brand">Nanni AI</td>
+          <td class="yes">●  incluse</td>
+          <td class="no">—</td>
+          <td class="no">—</td>
+          <td class="no">—</td>
+          <td class="no">—</td>
+        </tr>
+        <tr>
+          <td class="brand">CryAnalyzer</td>
+          <td class="yes">●  basique</td>
+          <td class="no">—</td>
+          <td class="no">—</td>
+          <td class="no">—</td>
+          <td class="no">—</td>
+        </tr>
+        <tr>
+          <td class="brand">Hush</td>
+          <td class="yes">●  incluse</td>
+          <td class="no">—</td>
+          <td class="no">—</td>
+          <td class="no">—</td>
+          <td class="no">—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">
+          <span class="num">06</span>
+          <span class="kicker">ce qu'on nous demande</span>
+        </div>
+      </div>
+      <div>
+        <h2>Les questions que<br>vous vous posez <span class="serif-italic">déjà.</span></h2>
+      </div>
+    </div>
+
+    <div class="faq-list">
+      <details class="faq-item" open>
+        <summary class="q">À partir de quel âge Babbl fonctionne-t-il ? <span class="plus">+</span></summary>
+        <p class="a">Babbl est conçu pour les bébés de 0 à 18 mois. Les signatures acoustiques sont les plus nettes entre 0 et 6 mois, mais le modèle reste fiable jusqu'à l'âge de la parole.</p>
+      </details>
+      <details class="faq-item">
+        <summary class="q">Mes enregistrements audio sont-ils envoyés sur des serveurs ? <span class="plus">+</span></summary>
+        <p class="a">L'analyse initiale se fait localement sur votre téléphone. Seule une empreinte acoustique anonymisée est envoyée à nos serveurs pour raffinement. Les enregistrements bruts ne quittent jamais votre appareil.</p>
+      </details>
+      <details class="faq-item">
+        <summary class="q">Babbl remplace-t-il un pédiatre ? <span class="plus">+</span></summary>
+        <p class="a">Non — et ce n'est pas son rôle. Babbl vous aide à comprendre et à agir dans les situations courantes. Quand un signal d'alerte est détecté, Babbl vous dirige vers un professionnel.</p>
+      </details>
+      <details class="faq-item">
+        <summary class="q">Comment fonctionne le clonage de voix ? <span class="plus">+</span></summary>
+        <p class="a">Un enregistrement d'une minute suffit. Votre voix est clonée via ElevenLabs, chiffrée, et n'est jamais utilisée en dehors de votre compte. Vous pouvez la supprimer à tout moment.</p>
+      </details>
+      <details class="faq-item">
+        <summary class="q">Puis-je annuler à tout moment ? <span class="plus">+</span></summary>
+        <p class="a">Oui, en un clic depuis votre compte, sans justificatif. La période restante reste active jusqu'à son terme.</p>
+      </details>
+      <details class="faq-item">
+        <summary class="q">Et si je n'ai qu'un seul parent à la maison ? <span class="plus">+</span></summary>
+        <p class="a">Babbl fonctionne parfaitement avec une seule voix clonée. Le cercle familial peut évoluer à votre rythme.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="cta-final">
+  <div class="container">
+    <div class="kicker" style="margin-bottom: 24px;">— Il est 3h du matin. Il pleure.</div>
+    <h2>Ce soir,<br>vous allez <em>savoir.</em></h2>
+    <p>
+      Téléchargez Babbl. Enregistrez. Respirez. En 10 secondes, vous aurez une réponse — et un geste à poser.
+      C'est gratuit, c'est pour toujours.
+    </p>
+    <a href="Babbl App.html" class="btn">Ouvrir la démo Babbl →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="foot-grid">
+      <div class="foot-col">
+        <div class="foot-logo-word">babb<em>l</em></div>
+        <p class="foot-tag">Comprendre votre bébé, un pleur à la fois. Fait avec soin depuis Paris par de (très) jeunes parents.</p>
+      </div>
+      <div class="foot-col">
+        <h5>Produit</h5>
+        <a href="#features">Babbl Cry</a>
+        <a href="#features">Babbl Voice</a>
+        <a href="#features">Babbl Lullaby</a>
+        <a href="#features">Babbl Monitor</a>
+        <a href="#features">Babbl Alert</a>
+      </div>
+      <div class="foot-col">
+        <h5>Ressources</h5>
+        <a href="#">Le journal Babbl</a>
+        <a href="#">Le comité pédiatres</a>
+        <a href="#">Pour les pros</a>
+        <a href="#">Presse</a>
+      </div>
+      <div class="foot-col">
+        <h5>Légal</h5>
+        <a href="#">Sécurité &amp; données</a>
+        <a href="#">Conditions d'usage</a>
+        <a href="#">Confidentialité</a>
+        <a href="#">Contact</a>
+      </div>
+    </div>
+    <div class="foot-legal">
+      <span>© 2026 Babbl SAS · Tous droits réservés.</span>
+      <span>Fait à Paris, avec beaucoup de café ☕ et très peu de sommeil.</span>
+    </div>
+  </div>
+</footer>
+
+<!-- TWEAKS -->
+<div id="tweaks-panel">
+  <h6>Tweaks — Babbl</h6>
+  <div class="tweak-row">
+    <label>Ambiance</label>
+    <select id="t-mode">
+      <option value="jour">Jour — lait & crème</option>
+      <option value="nuit">Nuit — bleu nuit</option>
+    </select>
+  </div>
+  <div class="tweak-row">
+    <label>Accent</label>
+    <div class="swatches" id="t-accent">
+      <div class="swatch active" data-h="40"  style="background: oklch(58% 0.13 38);"></div>
+      <div class="swatch" data-h="20"  style="background: oklch(58% 0.13 20);"></div>
+      <div class="swatch" data-h="80"  style="background: oklch(58% 0.13 80);"></div>
+      <div class="swatch" data-h="260" style="background: oklch(58% 0.13 260);"></div>
+      <div class="swatch" data-h="140" style="background: oklch(58% 0.13 140);"></div>
+    </div>
+  </div>
+  <div class="tweak-row">
+    <label>Hero — première phrase</label>
+    <select id="t-hero">
+      <option value="0">« Il pleure. Vous ne savez pas pourquoi. »</option>
+      <option value="1">« À 3h17, vous n'êtes plus seul. »</option>
+      <option value="2">« Écoutez. Babbl s'occupe du reste. »</option>
+    </select>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// Hero waveform bars
+// ============================================================
+(function(){
+  const wave = document.querySelector('.hero-wave');
+  if(!wave) return;
+  for(let i=0;i<32;i++){
+    const s = document.createElement('span');
+    s.style.animationDelay = (Math.random()*1.6) + 's';
+    s.style.animationDuration = (1.2 + Math.random()*0.8) + 's';
+    wave.appendChild(s);
+  }
+})();
+
+// ============================================================
+// Demo stage
+// ============================================================
+const demoData = {
+  1: {
+    visual: `<div class="bigwave">${Array.from({length:20}).map((_,i)=>`<span style="height:${30+Math.random()*70}%; animation-delay:${Math.random()*1}s;"></span>`).join('')}</div>`,
+    chip: '<span style="width:6px;height:6px;border-radius:50%;background:var(--terracotta-2);box-shadow:0 0 0 3px rgba(194,82,48,.2);"></span> Enregistrement en cours',
+    title: 'Appuyez. Écoutez.',
+    body: `Posez le téléphone à 50 cm du bébé. Babbl capture 8 à 12 secondes de pleur — assez pour avoir une signature acoustique propre, trop peu pour vous ajouter du stress.`,
+    detail: '',
+    lock: false,
+  },
+  2: {
+    visual: `<div class="spinner"></div>`,
+    chip: '<span style="width:6px;height:6px;border-radius:50%;background:var(--ocre);"></span> Analyse en cours',
+    title: 'Deux modèles, deux secondes.',
+    body: `Un premier modèle local classe les familles de pleurs. Claude Sonnet raffine avec votre contexte. Vos données ne quittent pas votre téléphone.`,
+    detail: `
+      <div class="row"><span>Pitch moyen</span><b>487 Hz</b></div>
+      <div class="row"><span>Rythme</span><b>régulier · 1,2 s</b></div>
+      <div class="row"><span>Pauses</span><b>3 détectées</b></div>
+    `,
+    lock: false,
+  },
+  3: {
+    visual: `
+      <div class="cause-display">
+        <div class="label">cause principale</div>
+        <div class="name">Faim</div>
+        <div class="pct">78% de confiance · il y a 4h depuis la dernière tétée</div>
+      </div>
+    `,
+    chip: '<span style="width:6px;height:6px;border-radius:50%;background:var(--sauge);"></span> Résultat',
+    title: 'La cause, en un mot.',
+    body: `Babbl vous donne une réponse claire, jamais ambiguë. Et si la confiance est faible, il vous le dit — et vous propose deux hypothèses à tester.`,
+    detail: `
+      <div class="row"><span>Faim</span><b style="color:var(--terracotta-2)">78%</b></div>
+      <div class="row"><span>Inconfort</span><b>14%</b></div>
+      <div class="row"><span>Fatigue</span><b>8%</b></div>
+    `,
+    lock: true,
+  },
+  4: {
+    visual: `
+      <div style="text-align:center; padding: 24px;">
+        <div style="font-family: var(--display); font-style:italic; font-size: 22px; color: var(--terracotta-2); margin-bottom: 18px;">le geste</div>
+        <div style="font-family: var(--display); font-size: 44px; line-height: 1; letter-spacing:-.02em;">Proposez le<br>biberon.</div>
+        <div style="margin-top: 20px; font-family: var(--mono); font-size: 11px; color: var(--cafe-mute); text-transform:uppercase; letter-spacing:.15em;">étape 1 sur 3</div>
+      </div>
+    `,
+    chip: '<span style="width:6px;height:6px;border-radius:50%;background:var(--terracotta-2);"></span> Action recommandée',
+    title: 'Un geste, pas dix.',
+    body: `Babbl vous donne la bonne action d'abord. Si ça ne marche pas en 2 minutes, il vous propose la suivante. Aucun doute, aucun scroll dans des listes interminables.`,
+    detail: `
+      <div class="row"><span>1. Proposer biberon ou sein</span><b>recommandé</b></div>
+      <div class="row"><span>2. Vérifier la couche</span><b>si échec</b></div>
+      <div class="row"><span>3. Position de réconfort</span><b>si échec</b></div>
+    `,
+    lock: true,
+  }
+};
+
+function renderStep(n){
+  const d = demoData[n];
+  const stage = document.getElementById('demo-stage');
+  stage.innerHTML = `
+    <div class="demo-visual">${d.visual}</div>
+    <div class="demo-text">
+      <div class="chip">${d.chip}</div>
+      <h3>${d.title}</h3>
+      <p>${d.body}</p>
+      ${d.detail ? `<div class="detail">${d.detail}</div>` : ''}
+      ${d.lock ? `
+        <div class="lock">
+          <div class="icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 7V5a4 4 0 018 0v2m-9 0h10a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V8a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div><b>Débloqué avec Babbl+</b> — 7 jours gratuits, sans carte.</div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+renderStep(1);
+
+document.querySelectorAll('.step').forEach(s=>{
+  s.addEventListener('click', ()=>{
+    document.querySelectorAll('.step').forEach(x=>x.classList.remove('active'));
+    s.classList.add('active');
+    renderStep(parseInt(s.dataset.step,10));
+  });
+});
+
+// Auto-rotate demo every 6s
+let idx = 1;
+let autoT = setInterval(()=>{
+  idx = (idx % 4) + 1;
+  const el = document.querySelector(`.step[data-step="${idx}"]`);
+  if(el){ el.click(); }
+}, 6000);
+document.querySelector('.demo-steps').addEventListener('click', ()=>{ clearInterval(autoT); });
+
+// ============================================================
+// Reveal on scroll
+// ============================================================
+const io = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+  });
+},{threshold: 0.1});
+document.querySelectorAll('section, .hero-grid').forEach(el=>{
+  el.classList.add('reveal');
+  io.observe(el);
+});
+
+// ============================================================
+// Tweaks
+// ============================================================
+const TWEAKS = /*EDITMODE-BEGIN*/{
+  "mode": "jour",
+  "accentHue": 80,
+  "heroVariant": 2
+}/*EDITMODE-END*/;
+
+const heroVariants = [
+  { k:"— Bonsoir, il est 3h17.", l1:"Il pleure.", l2:"Vous ne savez pas", l3:"pourquoi." },
+  { k:"— Bonsoir, il est 3h17.", l1:"À 3h17,", l2:"vous n'êtes", l3:"plus seul." },
+  { k:"— Un seul geste.",        l1:"Écoutez.", l2:"Babbl s'occupe", l3:"du reste." },
+];
+
+function applyTweaks(t){
+  document.body.classList.toggle('night', t.mode === 'nuit');
+  // accent
+  const h = t.accentHue;
+  document.documentElement.style.setProperty('--terracotta',   `oklch(68% 0.11 ${h})`);
+  document.documentElement.style.setProperty('--terracotta-2', `oklch(58% 0.13 ${h})`);
+  // hero
+  const hv = heroVariants[t.heroVariant] || heroVariants[0];
+  const kicker = document.querySelector('.hero-copy .kicker');
+  const h1 = document.querySelector('.hero-copy h1');
+  if(kicker) kicker.textContent = hv.k;
+  if(h1){
+    h1.innerHTML = `${hv.l1}<br><span class="softer">${hv.l2}</span><br><em>${hv.l3}</em>`;
+  }
+  // tweaks panel UI
+  const modeSel = document.getElementById('t-mode'); if(modeSel) modeSel.value = t.mode;
+  const heroSel = document.getElementById('t-hero'); if(heroSel) heroSel.value = t.heroVariant;
+  document.querySelectorAll('#t-accent .swatch').forEach(s=>{
+    s.classList.toggle('active', parseInt(s.dataset.h,10) === t.accentHue);
+  });
+}
+applyTweaks(TWEAKS);
+
+function setTweak(key, val){
+  TWEAKS[key] = val;
+  applyTweaks(TWEAKS);
+  try{
+    window.parent.postMessage({type:'__edit_mode_set_keys', edits:{[key]: val}}, '*');
+  }catch(e){}
+}
+document.getElementById('t-mode').addEventListener('change', e=>setTweak('mode', e.target.value));
+document.getElementById('t-hero').addEventListener('change', e=>setTweak('heroVariant', parseInt(e.target.value,10)));
+document.querySelectorAll('#t-accent .swatch').forEach(s=>{
+  s.addEventListener('click', ()=>setTweak('accentHue', parseInt(s.dataset.h,10)));
+});
+
+// Edit mode protocol
+window.addEventListener('message', (e)=>{
+  const d = e.data || {};
+  if(d.type === '__activate_edit_mode'){ document.getElementById('tweaks-panel').classList.add('on'); }
+  if(d.type === '__deactivate_edit_mode'){ document.getElementById('tweaks-panel').classList.remove('on'); }
+});
+try{ window.parent.postMessage({type:'__edit_mode_available'}, '*'); }catch(e){}
+</script>
+
+</body>
+</html>

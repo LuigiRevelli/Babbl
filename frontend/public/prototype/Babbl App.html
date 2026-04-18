@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Babbl — Prototype cliquable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Instrument+Sans:ital,wght@0,400..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --lait: #FAF5EC;
+  --creme: #F2E9D8;
+  --coquille: #FFFDF8;
+  --ivoire: #EFE5D2;
+  --cafe: #2B2320;
+  --cafe-soft: #5A4D46;
+  --cafe-mute: #907F74;
+  --terracotta: #C25230;
+  --ocre: #D9B56A;
+  --display: 'Fraunces', Georgia, serif;
+  --body: 'Instrument Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+*,*::before,*::after{ box-sizing: border-box; }
+html,body{ margin:0; padding:0; background: var(--lait); color: var(--cafe); font-family: var(--body); }
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:1;
+  background-image: radial-gradient(rgba(43,35,32,.035) 1px, transparent 1px);
+  background-size: 3px 3px;
+}
+header{
+  padding: 40px 48px 24px; position: relative; z-index: 2;
+  display:flex; justify-content:space-between; align-items: flex-end;
+  border-bottom: 1px solid var(--ivoire);
+}
+header .title{
+  font-family: var(--display); font-size: 46px; letter-spacing:-0.03em; line-height:.9;
+}
+header .title em{ font-style: italic; font-weight: 300; color: var(--terracotta); }
+header .sub{ color: var(--cafe-soft); margin-top: 8px; font-size: 14px; max-width: 48ch; }
+header .back{
+  display:inline-flex; align-items:center; gap:8px; text-decoration: none;
+  color: var(--cafe); font-size: 13px; padding: 10px 16px;
+  border: 1px solid var(--ivoire); border-radius: 99px; background: var(--coquille);
+}
+header .kicker{
+  font-family: var(--mono); font-size: 11px; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--cafe-mute); margin-bottom: 10px;
+}
+
+.lane{
+  padding: 56px 48px 48px; position: relative; z-index: 2;
+  overflow-x: auto;
+}
+.lane-title{
+  font-family: var(--mono); font-size: 11px; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--cafe-mute); margin-bottom: 24px;
+}
+.screens{
+  display: flex; gap: 44px; padding-bottom: 40px; min-width: min-content;
+}
+.screen-cell{ display:flex; flex-direction: column; gap: 14px; flex-shrink:0; }
+.screen-label{
+  font-family: var(--display); font-size: 22px; letter-spacing: -0.02em;
+  display:flex; gap: 12px; align-items: baseline;
+}
+.screen-label .n{
+  font-family: var(--mono); font-size: 11px; color: var(--terracotta);
+  letter-spacing: .12em; text-transform: uppercase;
+}
+.screen-label em{ font-style: italic; font-weight: 300; color: var(--cafe-soft); }
+.screen-note{ font-size: 12px; color: var(--cafe-mute); max-width: 380px; margin-top:-4px; }
+
+.device-wrap{
+  width: 390px; height: 844px; border-radius: 54px;
+  background: #000;
+  padding: 4px;
+  box-shadow: 0 40px 80px -30px rgba(43,35,32,.35), 0 0 0 1px rgba(43,35,32,.1);
+  position: relative;
+  flex-shrink: 0;
+}
+.device-inner{
+  width:100%; height:100%; border-radius: 50px; overflow: hidden;
+  position: relative; background: var(--lait);
+}
+.dynamic-island{
+  position:absolute; top: 11px; left: 50%; transform: translateX(-50%);
+  width: 120px; height: 35px; border-radius: 22px; background: #000; z-index: 50;
+}
+
+.flow-arrow{
+  align-self: center; margin-top: 300px;
+  display:flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.flow-arrow .arr{
+  font-family: var(--display); font-size: 40px; color: var(--terracotta);
+  line-height: 1;
+}
+.flow-arrow .lbl{
+  font-family: var(--mono); font-size: 9px; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--cafe-mute);
+  max-width: 90px; text-align: center; line-height: 1.4;
+}
+
+@keyframes wave { 0%,100%{ transform: scaleY(.3); } 50%{ transform: scaleY(1); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse {
+  0%,100%{ transform: scale(1); opacity: 1; }
+  50%{ transform: scale(1.15); opacity: .8; }
+}
+@keyframes ripple {
+  0%{ transform: scale(.9); opacity: .6; }
+  100%{ transform: scale(1.5); opacity: 0; }
+}
+
+/* Interactive tab bar */
+.interactive-section{ padding: 80px 48px 120px; position: relative; z-index: 2; border-top: 1px solid var(--ivoire); background: var(--creme); }
+.interactive-head{ text-align: center; margin-bottom: 40px; }
+.interactive-head h2{
+  font-family: var(--display); font-size: 56px; letter-spacing:-0.03em; line-height: .95; font-weight: 400;
+}
+.interactive-head h2 em{ font-style: italic; font-weight: 300; color: var(--terracotta); }
+.interactive-head p{ color: var(--cafe-soft); margin-top: 12px; font-size: 15px; }
+.interactive-stage{ display: flex; justify-content:center; }
+
+.clickable-nav{
+  display:flex; gap: 8px; justify-content: center; margin-top: 28px;
+  flex-wrap: wrap;
+}
+.clickable-nav button{
+  padding: 10px 18px; border-radius: 99px; border: 1px solid var(--ivoire);
+  background: var(--coquille); color: var(--cafe); font-family: var(--body);
+  font-size: 13px; cursor: pointer; transition: all .2s;
+}
+.clickable-nav button.active{ background: var(--cafe); color: var(--lait); border-color: var(--cafe); }
+.clickable-nav button:hover:not(.active){ border-color: var(--terracotta); }
+
+footer{
+  padding: 48px; text-align: center; color: var(--cafe-mute);
+  font-family: var(--mono); font-size: 11px; letter-spacing: .1em;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="kicker">— Prototype cliquable · Babbl app</div>
+    <div class="title">Le <em>flow</em> du parent à 3h du matin.</div>
+    <div class="sub">Cinq écrans, un paywall, une berceuse. L'écran interactif en bas est cliquable — essayez le bouton d'enregistrement.</div>
+  </div>
+  <a class="back" href="Babbl.html">← Retour au site</a>
+</header>
+
+<!-- GALLERY: flow storyboard -->
+<section class="lane">
+  <div class="lane-title">Storyboard — le flow principal</div>
+  <div class="screens">
+
+    <div class="screen-cell">
+      <div class="screen-label"><span class="n">01</span> Accueil <em>/ écoute</em></div>
+      <div class="screen-note">Le parent ouvre l'app à 3h17. Grand bouton d'enregistrement, 5 analyses restantes aujourd'hui.</div>
+      <div class="device-wrap"><div class="dynamic-island"></div><div class="device-inner" id="screen-1"></div></div>
+    </div>
+
+    <div class="flow-arrow"><div class="arr">→</div><div class="lbl">appuie pour enregistrer</div></div>
+
+    <div class="screen-cell">
+      <div class="screen-label"><span class="n">02</span> Analyse <em>en cours</em></div>
+      <div class="screen-note">Deux modèles, deux secondes. On rassure avec de la transparence technique, pas avec du marketing.</div>
+      <div class="device-wrap"><div class="dynamic-island"></div><div class="device-inner" id="screen-2"></div></div>
+    </div>
+
+    <div class="flow-arrow"><div class="arr">→</div><div class="lbl">2 sec d'attente</div></div>
+
+    <div class="screen-cell">
+      <div class="screen-label"><span class="n">03</span> Résultat <em>+ paywall</em></div>
+      <div class="screen-note">Cause gratuite. Signaux détaillés et voix clonée derrière le paywall — au moment où le parent veut agir.</div>
+      <div class="device-wrap"><div class="dynamic-island"></div><div class="device-inner" id="screen-3"></div></div>
+    </div>
+
+    <div class="flow-arrow"><div class="arr">→</div><div class="lbl">débloquer</div></div>
+
+    <div class="screen-cell">
+      <div class="screen-label"><span class="n">04</span> Paywall <em>Voice</em></div>
+      <div class="screen-note">Le moment de conversion. 7 jours gratuits, sans carte. Toggle mensuel / annuel en évidence.</div>
+      <div class="device-wrap"><div class="dynamic-island"></div><div class="device-inner" id="screen-4"></div></div>
+    </div>
+
+    <div class="flow-arrow"><div class="arr">→</div><div class="lbl">berceuse ia</div></div>
+
+    <div class="screen-cell">
+      <div class="screen-label"><span class="n">05</span> Lullaby <em>/ la berceuse</em></div>
+      <div class="screen-note">L'écran moment-de-magie. Voix clonée de maman, berceuse IA unique. C'est ce que les parents filment pour TikTok.</div>
+      <div class="device-wrap"><div class="dynamic-island"></div><div class="device-inner" id="screen-5"></div></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- INTERACTIVE -->
+<section class="interactive-section">
+  <div class="interactive-head">
+    <h2>Testez le <em>flow</em> en direct.</h2>
+    <p>Cliquez sur le bouton d'enregistrement pour parcourir toute la séquence.</p>
+  </div>
+  <div class="interactive-stage">
+    <div class="device-wrap"><div class="dynamic-island"></div><div class="device-inner" id="screen-interactive"></div></div>
+  </div>
+  <div class="clickable-nav" id="nav-interactive">
+    <button data-s="home" class="active">01 · Accueil</button>
+    <button data-s="analyzing">02 · Analyse</button>
+    <button data-s="result">03 · Résultat</button>
+    <button data-s="paywall">04 · Paywall</button>
+    <button data-s="voice">05 · Lullaby</button>
+  </div>
+</section>
+
+<footer>
+  — fait à Paris, avec beaucoup de café et très peu de sommeil —
+</footer>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="app/app-screens.jsx"></script>
+
+<script type="text/babel">
+  const noop = ()=>{};
+
+  // Storyboard: static screens in specific states
+  function StaticScreen({ which }){
+    const [listening, setListening] = React.useState(which === 'home-listening');
+    switch(which){
+      case 'home':        return <BabblApp_Home go={noop} listening={false} setListening={noop}/>;
+      case 'analyzing':   return <BabblApp_Analyzing go={noop}/>;
+      case 'result':      return <BabblApp_Result go={noop}/>;
+      case 'paywall':     return <BabblApp_Paywall go={noop}/>;
+      case 'voice':       return <BabblApp_Voice go={noop}/>;
+      default: return null;
+    }
+  }
+
+  ReactDOM.createRoot(document.getElementById('screen-1')).render(<StaticScreen which="home"/>);
+  ReactDOM.createRoot(document.getElementById('screen-2')).render(<StaticScreen which="analyzing"/>);
+  ReactDOM.createRoot(document.getElementById('screen-3')).render(<StaticScreen which="result"/>);
+  ReactDOM.createRoot(document.getElementById('screen-4')).render(<StaticScreen which="paywall"/>);
+  ReactDOM.createRoot(document.getElementById('screen-5')).render(<StaticScreen which="voice"/>);
+
+  // Interactive prototype with state
+  function Interactive(){
+    const [screen, setScreen] = React.useState('home');
+    const [listening, setListening] = React.useState(false);
+    const go = (s)=>{
+      setScreen(s);
+      // reflect on nav
+      document.querySelectorAll('#nav-interactive button').forEach(b=>{
+        b.classList.toggle('active', b.dataset.s === s);
+      });
+    };
+    React.useEffect(()=>{
+      document.querySelectorAll('#nav-interactive button').forEach(b=>{
+        b.onclick = ()=> go(b.dataset.s);
+      });
+    },[]);
+    switch(screen){
+      case 'home':      return <BabblApp_Home go={go} listening={listening} setListening={setListening}/>;
+      case 'analyzing': return <BabblApp_Analyzing go={go}/>;
+      case 'result':    return <BabblApp_Result go={go}/>;
+      case 'paywall':   return <BabblApp_Paywall go={go}/>;
+      case 'voice':     return <BabblApp_Voice go={go}/>;
+      default: return null;
+    }
+  }
+  ReactDOM.createRoot(document.getElementById('screen-interactive')).render(<Interactive/>);
+</script>
+
+</body>
+</html>

@@ -4,6 +4,14 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/AuthContext";
+
+// ─── Claude Design pages (active production UI) ───
+import BabblHome from "./pages/babbl/Home";
+import BabblResult from "./pages/babbl/Result";
+import BabblPaywall from "./pages/babbl/Paywall";
+import BabblLullaby from "./pages/babbl/Lullaby";
+
+// ─── Legacy Lovable pages — kept accessible for fallback / debug only ───
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
@@ -30,15 +38,24 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            {/* Auth screen is still reachable for signup/signin when you want it */}
+            {/* Auth still reachable for signup/signin */}
             <Route path="/auth" element={<Auth />} />
 
-            {/* Everything else is now public — no ProtectedRoute wrapper */}
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            {/* ─── Claude Design routes (active) ─── */}
+            <Route path="/" element={<BabblHome />} />
+            <Route path="/record" element={<BabblHome />} />
+            <Route path="/analysis/:id" element={<BabblResult />} />
+            <Route path="/upgrade" element={<BabblPaywall />} />
+            <Route path="/lullaby" element={<BabblLullaby />} />
+
+            {/* ─── Legacy Lovable routes (kept for now as fallback) ─── */}
+            <Route path="/legacy/dashboard" element={<Dashboard />} />
+            <Route path="/legacy/history" element={<History />} />
+            <Route path="/legacy/record" element={<Record />} />
+            <Route path="/legacy/analysis/:id" element={<AnalysisResult />} />
+            <Route path="/legacy/breathing" element={<Breathing />} />
+            <Route path="/legacy/night-mode" element={<NightMode />} />
             <Route path="/history" element={<History />} />
-            <Route path="/record" element={<Record />} />
-            <Route path="/analysis/:id" element={<AnalysisResult />} />
             <Route path="/breathing" element={<Breathing />} />
             <Route path="/night-mode" element={<NightMode />} />
             <Route path="/voice-setup" element={<VoiceSetup />} />

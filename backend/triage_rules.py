@@ -11,15 +11,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Dict, Tuple
 
-
-CAUSES = [
-    "hunger",
-    "fatigue",
-    "discomfort",
-    "pain",
-    "overstimulation",
-    "need_for_comfort",
-]
+from taxonomy import CAUSES
 
 
 def _clamp(value: float, minimum: float, maximum: float) -> float:
@@ -85,9 +77,12 @@ def apply_context_rules(probabilities: Dict[str, float], context: dict) -> tuple
     if meal_minutes is not None:
         if meal_minutes < 60:
             probs["hunger"] *= 0.55
-            notes.append("Recent feeding lowers the hunger prior.")
+            # A recent feeding makes trapped air / burping the likelier cause.
+            probs["gas"] *= 1.30
+            notes.append("Recent feeding lowers hunger and raises the gas prior.")
         elif meal_minutes < 120:
             probs["hunger"] *= 0.85
+            probs["gas"] *= 1.10
             notes.append("Feeding within the last 2 hours keeps hunger moderate.")
         elif meal_minutes < 240:
             probs["hunger"] *= 1.15

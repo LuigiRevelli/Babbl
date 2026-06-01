@@ -12,6 +12,8 @@ from typing import Dict
 import joblib
 import numpy as np
 
+from taxonomy import empty_distribution
+
 
 # Order must match training feature matrix columns.
 MODEL_FEATURES = [
@@ -99,26 +101,26 @@ def _to_model_vector(live_features: dict) -> np.ndarray:
 
 
 def _map_dataset_to_app_probs(dataset_probs: Dict[str, float]) -> Dict[str, float]:
-    """Map Donate-a-Cry classes to the product taxonomy used in the frontend."""
+    """Map Donate-a-Cry classes to Babbl's canonical taxonomy (taxonomy.CAUSES).
+
+    The dataset only carries 5 acoustically-labelled classes. The remaining
+    context-driven causes (overstimulation, stress, need_for_comfort) start from
+    a small prior here and are refined by the LLM using parent context.
+    """
     out = {
+        "pain": float(dataset_probs.get("belly_pain", 0.0)),
         "hunger": float(dataset_probs.get("hungry", 0.0)),
         "fatigue": float(dataset_probs.get("tired", 0.0)),
         "discomfort": float(dataset_probs.get("discomfort", 0.0)),
-        "pain": float(dataset_probs.get("belly_pain", 0.0)),
+        "gas": float(dataset_probs.get("burping", 0.0)),
         "overstimulation": 0.01,
-        "need_for_comfort": float(dataset_probs.get("burping", 0.0)),
+        "stress": 0.01,
+        "need_for_comfort": 0.02,
     }
 
     total = sum(out.values())
     if total <= 0:
-        return {
-            "hunger": 0.2,
-            "fatigue": 0.2,
-            "discomfort": 0.2,
-            "pain": 0.2,
-            "overstimulation": 0.1,
-            "need_for_comfort": 0.1,
-        }
+        return empty_distribution()
 
     return {k: float(v / total) for k, v in out.items()}
 

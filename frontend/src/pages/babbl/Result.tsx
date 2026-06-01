@@ -11,28 +11,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { BabblTheme as C } from '@/components/babbl/theme';
 import { AppStatusBar, HomeIndicator, BabblShell } from '@/components/babbl/primitives';
 import { getUserData } from '@/lib/userData';
-
-const CAUSE_FR: Record<string, string> = {
-  hungry: 'Faim',
-  tired: 'Fatigue',
-  discomfort: 'Inconfort',
-  pain: 'Douleur',
-  burping: 'Rot',
-  cold_hot: 'Température',
-  lonely: 'Besoin de câlin',
-  unknown: 'Inconnu',
-};
-
-const CAUSE_DESC: Record<string, string> = {
-  hungry: 'Pleur rythmé, pitch bas, pauses régulières.',
-  tired: 'Pleurs en vagues, yeux qui se ferment, baillements.',
-  discomfort: 'Pleurs irréguliers, agitation, signaux mixtes.',
-  pain: 'Pleurs aigus, soudains, intenses.',
-  burping: 'Courtes décharges, respiration saccadée.',
-  cold_hot: 'Pleurs geignards, peau inhabituelle.',
-  lonely: 'Pleurs qui s\'apaisent au contact visuel.',
-  unknown: 'Signaux mixtes — vérifiez les éléments classiques.',
-};
+import { causeFr, causeDesc, causeLayer, layerLabel } from '@/lib/taxonomy';
 
 export default function BabblResult() {
   const { id } = useParams<{ id: string }>();
@@ -78,8 +57,9 @@ export default function BabblResult() {
   }
 
   const causeKey = analysis.topCause;
-  const causeLabel = CAUSE_FR[causeKey] ?? causeKey.charAt(0).toUpperCase() + causeKey.slice(1);
-  const causeDesc = CAUSE_DESC[causeKey] ?? '';
+  const causeLabel = causeFr(causeKey);
+  const causeDescription = causeDesc(causeKey);
+  const provenance = layerLabel(causeLayer(causeKey));
   const confidence = Math.round(((analysis.probabilities[causeKey] ?? 0) as number) * 100);
 
   const actionsRaw: string[] = (analysis.recommended_actions ?? [])
@@ -134,15 +114,40 @@ export default function BabblResult() {
       <div style={{ padding: '24px 28px 0' }}>
         <div
           style={{
-            fontFamily: C.mono,
-            fontSize: 10,
-            letterSpacing: '.18em',
-            textTransform: 'uppercase',
-            color: C.cafeMute,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             marginBottom: 8,
           }}
         >
-          cause principale
+          <span
+            style={{
+              fontFamily: C.mono,
+              fontSize: 10,
+              letterSpacing: '.18em',
+              textTransform: 'uppercase',
+              color: C.cafeMute,
+            }}
+          >
+            cause principale
+          </span>
+          {provenance && (
+            <span
+              style={{
+                fontFamily: C.mono,
+                fontSize: 9,
+                letterSpacing: '.1em',
+                textTransform: 'uppercase',
+                color: C.cafeMute,
+                background: C.coquille,
+                border: `1px solid ${C.ivoire}`,
+                borderRadius: 99,
+                padding: '3px 9px',
+              }}
+            >
+              {provenance}
+            </span>
+          )}
         </div>
         <div
           style={{
@@ -171,7 +176,7 @@ export default function BabblResult() {
           <div style={{ fontFamily: C.mono, fontSize: 13, color: C.terracotta, fontWeight: 500 }}>{confidence}%</div>
         </div>
         <div style={{ fontSize: 13, color: C.cafeSoft, marginTop: 10, lineHeight: 1.5 }}>
-          {causeDesc} {analysis.parent_summary && <span style={{ fontStyle: 'italic' }}>{analysis.parent_summary}</span>}
+          {causeDescription} {analysis.parent_summary && <span style={{ fontStyle: 'italic' }}>{analysis.parent_summary}</span>}
         </div>
       </div>
 

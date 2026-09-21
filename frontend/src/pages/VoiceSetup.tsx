@@ -8,6 +8,7 @@ import { t } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { updateProfile } from '@/lib/supabaseData';
 import { createRecorder, chunksToBlob } from '@/lib/recorder';
+import { ageRangeFromBirthDate } from '@/lib/analysis';
 
 const AGE_OPTIONS: { value: AgeRange; label: string }[] = [
   { value: '0-3', label: t('age0_3') },
@@ -35,7 +36,10 @@ export default function VoiceSetup() {
   const [step, setStep] = useState<Step>(data.voiceProfile?.audioRecorded ? 'result' : 'profile');
   const [role, setRole] = useState<ParentRole>(data.voiceProfile?.role || 'mother');
   const [userName, setUserName] = useState(data.voiceProfile?.userName || '');
-  const [ageRange, setAgeRange] = useState<AgeRange>(data.voiceProfile?.ageRange || '0-3');
+  const [ageRange, setAgeRange] = useState<AgeRange>(data.voiceProfile?.ageRange || data.parentProfile?.ageRange || '0-3');
+  const [birthDate, setBirthDate] = useState<string>(data.voiceProfile?.birthDate || data.parentProfile?.birthDate || '');
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const birthDateValid = birthDate === '' || (/^\d{4}-\d{2}-\d{2}$/.test(birthDate) && birthDate <= todayIso);
 
   // Recording state
   const [currentPhrase, setCurrentPhrase] = useState(0);
@@ -98,14 +102,23 @@ export default function VoiceSetup() {
 
       const { voice_id } = await cloneVoice(merged, userName || t('babblParent'));
 
+      const current = getUserData();
       const updated = {
-        ...getUserData(),
+        ...current,
         voiceProfile: {
           role,
           userName,
           ageRange,
+          birthDate: birthDate || undefined,
           audioRecorded: true,
           voiceId: voice_id,
+        },
+        // Le profil parent porte l'âge utilisé par l'analyse : on le garde aligné.
+        parentProfile: {
+          ...(current.parentProfile ?? { role, ageRange }),
+          role,
+          ageRange,
+          birthDate: birthDate || current.parentProfile?.birthDate,
         },
       };
       saveUserData(updated);
@@ -195,7 +208,22 @@ export default function VoiceSetup() {
             className="w-full rounded-xl border border-border/50 bg-card px-4 py-3 text-sm mb-5 focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
 
-          {/* Age */}
+          {/* Birth date — la seule source fiable de l'âge en jours */}
+          <label className="text-xs font-semibold text-muted-foreground mb-2">{t('babyBirthDate')}</label>
+          <input
+            type="date"
+            value={birthDate}
+            max={todayIso}
+            onChange={(e) => {
+              const v = e.target.value;
+              setBirthDate(v);
+              if (/^\d{4}-\d{2}-\d{2}$/.test(v) && v <= todayIso) setAgeRange(ageRangeFromBirthDate(v));
+            }}
+            className={`w-full rounded-xl border bg-card px-4 py-3 text-sm mb-1 focus:outline-none focus:ring-2 focus:ring-primary/30 ${birthDateValid ? 'border-border/50' : 'border-destructive'}`}
+          />
+          <p className="text-[11px] text-muted-foreground mb-5 leading-snug">{t('babyBirthDateHint')}</p>
+
+          {/* Age range (repli si pas de date) */}
           <label className="text-xs font-semibold text-muted-foreground mb-2">{t('babyAge')}</label>
           <div className="flex flex-wrap gap-2 mb-8">
             {AGE_OPTIONS.map((opt) => (
@@ -216,7 +244,7 @@ export default function VoiceSetup() {
           <div className="mt-auto">
             <button
               onClick={handleProfileNext}
-              disabled={!userName.trim()}
+              disabled={!userName.trim() || !birthDateValid}
               className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-bold text-base transition-all duration-200 active:scale-[0.98] disabled:opacity-40"
             >
               {t('recordPhrases')}

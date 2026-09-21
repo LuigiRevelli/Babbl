@@ -23,9 +23,10 @@ Deux couches, et rien d'autre :
     (dernière tétée, dernière couche, âge). Jamais du son. Jamais en
     pourcentage. Chaque hypothèse dit d'où elle vient.
 
-Plus des CARTES DE SÉCURITÉ statiques : contenu fixe, déclenché uniquement par
-l'âge du bébé et par ce que le parent saisit, identique sur tous les écrans —
-leur absence ne peut jamais se lire comme un feu vert.
+Plus des CARTES DE SÉCURITÉ statiques : contenu fixe, mises en avant par l'âge
+du bébé SEUL (jamais par une mesure saisie — ce serait une règle de triage),
+identiques sur tous les écrans — leur absence ne peut jamais se lire comme un
+feu vert.
 
 Règle structurelle : AUCUNE clé ne porte un nom de maladie. Une clé qui porte
 ce nom finit toujours par produire une chaîne qui le porte — c'est ainsi
@@ -88,8 +89,8 @@ INTENSITY_DISCLAIMER = (
 
 
 # ─── Cartes de sécurité (statiques, jamais déduites du son) ─────────
-# Déclenchement : l'âge du bébé et ce que le parent saisit. Les trois cartes
-# sont TOUJOURS renvoyées ; `emphasized` indique celles à mettre en avant.
+# Mise en avant : l'âge du bébé seul (date de naissance en priorité). Les trois
+# cartes sont TOUJOURS renvoyées ; `emphasized` indique celles à mettre en avant.
 # Repères issus des recommandations grand public HAS ; formulation à faire
 # relire par un professionnel de santé avant publication.
 SAFETY_CARDS: dict[str, dict] = {

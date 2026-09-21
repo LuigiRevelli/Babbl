@@ -19,7 +19,7 @@ import {
 import { analyzeAudio as apiAnalyze } from '@/lib/api';
 import { getUserData, saveUserData } from '@/lib/userData';
 import { CRY_AUDIO_CONSTRAINTS, CRY_RECORD_MS, createRecorder, chunksToBlob } from '@/lib/recorder';
-import { toStoredAnalysis, transientObservation, refusalFromError, type AnalyzeResponse, type Refusal } from '@/lib/analysis';
+import { toStoredAnalysis, transientObservation, refusalFromError, babyAgeForContext, type AnalyzeResponse, type Refusal } from '@/lib/analysis';
 
 const RECORD_MS = CRY_RECORD_MS; // durée fixe, définie dans lib/recorder.ts
 
@@ -97,8 +97,13 @@ export default function BabblHome() {
       if (userData.parentProfile?.ageRange) ctx.babyAgeRange = userData.parentProfile.ageRange;
       if (userData.babyName) ctx.babyName = userData.babyName;
 
-      const ageMap: Record<string, number> = { '0-3': 2, '3-6': 5, '6-12': 9, '1-2': 18, '2+': 30 };
-      const babyAgeMonths = ageMap[userData.parentProfile?.ageRange ?? '0-3'] ?? 3;
+      // La date de naissance prime sur la tranche : sans elle, la carte
+      // « nouveau-né de moins de 15 jours » ne peut jamais s'allumer.
+      const age = babyAgeForContext(userData.parentProfile ?? userData.voiceProfile);
+      const babyAgeMonths = age.months;
+      if (age.days != null) ctx.babyAgeDays = age.days;
+      if (age.birthDate) ctx.babyBirthDate = age.birthDate;
+      ctx.babyAgeMonths = babyAgeMonths;
 
       const result = (await apiAnalyze(blob, ctx, {
         voiceId: userData.voiceProfile?.voiceId,

@@ -38,12 +38,15 @@ export interface ParentProfile {
   role: ParentRole;
   babyName?: string;
   ageRange: AgeRange;
+  /** Date de naissance (AAAA-MM-JJ). Seule source fiable de l'âge en jours. */
+  birthDate?: string;
 }
 
 export interface VoiceProfile {
   role: ParentRole;
   userName: string;
   ageRange: AgeRange;
+  birthDate?: string;
   audioRecorded: boolean;
   voiceId?: string;
 }

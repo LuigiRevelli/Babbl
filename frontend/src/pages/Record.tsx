@@ -5,7 +5,7 @@ import MobileLayout from '@/components/MobileLayout';
 import BackButton from '@/components/BackButton';
 import { getUserData, saveUserData } from '@/lib/userData';
 import { CRY_AUDIO_CONSTRAINTS, CRY_RECORD_MS, createRecorder, chunksToBlob } from '@/lib/recorder';
-import { toStoredAnalysis, transientObservation, refusalFromError, type AnalyzeResponse, type Refusal } from '@/lib/analysis';
+import { toStoredAnalysis, transientObservation, refusalFromError, babyAgeForContext, type AnalyzeResponse, type Refusal } from '@/lib/analysis';
 import SafetyCardsBlock from '@/components/SafetyCardsBlock';
 import { analyzeAudio as apiAnalyze } from '@/lib/api';
 import { t } from '@/lib/i18n';
@@ -80,9 +80,11 @@ export default function Record() {
       if (userData.parentProfile?.ageRange) context.babyAgeRange = userData.parentProfile.ageRange;
       if (userData.babyName) context.babyName = userData.babyName;
 
-      // Age range to months (midpoint)
-      const ageMap: Record<string, number> = { '0-3': 2, '3-6': 5, '6-12': 9, '1-2': 18, '2+': 30 };
-      const babyAgeMonths = ageMap[userData.parentProfile?.ageRange ?? '0-3'] ?? 3;
+      const age = babyAgeForContext(userData.parentProfile ?? userData.voiceProfile);
+      const babyAgeMonths = age.months;
+      if (age.days != null) context.babyAgeDays = age.days;
+      if (age.birthDate) context.babyBirthDate = age.birthDate;
+      context.babyAgeMonths = babyAgeMonths;
 
       const result = (await apiAnalyze(blob, context, {
         voiceId: userData.voiceProfile?.voiceId,

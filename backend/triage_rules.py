@@ -14,7 +14,7 @@ nom de maladie. Voir SYMPTOMS.md pour la raison de chaque absence.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from taxonomy import (
     CONTEXT_HYPOTHESES,
@@ -77,20 +77,45 @@ def _awake_minutes(context: dict) -> float | None:
         return None
 
 
-def _age_months(context: dict, fallback: int | None = None) -> int | None:
-    raw = context.get("babyAgeMonths") or context.get("baby_age_months")
+def _days_since_birth(context: dict) -> int | None:
+    """Âge en jours depuis `babyBirthDate` (AAAA-MM-JJ). La date de naissance
+    est la seule source fiable : la tranche « 0-3 mois » devenait « 2 mois »
+    et la carte nouveau-né ne pouvait jamais s'allumer."""
+    raw = context.get("babyBirthDate") or context.get("baby_birth_date")
+    if not raw:
+        return None
     try:
-        return int(raw) if raw is not None else fallback
-    except (TypeError, ValueError):
-        return fallback
+        born = date.fromisoformat(str(raw)[:10])
+    except ValueError:
+        return None
+    days = (datetime.now(timezone.utc).date() - born).days
+    return days if days >= 0 else None
 
 
 def _age_days(context: dict) -> int | None:
-    raw = context.get("babyAgeDays") or context.get("baby_age_days")
+    from_birth = _days_since_birth(context)
+    if from_birth is not None:
+        return from_birth
+    raw = context.get("babyAgeDays")
+    if raw is None:
+        raw = context.get("baby_age_days")
     try:
         return int(raw) if raw is not None else None
     except (TypeError, ValueError):
         return None
+
+
+def _age_months(context: dict, fallback: int | None = None) -> int | None:
+    days = _days_since_birth(context)
+    if days is not None:
+        return int(days // 30.44)
+    raw = context.get("babyAgeMonths")
+    if raw is None:
+        raw = context.get("baby_age_months")
+    try:
+        return int(raw) if raw is not None else fallback
+    except (TypeError, ValueError):
+        return fallback
 
 
 def _fmt_delay(minutes: float) -> str:
@@ -225,15 +250,12 @@ def context_hypotheses(context: dict, baby_age_months: int | None = None) -> lis
 # ─── 4. Cartes de sécurité (statiques) ───────────────────────────────
 
 def safety_cards(context: dict, baby_age_months: int | None = None) -> dict:
-    """Les trois cartes, toujours. `emphasized` dépend de l'âge et de ce que
-    le parent a saisi — jamais du son."""
+    """Les trois cartes, toujours. `emphasized` dépend de l'ÂGE SEUL — jamais
+    du son, et plus d'une température saisie : une règle qui transforme une
+    mesure physiologique individuelle en « consultez » est un algorithme de
+    triage (MDCG 2019-11). Le texte de la carte fièvre reste, statique."""
     age_m = _age_months(context, baby_age_months)
     age_d = _age_days(context)
-    fever = context.get("feverMeasuredC") or context.get("fever_measured_c")
-    try:
-        fever = float(fever) if fever is not None else None
-    except (TypeError, ValueError):
-        fever = None
 
     cards = []
     for key, meta in SAFETY_CARDS.items():
@@ -241,9 +263,9 @@ def safety_cards(context: dict, baby_age_months: int | None = None) -> dict:
         if rule == "always":
             emphasized = True
         elif rule == "age_months < 3":
-            emphasized = (age_m is not None and age_m < 3) or (fever is not None and fever >= 38.0)
+            emphasized = age_m is not None and age_m < 3
         elif rule == "age_days < 15":
-            emphasized = (age_d is not None and age_d < 15) or (age_m == 0)
+            emphasized = (age_d is not None and age_d < 15) or (age_d is None and age_m == 0)
         else:
             emphasized = False
         cards.append({"key": key, "title": meta["title"], "body": meta["body"], "emphasized": emphasized})

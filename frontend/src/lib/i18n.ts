@@ -87,6 +87,8 @@ const fr = {
   yourName: "Votre prénom",
   namePlaceholder: "ex : Marie",
   babyAge: "Âge du bébé",
+  babyBirthDate: "Date de naissance du bébé",
+  babyBirthDateHint: "Avec la date exacte, les repères de sécurité s'adaptent au jour près (nouveau-né, moins de 3 mois). Sans elle, Babbl utilise la tranche.",
   age0_3: "0-3 mois",
   age3_6: "3-6 mois",
   age6_12: "6-12 mois",

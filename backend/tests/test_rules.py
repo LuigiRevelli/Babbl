@@ -63,17 +63,30 @@ def test_hypotheses_come_from_context_only():
     assert [h["key"] for h in context_hypotheses({}, None)] == ["need_for_comfort"]
 
 
-def test_safety_cards_always_all_three():
-    for ctx, age in (({}, 8), ({"babyAgeMonths": 1}, 1), ({"babyAgeDays": 5}, 0), ({"feverMeasuredC": 38.4}, 6)):
+def _emph(ctx, age=None):
+    return {c["key"]: c["emphasized"] for c in safety_cards(ctx, age)["cards"]}
+
+
+def _born_days_ago(n: int) -> str:
+    return (datetime.now(timezone.utc).date() - timedelta(days=n)).isoformat()
+
+
+def test_safety_cards_always_all_three_emphasised_by_age_only():
+    for ctx, age in (({}, 8), ({"babyAgeMonths": 1}, 1), ({"babyAgeDays": 5}, 0), ({"babyBirthDate": _born_days_ago(3)}, None)):
         out = safety_cards(ctx, age)
         assert {c["key"] for c in out["cards"]} == set(SAFETY_CARDS)
         assert out["footer"].startswith("En cas de doute")
-    young = {c["key"]: c["emphasized"] for c in safety_cards({}, 1)["cards"]}
-    assert young["fever_under_3_months"] and young["breathing"]
-    fever = {c["key"]: c["emphasized"] for c in safety_cards({"feverMeasuredC": 38.4}, 6)["cards"]}
-    assert fever["fever_under_3_months"]
-    newborn = {c["key"]: c["emphasized"] for c in safety_cards({"babyAgeDays": 5}, 0)["cards"]}
-    assert newborn["newborn_under_15_days"]
+        assert _emph(ctx, age)["breathing"]                                   # toujours en avant
+    assert _emph({}, 1)["fever_under_3_months"]
+    assert not _emph({}, 6)["fever_under_3_months"]
+    # la date de naissance prime : 3 jours → nouveau-né ET moins de 3 mois ; 40 jours → plus nouveau-né
+    e3 = _emph({"babyBirthDate": _born_days_ago(3)})
+    assert e3["newborn_under_15_days"] and e3["fever_under_3_months"]
+    e40 = _emph({"babyBirthDate": _born_days_ago(40), "babyAgeMonths": 9})   # la date bat la tranche
+    assert not e40["newborn_under_15_days"] and e40["fever_under_3_months"]
+    # une température saisie ne déclenche rien : ce serait une règle de triage
+    assert not _emph({"feverMeasuredC": 39.2}, 6)["fever_under_3_months"]
+    assert _emph({"babyAgeDays": 5}, 0)["newborn_under_15_days"]
 
 
 def test_sanitizer_blocks_medical_claims_percentages_and_alerts():

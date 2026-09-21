@@ -160,3 +160,29 @@ export function refusalFromError(err: unknown, ageRange?: string): Refusal {
 }
 
 export { INTENSITY_DISCLAIMER };
+
+/** Âge du bébé pour le backend. La date de naissance prime ; la tranche ne sert que de repli. */
+export function babyAgeForContext(profile?: { ageRange?: string; birthDate?: string } | null): {
+  months: number;
+  days?: number;
+  birthDate?: string;
+} {
+  const ageMap: Record<string, number> = { '0-3': 2, '3-6': 5, '6-12': 9, '1-2': 18, '2+': 30 };
+  const bd = profile?.birthDate;
+  if (bd && /^\d{4}-\d{2}-\d{2}$/.test(bd)) {
+    const born = new Date(bd + 'T00:00:00');
+    const days = Math.max(0, Math.floor((Date.now() - born.getTime()) / 86_400_000));
+    return { months: Math.floor(days / 30.44), days, birthDate: bd };
+  }
+  return { months: ageMap[profile?.ageRange ?? '0-3'] ?? 3 };
+}
+
+/** Tranche d'âge dérivée d'une date de naissance (cohérence avec l'ancien profil). */
+export function ageRangeFromBirthDate(bd: string): '0-3' | '3-6' | '6-12' | '1-2' | '2+' {
+  const m = babyAgeForContext({ birthDate: bd }).months;
+  if (m < 3) return '0-3';
+  if (m < 6) return '3-6';
+  if (m < 12) return '6-12';
+  if (m < 24) return '1-2';
+  return '2+';
+}

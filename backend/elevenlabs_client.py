@@ -8,6 +8,9 @@ import requests
 # Rachel — calm warm female voice (fallback)
 DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"
 
+# Une réponse à 3 h du matin n'attend pas la voix : délai court, repli silencieux.
+TTS_TIMEOUT_S = float(os.environ.get("TTS_TIMEOUT_S", "6"))
+
 
 def _api_key() -> str:
     api_key = os.environ.get("ELEVENLABS_API_KEY")
@@ -33,7 +36,7 @@ def text_to_speech(text: str, voice_id: str = DEFAULT_VOICE_ID) -> bytes:
             "use_speaker_boost": True,
         },
     }
-    r = requests.post(url, json=data, headers=headers, timeout=60)
+    r = requests.post(url, json=data, headers=headers, timeout=TTS_TIMEOUT_S)
     r.raise_for_status()
     return r.content
 

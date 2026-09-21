@@ -13,6 +13,7 @@ import json
 import os
 import traceback
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
@@ -23,6 +24,7 @@ from baseline import update_baseline
 from comfort_messages import generate_comfort_message
 from elevenlabs_client import clone_voice, text_to_speech
 from mistral_client import write_parent_guidance
+from security import RateLimiter, client_ip, is_safe_audio_name, safe_remove, sweep_old_files, verify_user
 from taxonomy import NO_CRY_HINT, NO_CRY_REMINDER, TOO_SHORT_HINT
 from triage_rules import context_hypotheses, intensity_observation, recording_gate, safety_cards
 
@@ -50,8 +52,34 @@ def _get_supabase():
 TMP_DIR = os.path.join(BASE_DIR, "tmp")
 os.makedirs(TMP_DIR, exist_ok=True)
 
+# Les mp3 lus par le parent vivent 24 h ; les enregistrements bruts, zéro seconde
+# après l'extraction des descripteurs (voir `finally` dans analyze / voice_clone).
+MP3_TTL_S = 24 * 3600
+# Aucune écriture du profil acoustique tant que la migration « clé bébé +
+# feature_version » n'est pas faite : les descripteurs v2 (pyin) sont
+# incompatibles avec les lignes existantes, et une collecte par défaut sans
+# finalité visible pour le parent n'est pas défendable.
+BASELINE_ENABLED = os.environ.get("BABBL_BASELINE_ENABLED", "0") == "1"
+
+# Appels payants (Anthropic, ElevenLabs) : limite par adresse.
+_analyze_limiter = RateLimiter(limit=int(os.environ.get("BABBL_ANALYZE_PER_10MIN", "20")), window_s=600)
+_clone_limiter = RateLimiter(limit=int(os.environ.get("BABBL_CLONE_PER_DAY", "3")), window_s=86400)
+_executor = ThreadPoolExecutor(max_workers=4)
+
 app = Flask(__name__)
 CORS(app)
+app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 Mo : un clip de 10 s en pèse < 1
+
+
+def _refusal(status: int, error: str, code: str, context: dict, baby_age_months: int | None, hint: str | None = None):
+    """INVARIANT : toute réponse d'échec porte les trois cartes de sécurité."""
+    return jsonify({
+        "error": error,
+        "code": code,
+        "reminder": NO_CRY_REMINDER,
+        "hint": hint or "",
+        "safety": safety_cards(context, baby_age_months),
+    }), status
 
 
 @app.get("/api/health")
@@ -61,7 +89,16 @@ def health():
 
 @app.post("/api/voice/clone")
 def voice_clone():
-    """Create an ElevenLabs Instant Voice Clone from a short sample."""
+    """Create an ElevenLabs Instant Voice Clone from a short sample.
+
+    Réservé aux comptes vérifiés : cet endpoint crée des voix sur le compte
+    ElevenLabs de Babbl. Ouvert à Internet, il permettait de cloner n'importe
+    quelle voix avec notre clé."""
+    auth = verify_user(_get_supabase(), request.headers.get("Authorization"))
+    if not auth.verified:
+        return jsonify({"error": "Connexion requise pour cloner une voix.", "code": "auth_required"}), 401
+    if not _clone_limiter.allow(auth.user_id):
+        return jsonify({"error": "Limite de clonage atteinte pour aujourd'hui.", "code": "rate_limited"}), 429
     if "audio" not in request.files:
         return jsonify({"error": "Fichier audio manquant"}), 400
 
@@ -86,7 +123,10 @@ def voice_clone():
                     "(ou 'Create Instant Voice Clone')."
                 )
             }), 403
-        return jsonify({"error": f"Le clonage vocal a échoué : {msg}"}), 500
+        return jsonify({"error": "Le clonage vocal a échoué."}), 500
+    finally:
+        # La voix du parent ne reste pas sur le disque.
+        safe_remove(sample_path)
 
     return jsonify({"voice_id": voice_id, "name": name})
 
@@ -111,8 +151,14 @@ def analyze():
     context_raw = request.form.get("context", "{}")
     try:
         context = json.loads(context_raw)
+        if not isinstance(context, dict):
+            context = {}
     except json.JSONDecodeError:
         return jsonify({"error": "JSON de contexte invalide"}), 400
+
+    # 0. Qui parle ? Jeton vérifié par Supabase — jamais décodé à la main.
+    auth = verify_user(_get_supabase(), request.headers.get("Authorization"))
+    sweep_old_files(TMP_DIR, MP3_TTL_S)
 
     voice_id = request.form.get("voice_id") or context.get("voiceId") or context.get("voice_id") or None
     parent_label = request.form.get("parent_label") or context.get("parentLabel") or context.get("parent_label") or "father"
@@ -127,18 +173,25 @@ def analyze():
     except ValueError:
         baby_age_months = 3
 
+    if auth.status == "invalid":
+        return _refusal(401, "Session invalide. Reconnectez-vous.", "auth_invalid", context, baby_age_months)
+    if not _analyze_limiter.allow(client_ip(request)):
+        return _refusal(429, "Trop d'analyses en peu de temps. Réessayez dans quelques minutes.", "rate_limited", context, baby_age_months)
+
     request_id = uuid.uuid4().hex
     ext = os.path.splitext(audio_file.filename or "")[1] or ".webm"
     audio_path = os.path.join(TMP_DIR, f"{request_id}{ext}")
     audio_file.save(audio_path)
 
-    # 1. Descripteurs acoustiques
+    # 1. Descripteurs acoustiques — puis l'enregistrement brut est effacé,
+    #    quoi qu'il arrive. Aucun pleur de nourrisson ne reste sur le disque.
     try:
         features = extract_features(audio_path)
     except Exception as e:
         traceback.print_exc()
-        msg = str(e) or type(e).__name__
-        return jsonify({"error": f"L'analyse audio a échoué : {msg}"}), 500
+        return _refusal(500, "L'analyse audio a échoué.", "audio_error", context, baby_age_months)
+    finally:
+        safe_remove(audio_path)
 
     # Aucun chiffre acoustique ne sort du serveur : un nombre finirait affiché
     # ou stocké côté client. Seule la durée est renvoyée.
@@ -167,81 +220,75 @@ def analyze():
     # 6. Résumé et gestes
     guidance = write_parent_guidance(hypotheses, intensity, context, baby_age_months, baby_name)
 
-    # 7. Audio (best-effort)
-    audio_url = None
-    try:
-        summary = guidance.get("parent_summary", "")
-        if summary:
-            mp3_bytes = text_to_speech(summary)
-            mp3_name = f"{request_id}.mp3"
-            with open(os.path.join(TMP_DIR, mp3_name), "wb") as f:
-                f.write(mp3_bytes)
-            audio_url = f"/api/audio/{mp3_name}"
-    except Exception as e:
-        print(f"[elevenlabs] failed: {e}")
-
+    # 7. Audio (best-effort, en parallèle, borné). Le résultat déterministe
+    #    n'attend jamais la voix : chaque appel a son propre délai court.
     top_key = hypotheses[0]["key"] if hypotheses else "need_for_comfort"
+    comfort_text = generate_comfort_message(
+        top_cause=top_key, age_months=baby_age_months, parent_label=parent_label,
+    ) if voice_id else None
+
+    def _tts_to_file(text: str, name: str, vid: str | None):
+        mp3_bytes = text_to_speech(text, voice_id=vid) if vid else text_to_speech(text)
+        with open(os.path.join(TMP_DIR, name), "wb") as f:
+            f.write(mp3_bytes)
+        return f"/api/audio/{name}"
+
+    audio_url = None
     comfort_audio_url = None
-    comfort_text = None
-    if voice_id:
+    summary = guidance.get("parent_summary", "")
+    futures = {}
+    if summary:
+        futures["summary"] = _executor.submit(_tts_to_file, summary, f"{request_id}.mp3", None)
+    if comfort_text:
+        futures["comfort"] = _executor.submit(_tts_to_file, comfort_text, f"{request_id}_comfort.mp3", voice_id)
+    for key, fut in futures.items():
         try:
-            comfort_text = generate_comfort_message(
-                top_cause=top_key, age_months=baby_age_months, parent_label=parent_label,
-            )
-            comfort_bytes = text_to_speech(comfort_text, voice_id=voice_id)
-            comfort_name = f"{request_id}_comfort.mp3"
-            with open(os.path.join(TMP_DIR, comfort_name), "wb") as f:
-                f.write(comfort_bytes)
-            comfort_audio_url = f"/api/audio/{comfort_name}"
+            url = fut.result(timeout=8)
+            if key == "summary":
+                audio_url = url
+            else:
+                comfort_audio_url = url
         except Exception as e:
-            print(f"[elevenlabs comfort] failed: {e}")
+            print(f"[elevenlabs {key}] failed: {type(e).__name__}")
 
-    # 8. Utilisateur (JWT Supabase dans Authorization), profil silencieux, persistance
-    user_id = None
-    auth_header = request.headers.get("Authorization", "")
-    if auth_header.startswith("Bearer "):
-        try:
-            import base64
-            token = auth_header.split(" ", 1)[1]
-            payload = token.split(".")[1]
-            payload += "=" * (-len(payload) % 4)
-            claims = json.loads(base64.urlsafe_b64decode(payload))
-            user_id = claims.get("sub")
-        except Exception:
-            pass
-
-    if user_id:
+    # 8. Persistance — uniquement pour un compte VÉRIFIÉ. Le backend est le
+    #    seul écrivain de `analyses` (le frontend n'écrit plus). L'observation
+    #    sonore n'est jamais persistée ; les hypothèses le sont (dans
+    #    key_signals, faute de colonne dédiée) pour que l'historique et le
+    #    rapport médecin les retrouvent.
+    if auth.verified:
         sb = _get_supabase()
         if sb:
-            # Le profil acoustique continue de se constituer, sans rien afficher
-            # (SYMPTOMS.md : aucune sortie « déviation » n'est défendable aujourd'hui).
-            try:
-                update_baseline(sb, user_id, features)
-            except Exception as e:
-                print(f"[baseline] update failed: {e}")
-
-            # L'observation sonore n'est PAS persistée (texte transitoire, jamais
-            # historisé). Les colonnes héritées reçoivent des valeurs neutres.
+            if BASELINE_ENABLED:
+                try:
+                    update_baseline(sb, auth.user_id, features)
+                except Exception as e:
+                    print(f"[baseline] update failed: {type(e).__name__}")
             try:
                 sb.table("analyses").insert({
                     "id": request_id,
-                    "user_id": user_id,
+                    "user_id": auth.user_id,
                     "top_cause": top_key,
                     "probabilities": {},
                     "parent_summary": guidance.get("parent_summary", ""),
                     "confidence_level": "context",
                     "alert": "none",
-                    "key_signals": [s for s in guidance.get("key_signals", []) if s.get("source") == "context"],
+                    "key_signals": [
+                        {"signal": h["why"], "source": "context", "key": h["key"], "label": h["label"], "why": h["why"]}
+                        for h in hypotheses
+                    ],
                     "recommended_actions": guidance.get("recommended_actions", []),
                     "audio_url": audio_url,
                     "comfort_audio_url": comfort_audio_url,
                     "comfort_text": comfort_text,
                 }).execute()
             except Exception as e:
-                print(f"[supabase] save analysis failed: {e}")
+                print(f"[supabase] save analysis failed: {type(e).__name__}")
 
     return jsonify(
         {
+            "id": request_id,
+            "persisted": bool(auth.verified and _get_supabase() is not None),
             "recording": recording,
             "intensity": intensity,
             "hypotheses": hypotheses,
@@ -260,6 +307,10 @@ def analyze():
 
 @app.get("/api/audio/<path:filename>")
 def get_audio(filename):
+    # Uniquement nos mp3 (identifiant aléatoire de 32 hex, durée de vie 24 h).
+    # Jamais un chemin, jamais un enregistrement brut.
+    if not is_safe_audio_name(filename):
+        return jsonify({"error": "Fichier inconnu"}), 404
     return send_from_directory(TMP_DIR, filename, mimetype="audio/mpeg")
 
 

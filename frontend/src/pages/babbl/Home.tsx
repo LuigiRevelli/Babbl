@@ -19,9 +19,7 @@ import {
 import { analyzeAudio as apiAnalyze } from '@/lib/api';
 import { getUserData, saveUserData } from '@/lib/userData';
 import { CRY_AUDIO_CONSTRAINTS, CRY_RECORD_MS, createRecorder, chunksToBlob } from '@/lib/recorder';
-import { toStoredAnalysis, toSupabaseRow, transientObservation, refusalFromError, type AnalyzeResponse, type Refusal } from '@/lib/analysis';
-import { useAuth } from '@/lib/AuthContext';
-import { saveAnalysis as saveAnalysisToSupabase } from '@/lib/supabaseData';
+import { toStoredAnalysis, transientObservation, refusalFromError, type AnalyzeResponse, type Refusal } from '@/lib/analysis';
 
 const RECORD_MS = CRY_RECORD_MS; // durée fixe, définie dans lib/recorder.ts
 
@@ -29,7 +27,6 @@ type Phase = 'idle' | 'listening' | 'analyzing';
 
 export default function BabblHome() {
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   const [phase, setPhase] = useState<Phase | 'refused'>('idle');
   const [refusal, setRefusal] = useState<Refusal | null>(null);
@@ -109,18 +106,11 @@ export default function BabblHome() {
         babyAgeMonths,
       })) as AnalyzeResponse;
 
-      // L'historique ne garde que le contexte, le résumé et les gestes.
-      const analysis = toStoredAnalysis(result, crypto.randomUUID());
+      // L'historique local ne garde que le contexte, le résumé et les gestes.
+      // En base, c'est le backend qui écrit (jeton vérifié) — un seul écrivain.
+      const analysis = toStoredAnalysis(result, result.id ?? crypto.randomUUID());
       userData.analyses.push(analysis);
       saveUserData(userData);
-
-      if (user?.id) {
-        try {
-          await saveAnalysisToSupabase(user.id, toSupabaseRow(analysis));
-        } catch (e) {
-          console.warn('[supabase] sauvegarde échouée, localStorage uniquement :', e);
-        }
-      }
       // L'observation sonore n'est affichée qu'une fois : elle voyage dans
       // l'état de navigation, jamais dans le stockage.
       navigate(`/analysis/${analysis.id}`, { state: { observation: transientObservation(result) } });

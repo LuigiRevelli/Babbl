@@ -5,16 +5,13 @@ import MobileLayout from '@/components/MobileLayout';
 import BackButton from '@/components/BackButton';
 import { getUserData, saveUserData } from '@/lib/userData';
 import { CRY_AUDIO_CONSTRAINTS, CRY_RECORD_MS, createRecorder, chunksToBlob } from '@/lib/recorder';
-import { toStoredAnalysis, toSupabaseRow, transientObservation, refusalFromError, type AnalyzeResponse, type Refusal } from '@/lib/analysis';
+import { toStoredAnalysis, transientObservation, refusalFromError, type AnalyzeResponse, type Refusal } from '@/lib/analysis';
 import SafetyCardsBlock from '@/components/SafetyCardsBlock';
 import { analyzeAudio as apiAnalyze } from '@/lib/api';
 import { t } from '@/lib/i18n';
-import { useAuth } from '@/lib/AuthContext';
-import { saveAnalysis as saveAnalysisToSupabase } from '@/lib/supabaseData';
 
 export default function Record() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const data = getUserData();
   const profile = data.parentProfile;
 
@@ -93,17 +90,10 @@ export default function Record() {
         babyAgeMonths,
       })) as AnalyzeResponse;
 
-      const analysis = toStoredAnalysis(result, crypto.randomUUID());
+      // En base, c'est le backend qui écrit (jeton vérifié) — un seul écrivain.
+      const analysis = toStoredAnalysis(result, result.id ?? crypto.randomUUID());
       userData.analyses.push(analysis);
       saveUserData(userData);
-
-      if (user?.id) {
-        try {
-          await saveAnalysisToSupabase(user.id, toSupabaseRow(analysis));
-        } catch (e) {
-          console.warn('[supabase] Sauvegarde analyse échouée, localStorage utilisé :', e);
-        }
-      }
 
       navigate(`/analysis/${analysis.id}`, { state: { observation: transientObservation(result) } });
     } catch (err: unknown) {

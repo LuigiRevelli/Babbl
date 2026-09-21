@@ -60,6 +60,10 @@ export interface AnalyzeResponse {
   recommended_actions: RecommendedAction[];
   key_signals: KeySignal[];
   guidance_source: 'llm' | 'deterministic';
+  /** Identifiant serveur de l'analyse (clé de la ligne persistée). */
+  id?: string;
+  /** Vrai si le backend a écrit la ligne (compte vérifié). */
+  persisted?: boolean;
   context: Record<string, unknown>;
   audio_url: string | null;
   comfort_audio_url: string | null;
@@ -98,23 +102,6 @@ export function toStoredAnalysis(res: AnalyzeResponse, id: string): Analysis {
     audio_url: res.audio_url ?? undefined,
     comfort_audio_url: res.comfort_audio_url ?? undefined,
     comfort_text: res.comfort_text ?? undefined,
-  };
-}
-
-/** Colonnes Supabase (schéma hérité, valeurs neutres pour les champs retirés). */
-export function toSupabaseRow(a: Analysis) {
-  return {
-    id: a.id,
-    top_cause: a.topCause,
-    probabilities: {},
-    parent_summary: a.parent_summary,
-    confidence_level: 'context',
-    alert: 'none',
-    key_signals: a.key_signals ?? [],
-    recommended_actions: a.recommended_actions ?? [],
-    audio_url: a.audio_url ?? null,
-    comfort_audio_url: a.comfort_audio_url ?? null,
-    comfort_text: a.comfort_text ?? null,
   };
 }
 

@@ -25,6 +25,7 @@ ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
 
 MAX_ACTIONS = 3
+LLM_TIMEOUT_S = float(os.environ.get("LLM_TIMEOUT_S", "8"))
 ALLOWED_SIGNAL_SOURCES = ("context", "intensity")
 
 # Mots interdits dans toute phrase adressée au parent. Un seul suffit à
@@ -95,7 +96,7 @@ def _post_anthropic(system: str, user_msg: str) -> str:
         "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
     }
-    r = requests.post(ANTHROPIC_URL, headers=headers, json=payload, timeout=60)
+    r = requests.post(ANTHROPIC_URL, headers=headers, json=payload, timeout=LLM_TIMEOUT_S)
     r.raise_for_status()
     return r.json()["content"][0]["text"]
 

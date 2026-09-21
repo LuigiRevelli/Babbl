@@ -49,8 +49,12 @@ export default function Dashboard() {
             sosModeUsed: false,
             key_signals: a.key_signals ?? [],
             recommended_actions: a.recommended_actions ?? [],
-            hypotheses: a.hypotheses ?? [],
-            safety_cards: a.safety_cards ?? [],
+            // Le backend persiste les hypothèses dans key_signals (objets {key,label,why}).
+            hypotheses: (a.key_signals ?? []).filter((s: any) => s && typeof s === 'object' && s.key).map((s: any) => ({
+              key: s.key, label: s.label ?? '', why: s.why ?? s.signal ?? '', source: 'context' as const,
+              disclaimer: 'Le son ne permet pas de le confirmer.',
+            })),
+            safety_cards: [],
             audio_url: a.audio_url,
             comfort_audio_url: a.comfort_audio_url,
             comfort_text: a.comfort_text,

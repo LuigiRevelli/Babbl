@@ -151,6 +151,9 @@ export default function AnalysisResult() {
         <div className="rounded-2xl bg-card border border-border/50 p-4 mb-4 animate-fade-in" style={{ animationDelay: '0.15s', animationFillMode: 'backwards' }}>
           <p className="text-xs text-muted-foreground mb-2 font-semibold uppercase tracking-wider">{t('summary')}</p>
           <p className="text-sm leading-relaxed">{analysis.parent_summary}</p>
+          <p className="text-[11px] text-muted-foreground mt-2 leading-snug">
+            {analysis.guidance_source === 'llm' ? t('aiSummaryNotice') : t('fixedSummaryNotice')}
+          </p>
         </div>
       )}
 
@@ -196,6 +199,9 @@ export default function AnalysisResult() {
           <Heart className={`w-5 h-5 text-primary ${isComfortPlaying ? 'animate-pulse' : ''}`} />
           <span className="font-semibold text-sm text-primary">{isComfortPlaying ? t('playing') : t('comfortBaby')}</span>
         </button>
+      )}
+      {analysis.comfort_audio_url && (
+        <p className="text-[11px] text-muted-foreground -mt-2 mb-4 text-center">{t('syntheticVoiceNotice')}</p>
       )}
 
       {/* Repères de sécurité — toujours affichés, jamais déduits du son */}

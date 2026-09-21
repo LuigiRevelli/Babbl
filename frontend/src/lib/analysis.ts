@@ -99,6 +99,7 @@ export function toStoredAnalysis(res: AnalyzeResponse, id: string): Analysis {
     hypotheses: res.hypotheses ?? [],
     safety_cards: res.safety?.cards ?? [],
     safety_footer: res.safety?.footer,
+    guidance_source: res.guidance_source,
     audio_url: res.audio_url ?? undefined,
     comfort_audio_url: res.comfort_audio_url ?? undefined,
     comfort_text: res.comfort_text ?? undefined,

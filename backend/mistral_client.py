@@ -24,6 +24,7 @@ import requests
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
 
+PROMPT_VERSION = "2026.09.21-2"   # incrémenter à chaque changement de SYSTEM_PROMPT ou des cribles
 MAX_ACTIONS = 3
 LLM_TIMEOUT_S = float(os.environ.get("LLM_TIMEOUT_S", "8"))
 ALLOWED_SIGNAL_SOURCES = ("context", "intensity")

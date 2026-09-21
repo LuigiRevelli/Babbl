@@ -148,7 +148,14 @@ export default function BabblResult() {
         )}
         <div style={{ fontSize: 12, color: C.cafeMute, marginTop: 12, fontStyle: 'italic' }}>{HYPOTHESIS_DISCLAIMER}</div>
         {analysis.parent_summary && (
-          <div style={{ fontSize: 14, color: C.cafe, marginTop: 14, lineHeight: 1.55 }}>{analysis.parent_summary}</div>
+          <>
+            <div style={{ fontSize: 14, color: C.cafe, marginTop: 14, lineHeight: 1.55 }}>{analysis.parent_summary}</div>
+            <div style={{ fontSize: 11, color: C.cafeMute, marginTop: 6, lineHeight: 1.4 }}>
+              {analysis.guidance_source === 'llm'
+                ? 'Résumé rédigé par une IA (Claude), relu par un filtre automatique.'
+                : 'Résumé automatique, texte fixe (sans IA).'}
+            </div>
+          </>
         )}
       </div>
 
@@ -171,7 +178,7 @@ export default function BabblResult() {
         <div style={{ background: C.coquille, borderRadius: 24, border: `1px solid ${C.ivoire}`, padding: 22, marginBottom: 14 }}>
           <div style={{ marginBottom: 6 }}>{label('repères de sécurité')}</div>
           <div style={{ fontSize: 12, color: C.cafeMute, marginBottom: 14, fontStyle: 'italic' }}>
-            Toujours affichés. Ils ne dépendent pas de l'enregistrement.
+            Toujours affichés. Ils ne dépendent pas de l'enregistrement. Texte fixe, non généré.
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {cards.map(card => (
@@ -236,7 +243,7 @@ export default function BabblResult() {
             <br />
             <span style={{ fontStyle: 'italic', color: C.ocre }}>votre voix.</span>
           </div>
-          <div style={{ fontSize: 13, color: 'rgba(243,234,218,.7)', marginTop: 10 }}>Même si vous n'êtes pas dans la pièce.</div>
+          <div style={{ fontSize: 13, color: 'rgba(243,234,218,.7)', marginTop: 10 }}>Même si vous n'êtes pas dans la pièce. Voix synthétique, générée à partir de votre enregistrement.</div>
         </div>
       </div>
 

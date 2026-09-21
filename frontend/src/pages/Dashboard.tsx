@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Droplets, Utensils, Baby, Flame, Clock, Plus, Droplet, Mic, LogOut } from 'lucide-react';
+import { Droplets, Utensils, Baby, Flame, Clock, Plus, Droplet, Mic, LogOut, Sun } from 'lucide-react';
 import MobileLayout from '@/components/MobileLayout';
 import {
   getUserData, getGreeting, isStreakInDanger, formatRelativeDate, saveUserData,
@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [data, setData] = useState(getUserData());
   const [diaperPulse, setDiaperPulse] = useState(false);
   const [mealPulse, setMealPulse] = useState(false);
+  const [wakePulse, setWakePulse] = useState(false);
   const [showDiaperMenu, setShowDiaperMenu] = useState(false);
 
   // Hydrate from Supabase when logged in, fall back to localStorage
@@ -100,6 +101,15 @@ export default function Dashboard() {
     setData(updated);
     setMealPulse(true);
     setTimeout(() => setMealPulse(false), 600);
+  };
+
+  const handleLogWake = () => {
+    const now = new Date().toISOString();
+    const updated = { ...data, lastWake: now };
+    saveUserData(updated);
+    setData(updated);
+    setWakePulse(true);
+    setTimeout(() => setWakePulse(false), 600);
   };
 
   const handleLogDiaper = (type: 'pee' | 'stool') => {
@@ -213,6 +223,28 @@ export default function Dashboard() {
         </div>
         <button
           onClick={handleLogMeal}
+          className="w-8 h-8 rounded-full bg-muted flex items-center justify-center transition-transform duration-200 hover:scale-110 active:scale-95"
+        >
+          <Plus className="w-4 h-4 text-muted-foreground" strokeWidth={2} />
+        </button>
+      </div>
+
+      {/* Réveil — alimente l'hypothèse « fatigue » à partir de la saisie du parent */}
+      <div
+        className={`w-full rounded-2xl p-4 mb-3 bg-card/80 backdrop-blur-md border border-border/50 flex items-center justify-between animate-fade-in transition-all duration-300 ${wakePulse ? 'ring-2 ring-primary/50' : ''}`}
+        style={{ animationDelay: '0.22s', animationFillMode: 'backwards' }}
+      >
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center transition-transform duration-300 ${wakePulse ? 'scale-125' : ''}`}>
+            <Sun className="w-5 h-5 text-primary" strokeWidth={1.5} />
+          </div>
+          <div className="text-left">
+            <p className="text-xs text-muted-foreground">{t('lastWake')}</p>
+            <p className="text-sm font-semibold">{formatTime(data.lastWake)}</p>
+          </div>
+        </div>
+        <button
+          onClick={handleLogWake}
           className="w-8 h-8 rounded-full bg-muted flex items-center justify-center transition-transform duration-200 hover:scale-110 active:scale-95"
         >
           <Plus className="w-4 h-4 text-muted-foreground" strokeWidth={2} />

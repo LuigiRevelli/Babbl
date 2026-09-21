@@ -77,6 +77,7 @@ export default function Record() {
       const context: Record<string, unknown> = {};
       if (userData.lastMeal) context.lastFeedingTime = userData.lastMeal;
       if (userData.lastDiaper) context.lastDiaperTime = userData.lastDiaper;
+      if (userData.lastWake) context.awakeSinceAt = userData.lastWake;
       if (userData.parentProfile?.ageRange) context.babyAgeRange = userData.parentProfile.ageRange;
       if (userData.babyName) context.babyName = userData.babyName;
 

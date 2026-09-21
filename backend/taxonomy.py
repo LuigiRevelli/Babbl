@@ -38,6 +38,9 @@ professionnel de santé français avant publication (SYMPTOMS.md, Méthode).
 
 from __future__ import annotations
 
+# Incrémenter à chaque changement de texte ou de clé. Renvoyé dans chaque réponse.
+TAXONOMY_VERSION = "2026.09.21-1"
+
 # ─── Couche 2 : hypothèses contextuelles ────────────────────────────
 # Ordre = ordre d'affichage par défaut. `source` est toujours "context".
 CONTEXT_HYPOTHESES: dict[str, dict] = {

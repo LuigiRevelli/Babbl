@@ -120,6 +120,15 @@ def test_success_response_has_no_acoustic_numbers():
     assert set(r.get_json()["recording"]) == {"duration_seconds"}
 
 
+def test_versions_in_every_response():
+    client = babbl_app.app.test_client()
+    ok = _post(client, _wav_bytes(8.0, silent_tail=1.0), {}).get_json()
+    ko = _post(client, _wav_bytes(1.0), {}).get_json()
+    for body in (ok, ko):
+        assert {"features", "taxonomy", "rules", "prompt", "git"} <= set(body["versions"])
+    assert ok["versions"]["features"] == 2
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     for fn in fns:

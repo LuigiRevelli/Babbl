@@ -19,14 +19,14 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
-from audio_analysis import extract_features
+from audio_analysis import FEATURE_VERSION, extract_features
 from baseline import update_baseline
 from comfort_messages import generate_comfort_message
 from elevenlabs_client import clone_voice, text_to_speech
-from mistral_client import write_parent_guidance
+from mistral_client import PROMPT_VERSION, write_parent_guidance
 from security import RateLimiter, client_ip, is_safe_audio_name, safe_remove, sweep_old_files, verify_user
-from taxonomy import NO_CRY_HINT, NO_CRY_REMINDER, TOO_SHORT_HINT
-from triage_rules import context_hypotheses, intensity_observation, recording_gate, safety_cards
+from taxonomy import NO_CRY_HINT, NO_CRY_REMINDER, TAXONOMY_VERSION, TOO_SHORT_HINT
+from triage_rules import RULES_VERSION, context_hypotheses, intensity_observation, recording_gate, safety_cards
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Load .env from project root (one level up from backend/)
@@ -61,6 +61,16 @@ MP3_TTL_S = 24 * 3600
 # finalité visible pour le parent n'est pas défendable.
 BASELINE_ENABLED = os.environ.get("BABBL_BASELINE_ENABLED", "0") == "1"
 
+# Ce qui a produit chaque réponse — pour pouvoir dire, après coup, « ce soir-là
+# l'app disait ceci avec ces règles ». Renvoyé dans chaque réponse.
+VERSIONS = {
+    "features": FEATURE_VERSION,
+    "taxonomy": TAXONOMY_VERSION,
+    "rules": RULES_VERSION,
+    "prompt": PROMPT_VERSION,
+    "git": os.environ.get("BABBL_GIT_SHA", "dev"),
+}
+
 # Appels payants (Anthropic, ElevenLabs) : limite par adresse.
 _analyze_limiter = RateLimiter(limit=int(os.environ.get("BABBL_ANALYZE_PER_10MIN", "20")), window_s=600)
 _clone_limiter = RateLimiter(limit=int(os.environ.get("BABBL_CLONE_PER_DAY", "3")), window_s=86400)
@@ -76,6 +86,7 @@ def _refusal(status: int, error: str, code: str, context: dict, baby_age_months:
     return jsonify({
         "error": error,
         "code": code,
+        "versions": VERSIONS,
         "reminder": NO_CRY_REMINDER,
         "hint": hint or "",
         "safety": safety_cards(context, baby_age_months),
@@ -207,6 +218,7 @@ def analyze():
             "error": gate_msg,
             "code": gate_code,
             "recording": recording,
+            "versions": VERSIONS,
             "reminder": NO_CRY_REMINDER,
             "hint": TOO_SHORT_HINT if gate_code == "too_short" else NO_CRY_HINT,
             "safety": safety_cards(context, baby_age_months),
@@ -289,6 +301,7 @@ def analyze():
         {
             "id": request_id,
             "persisted": bool(auth.verified and _get_supabase() is not None),
+            "versions": VERSIONS,
             "recording": recording,
             "intensity": intensity,
             "hypotheses": hypotheses,

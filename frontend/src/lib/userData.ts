@@ -21,6 +21,8 @@ export interface Analysis {
   /** Cartes de sécurité telles qu'affichées. Absent sur les anciennes entrées. */
   safety_cards?: SafetyCard[];
   safety_footer?: string;
+  /** Qui a rédigé le résumé : le modèle (sous garde-fou) ou le texte fixe. Affiché (AI Act art. 50). */
+  guidance_source?: 'llm' | 'deterministic';
   audio_url?: string;
   comfort_audio_url?: string;
   comfort_text?: string;
@@ -63,6 +65,8 @@ export interface UserData {
   moodLog: Array<{ timestamp: string; mood: string }>;
   lastMeal?: string;
   lastDiaper?: string;
+  /** Dernier réveil — alimente l'hypothèse « fatigue », d'après la saisie du parent. */
+  lastWake?: string;
   diaperHistory: DiaperEntry[];
   parentProfile?: ParentProfile;
   nightMode: boolean;

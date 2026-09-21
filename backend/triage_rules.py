@@ -16,6 +16,9 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 
+# Incrémenter à chaque changement de seuil ou de règle. Renvoyé dans chaque réponse.
+RULES_VERSION = "2026.09.21-2"
+
 from taxonomy import (
     CONTEXT_HYPOTHESES,
     HYPOTHESIS_DISCLAIMER,

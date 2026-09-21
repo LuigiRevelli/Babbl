@@ -94,6 +94,7 @@ export default function BabblHome() {
       const ctx: Record<string, unknown> = {};
       if (userData.lastMeal) ctx.lastFeedingTime = userData.lastMeal;
       if (userData.lastDiaper) ctx.lastDiaperTime = userData.lastDiaper;
+      if (userData.lastWake) ctx.awakeSinceAt = userData.lastWake;
       if (userData.parentProfile?.ageRange) ctx.babyAgeRange = userData.parentProfile.ageRange;
       if (userData.babyName) ctx.babyName = userData.babyName;
 

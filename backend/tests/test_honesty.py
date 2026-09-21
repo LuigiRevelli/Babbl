@@ -38,7 +38,7 @@ def _backend_strings():
             out.append((f"comfort_messages[{bucket}][{key}]", text))
             out.append((f"comfort_messages[{bucket}][{key}] (mère)", comfort_messages.generate_comfort_message(key, 4, "mother")))
     # repli déterministe sur plusieurs contextes
-    inten = intensity_observation({"duration_seconds": 9.0, "silence_ratio": 0.3, "pitch_mean_hz": 450.0})
+    inten = intensity_observation({"duration_seconds": 9.0, "voiced_fraction": 0.7, "pitch_median_hz": 450.0})
     for ctx in ({}, {"lastFeedingTime": "2000-01-01T00:00:00Z"}, {"lastDiaperTime": "2000-01-01T00:00:00Z", "babyAgeMonths": 1}):
         fb = fallback_guidance(context_hypotheses(ctx, 2), inten, "Léa")
         out.append((f"fallback.summary {ctx}", fb["parent_summary"]))

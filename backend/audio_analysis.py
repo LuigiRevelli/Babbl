@@ -1,9 +1,20 @@
 """
-Audio feature extraction for Babbl.
+Descripteurs acoustiques d'un pleur — mesures, pas interprétation.
 
-We extract a small set of objective acoustic descriptors from a baby's cry
-using librosa. These features are not interpretation — interpretation is left
-to the LLM (Mistral) downstream.
+FEATURE_VERSION 2 (21/09/2026) — changements mesurés, voir ROADMAP-BACKEND.md :
+
+- Hauteur : `librosa.pyin` (fmin 200, fmax 1000 Hz) sur les trames voisées.
+  `piptrack` prenait la raie la plus forte du spectre — souvent une
+  harmonique : sur de vrais pleurs, 750-842 Hz là où pyin donne 232-398 Hz.
+- Continuité : `voiced_fraction` = part des trames où des cordes vocales
+  vibrent. Invariant au volume capté (0,81 à 0 / −12 / −26 dB sur un cri
+  synthétique), là où `silence_ratio` (seuil absolu 0,01) passait de 0,24 à
+  0,80 et s'inversait avec du bruit de fond. `silence_ratio` est conservé
+  pour information, plus jamais pour décider.
+
+Les valeurs d'amplitude (`amplitude_*`, `energy_total`) sont des propriétés de
+l'enregistrement — distance, gain — pas du bébé. Elles ne servent à rien en
+aval et ne quittent jamais le serveur.
 """
 
 import os
@@ -15,40 +26,29 @@ from audioread.exceptions import NoBackendError
 import librosa
 import numpy as np
 
+FEATURE_VERSION = 2
+SR = 22050
+F0_MIN = 200.0
+F0_MAX = 1000.0
+
 
 def _convert_to_wav_with_ffmpeg(audio_path: str) -> str:
     """Convert input audio to mono WAV@22050 using ffmpeg, return temp path."""
     ffmpeg_path = shutil.which("ffmpeg")
     if not ffmpeg_path:
-        raise RuntimeError(
-            "NoBackendError: unable to decode the audio file. "
-            "Install ffmpeg (for example: sudo apt install ffmpeg) and restart the backend."
-        )
+        raise RuntimeError("decoder_unavailable")
 
     fd, wav_path = tempfile.mkstemp(suffix=".wav")
     os.close(fd)
 
-    cmd = [
-        ffmpeg_path,
-        "-y",
-        "-i",
-        audio_path,
-        "-ac",
-        "1",
-        "-ar",
-        "22050",
-        wav_path,
-    ]
+    cmd = [ffmpeg_path, "-y", "-i", audio_path, "-ac", "1", "-ar", str(SR), wav_path]
     proc = subprocess.run(cmd, capture_output=True, text=True)
     if proc.returncode != 0:
         try:
             os.remove(wav_path)
         except OSError:
             pass
-        raise RuntimeError(
-            "Audio conversion failed via ffmpeg. "
-            "Check the input format (webm/ogg/wav) and the ffmpeg installation."
-        )
+        raise RuntimeError("decode_failed")
 
     return wav_path
 
@@ -56,11 +56,11 @@ def _convert_to_wav_with_ffmpeg(audio_path: str) -> str:
 def _load_audio(audio_path: str):
     """Load audio robustly, with ffmpeg conversion fallback if decoder backend is missing."""
     try:
-        return librosa.load(audio_path, sr=22050, mono=True)
+        return librosa.load(audio_path, sr=SR, mono=True)
     except NoBackendError:
         wav_path = _convert_to_wav_with_ffmpeg(audio_path)
         try:
-            return librosa.load(wav_path, sr=22050, mono=True)
+            return librosa.load(wav_path, sr=SR, mono=True)
         finally:
             try:
                 os.remove(wav_path)
@@ -69,68 +69,59 @@ def _load_audio(audio_path: str):
 
 
 def extract_features(audio_path: str) -> dict:
-    """Extract scientific acoustic features from a cry audio file.
+    """Extract objective acoustic descriptors from a cry audio file.
 
-    Returns a JSON-serializable dict ready to be sent to the LLM.
+    Returns a JSON-serializable dict. Nothing here is a claim about the baby.
     """
-    # Load mono at 22050 Hz (good tradeoff for voice / cry analysis)
     y, sr = _load_audio(audio_path)
 
     if len(y) == 0:
         raise ValueError("Empty audio file")
 
-    # --- Pitch (fundamental frequency) ---
-    # piptrack gives per-frame pitch candidates; we keep the strongest one per frame.
-    pitches, magnitudes = librosa.piptrack(y=y, sr=sr)
-    pitch_values = []
-    for t in range(pitches.shape[1]):
-        idx = magnitudes[:, t].argmax()
-        p = pitches[idx, t]
-        if p > 0:
-            pitch_values.append(float(p))
+    # --- Fundamental frequency, voiced frames only (pyin) ---
+    f0, voiced_flag, _ = librosa.pyin(y, fmin=F0_MIN, fmax=F0_MAX, sr=sr, frame_length=2048)
+    voiced_flag = np.asarray(voiced_flag, dtype=bool)
+    voiced_f0 = np.nan_to_num(f0[voiced_flag]) if voiced_flag.any() else np.array([])
+    voiced_fraction = float(np.mean(voiced_flag)) if len(voiced_flag) else 0.0
 
-    pitch_mean = float(np.mean(pitch_values)) if pitch_values else 0.0
-    pitch_std = float(np.std(pitch_values)) if pitch_values else 0.0
-    pitch_max = float(np.max(pitch_values)) if pitch_values else 0.0
-    pitch_min = float(np.min(pitch_values)) if pitch_values else 0.0
+    if len(voiced_f0):
+        pitch_median = float(np.median(voiced_f0))
+        pitch_mean = float(np.mean(voiced_f0))
+        pitch_std = float(np.std(voiced_f0))
+        pitch_max = float(np.max(voiced_f0))
+        pitch_min = float(np.min(voiced_f0))
+    else:
+        pitch_median = pitch_mean = pitch_std = pitch_max = pitch_min = 0.0
 
-    # --- Amplitude / energy ---
+    # --- Amplitude (propriété de l'enregistrement, jamais décisionnelle) ---
     rms = librosa.feature.rms(y=y)[0]
-
-    # --- Temporal pattern ---
-    onset_env = librosa.onset.onset_strength(y=y, sr=sr)
-    try:
-        tempo = float(librosa.feature.tempo(onset_envelope=onset_env, sr=sr)[0])
-    except Exception:
-        tempo = 0.0
 
     # --- Spectral shape ---
     spectral_centroid = librosa.feature.spectral_centroid(y=y, sr=sr)[0]
     spectral_bandwidth = librosa.feature.spectral_bandwidth(y=y, sr=sr)[0]
     spectral_rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
     mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
-
-    # --- Roughness / harshness indicator ---
     zcr = librosa.feature.zero_crossing_rate(y)[0]
 
     duration = float(len(y) / sr)
-    silence_ratio = float(np.sum(np.abs(y) < 0.01) / len(y))
+    silence_ratio = float(np.sum(np.abs(y) < 0.01) / len(y))  # information seulement
 
     return {
+        "feature_version": FEATURE_VERSION,
+        "duration_seconds": round(duration, 2),
+        "voiced_fraction": round(voiced_fraction, 4),
+        "pitch_median_hz": round(pitch_median, 2),
         "pitch_mean_hz": round(pitch_mean, 2),
         "pitch_std_hz": round(pitch_std, 2),
         "pitch_max_hz": round(pitch_max, 2),
         "pitch_min_hz": round(pitch_min, 2),
-        "amplitude_mean": round(float(np.mean(rms)), 5),
-        "amplitude_max": round(float(np.max(rms)), 5),
-        "amplitude_std": round(float(np.std(rms)), 5),
-        "tempo_bpm": round(tempo, 2),
         "spectral_centroid_mean": round(float(np.mean(spectral_centroid)), 2),
         "spectral_bandwidth_mean": round(float(np.mean(spectral_bandwidth)), 2),
         "spectral_rolloff_mean": round(float(np.mean(spectral_rolloff)), 2),
         "zcr_mean": round(float(np.mean(zcr)), 5),
         "mfcc_means": [round(float(np.mean(m)), 3) for m in mfccs],
-        "duration_seconds": round(duration, 2),
-        "energy_total": round(float(np.sum(y ** 2)), 4),
         "silence_ratio": round(silence_ratio, 4),
+        "amplitude_mean": round(float(np.mean(rms)), 5),
+        "amplitude_max": round(float(np.max(rms)), 5),
+        "energy_total": round(float(np.sum(y ** 2)), 4),
     }

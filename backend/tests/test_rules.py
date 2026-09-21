@@ -21,13 +21,16 @@ def _iso_ago(minutes: float) -> str:
     return (datetime.now(timezone.utc) - timedelta(minutes=minutes)).isoformat()
 
 
-GOOD = {"duration_seconds": 9.8, "silence_ratio": 0.25, "pitch_mean_hz": 480.0}
+GOOD = {"duration_seconds": 9.8, "voiced_fraction": 0.75, "pitch_median_hz": 480.0}
 
 
-def test_gate_rejects_short_and_silent():
-    assert recording_gate({"duration_seconds": 1.2, "silence_ratio": 0.1, "pitch_mean_hz": 400})[1] == "too_short"
-    assert recording_gate({"duration_seconds": 8.0, "silence_ratio": 0.95, "pitch_mean_hz": 400})[1] == "no_cry_detected"
-    assert recording_gate({"duration_seconds": 8.0, "silence_ratio": 0.2, "pitch_mean_hz": 0.0})[1] == "no_cry_detected"
+def test_gate_recognises_a_cry_not_a_volume():
+    assert recording_gate({"duration_seconds": 1.2, "voiced_fraction": 0.8, "pitch_median_hz": 400})[1] == "too_short"
+    assert recording_gate({"duration_seconds": 8.0, "voiced_fraction": 0.05, "pitch_median_hz": 400})[1] == "no_cry_detected"   # bruit
+    assert recording_gate({"duration_seconds": 8.0, "voiced_fraction": 1.0, "pitch_median_hz": 221})[1] == "no_cry_detected"    # musique
+    assert recording_gate({"duration_seconds": 8.0, "voiced_fraction": 1.0, "pitch_median_hz": 200})[1] == "no_cry_detected"    # voix grave
+    assert recording_gate({"duration_seconds": 8.0, "voiced_fraction": 0.9, "pitch_median_hz": 950})[1] == "no_cry_detected"    # hors bande
+    assert recording_gate({"duration_seconds": 8.0, "voiced_fraction": 0.0, "pitch_median_hz": 0.0})[1] == "no_cry_detected"
     ok, code, msg = recording_gate(GOOD)
     assert ok and code is None and msg is None
 
@@ -35,8 +38,9 @@ def test_gate_rejects_short_and_silent():
 def test_intensity_is_text_only_and_never_reassuring():
     for feats, level in (
         (GOOD, "intense"),
-        ({"duration_seconds": 9.0, "silence_ratio": 0.5, "pitch_mean_hz": 380.0}, "modere"),
-        ({"duration_seconds": 9.0, "silence_ratio": 0.8, "pitch_mean_hz": 380.0}, "faible"),
+        ({"duration_seconds": 9.0, "voiced_fraction": 0.45, "pitch_median_hz": 380.0}, "modere"),
+        ({"duration_seconds": 9.0, "voiced_fraction": 0.20, "pitch_median_hz": 380.0}, "faible"),
+        ({"duration_seconds": 9.0, "voiced_fraction": 0.75, "pitch_median_hz": 300.0}, "intense"),   # la hauteur ne décide plus
     ):
         out = intensity_observation(feats)
         assert out["level"] == level

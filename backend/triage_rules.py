@@ -101,22 +101,38 @@ def _fmt_delay(minutes: float) -> str:
 
 
 # ─── 1. Porte d'entrée : enregistrement exploitable ? ────────────────
+# Seuils posés sur des MESURES (pyin, 21/09/2026, voir ROADMAP-BACKEND.md) :
+#   cri synthétique 450 Hz → voiced_fraction 0,81 à 0 / −12 / −26 dB, f0 449 Hz ;
+#   bruit blanc (télé) → 0,00 ; musique 220 Hz → voisée mais 221 Hz ;
+#   voix grave 120 Hz → plancher pyin 200 Hz ; bruit rose à 10 dB → 0,82.
+# Une continuité de trames voisées ne dépend ni du volume ni de la distance.
 
 MIN_DURATION_S = 3.0
-MAX_SILENCE_RATIO = 0.90
+MIN_VOICED_FRACTION = 0.20
+CRY_F0_MIN_HZ = 250.0   # sous 250 : voix adulte, musique grave, plancher de pyin
+CRY_F0_MAX_HZ = 800.0   # au-delà : sifflement, harmonique, artefact
+
+
+def _voiced_fraction(features: dict) -> float:
+    return float(features.get("voiced_fraction", 0.0) or 0.0)
+
+
+def _pitch_median(features: dict) -> float:
+    return float(features.get("pitch_median_hz", 0.0) or 0.0)
 
 
 def recording_gate(features: dict) -> tuple[bool, str | None, str | None]:
     """Retourne (ok, code, message_fr). Babbl refuse de répondre plutôt que de
     répondre sur rien : dans l'étude de référence, 79,6 % des séquences ont été
-    écartées pour bruit avant analyse."""
+    écartées pour bruit avant analyse. La porte reconnaît un PLEUR (trames
+    voisées dans la bande d'un nourrisson), pas un volume."""
     duration = float(features.get("duration_seconds", 0.0) or 0.0)
-    silence = float(features.get("silence_ratio", 0.0) or 0.0)
-    pitch = float(features.get("pitch_mean_hz", 0.0) or 0.0)
+    voiced = _voiced_fraction(features)
+    f0 = _pitch_median(features)
 
     if duration < MIN_DURATION_S:
         return False, "too_short", f"L'enregistrement dure {duration:.1f} s."
-    if silence > MAX_SILENCE_RATIO or pitch <= 0.0:
+    if voiced < MIN_VOICED_FRACTION or not (CRY_F0_MIN_HZ <= f0 <= CRY_F0_MAX_HZ):
         # Le message ne dit PAS « rapprochez le téléphone » : le silence peut
         # être le bébé, pas le micro. Le rappel et l'indice sont dans app.py.
         return False, "no_cry_detected", "Babbl n'a pas entendu de pleur net sur cet enregistrement."
@@ -125,21 +141,24 @@ def recording_gate(features: dict) -> tuple[bool, str | None, str | None]:
 
 # ─── 2. Couche 1 : observation sonore (texte, jamais chiffré) ────────
 
+INTENSE_VOICED_FRACTION = 0.60
+FAIBLE_VOICED_FRACTION = 0.30
+
+
 def intensity_observation(features: dict) -> dict:
-    """Observation coarse, en trois niveaux, à partir de deux grandeurs peu
-    dépendantes du volume capté : la continuité du pleur sur le clip et sa
-    hauteur moyenne. Ce n'est pas une échelle validée — c'est le maximum que
-    SYMPTOMS.md autorise (« observation textuelle non stockée ») en attendant
-    les expériences 0-2 (chaîne de capture, dégradation, test-retest).
+    """Observation coarse, en trois niveaux, à partir d'une seule grandeur
+    invariante au volume capté : la continuité du pleur (part des trames
+    voisées). La hauteur ne décide plus rien — elle est spécifique au bébé,
+    pas à son état (Corvin 2024, Lockhart-Bouron 2023). Ce n'est pas une échelle
+    validée — c'est le maximum que SYMPTOMS.md autorise (« observation
+    textuelle non stockée ») en attendant le banc d'essai (ROADMAP item 6).
     Le résultat ne doit être ni stocké, ni historisé, ni chiffré au parent."""
     duration = float(features.get("duration_seconds", 0.0) or 0.0)
-    silence = float(features.get("silence_ratio", 0.0) or 0.0)
-    pitch = float(features.get("pitch_mean_hz", 0.0) or 0.0)
-    continuity = max(0.0, min(1.0, 1.0 - silence))
+    continuity = max(0.0, min(1.0, _voiced_fraction(features)))
 
-    if continuity < 0.30 or pitch <= 0.0:
+    if continuity < FAIBLE_VOICED_FRACTION:
         level = "faible"
-    elif continuity >= 0.60 and pitch >= 450.0:
+    elif continuity >= INTENSE_VOICED_FRACTION:
         level = "intense"
     else:
         level = "modere"

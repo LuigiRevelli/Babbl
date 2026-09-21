@@ -22,7 +22,7 @@ from comfort_messages import generate_comfort_message
 from elevenlabs_client import clone_voice, text_to_speech
 from ml_model import predict_probabilities
 from mistral_client import analyze_with_mistral
-from triage_rules import apply_context_rules, reliability_score, escalate_alert
+from triage_rules import apply_context_rules, reliability_score, escalate_alert, _alert_rank
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Load .env from project root (one level up from backend/)
@@ -227,8 +227,7 @@ def analyze():
         except Exception as e:
             print(f"[elevenlabs comfort] failed: {e}")
 
-    # ─── Persist to Supabase (best-effort) ─────────────────────
-    # Extract user_id from the Authorization header (Supabase JWT) if present.
+    # ─── Identify the user (Supabase JWT in Authorization header) ──
     user_id = None
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
@@ -244,6 +243,55 @@ def analyze():
         except Exception:
             pass
 
+    # ─── Babbl Baseline — apprentissage du profil acoustique ────
+    baseline_result = {
+        "baseline_deviation_score": 0,
+        "baseline_anomalies": [],
+        "baseline_sample_count": 0,
+        "baseline_active": False,
+        "baseline_message": "",
+    }
+    if user_id:
+        sb = _get_supabase()
+        if sb:
+            # Compare against the reference FIRST, then fold this cry into it.
+            # The previous order included the current cry in its own baseline,
+            # biasing every deviation toward "normal".
+            try:
+                dev = compute_deviation(sb, user_id, features)
+                baseline_result["baseline_deviation_score"] = dev.get("deviation_score", 0)
+                baseline_result["baseline_anomalies"] = dev.get("anomalies", [])
+                baseline_result["baseline_sample_count"] = dev.get("sample_count", 0)
+                baseline_result["baseline_active"] = dev.get("baseline_active", False)
+                baseline_result["baseline_message"] = dev.get("message", "")
+
+                # Escalade si deviation > 70 ET baseline active (>= 5 echantillons)
+                if (dev.get("baseline_active")
+                        and dev.get("deviation_score", 0) > 70
+                        and dev.get("sample_count", 0) >= MIN_SAMPLES_FOR_DEVIATION):
+                    # Use the canonical ALERT_LEVELS ranking. A previous version
+                    # looked up "consult" (not a canonical level), which ranked a
+                    # real "consult_recommended" alert as 0 and overwrote it with
+                    # a value the frontend cannot render.
+                    current_alert = triage.get("alert", "none")
+                    if _alert_rank(current_alert) < _alert_rank("consult_recommended"):
+                        triage["alert"] = "consult_recommended"
+                        triage.setdefault("alert_notes", [])
+                        triage["alert_notes"].append(
+                            "Alerte escaladee par Babbl Baseline : deviation significative "
+                            f"({dev['deviation_score']}/100) par rapport au profil acoustique habituel."
+                        )
+            except Exception as e:
+                print(f"[baseline] deviation check failed: {e}")
+
+            try:
+                update_baseline(sb, user_id, features)
+            except Exception as e:
+                print(f"[baseline] update failed: {e}")
+
+    # ─── Persist to Supabase (best-effort) — AFTER every alert change ──
+    # Written last so history and the doctor report never contradict the
+    # screen the parent actually saw.
     if user_id:
         sb = _get_supabase()
         if sb:
@@ -266,46 +314,6 @@ def analyze():
                 }).execute()
             except Exception as e:
                 print(f"[supabase] save analysis failed: {e}")
-
-    # ─── Babbl Baseline — apprentissage du profil acoustique ────
-    baseline_result = {
-        "baseline_deviation_score": 0,
-        "baseline_anomalies": [],
-        "baseline_sample_count": 0,
-        "baseline_active": False,
-        "baseline_message": "",
-    }
-    if user_id:
-        sb = _get_supabase()
-        if sb:
-            try:
-                update_baseline(sb, user_id, features)
-            except Exception as e:
-                print(f"[baseline] update failed: {e}")
-
-            try:
-                dev = compute_deviation(sb, user_id, features)
-                baseline_result["baseline_deviation_score"] = dev.get("deviation_score", 0)
-                baseline_result["baseline_anomalies"] = dev.get("anomalies", [])
-                baseline_result["baseline_sample_count"] = dev.get("sample_count", 0)
-                baseline_result["baseline_active"] = dev.get("baseline_active", False)
-                baseline_result["baseline_message"] = dev.get("message", "")
-
-                # Escalade si deviation > 70 ET baseline active (>= 5 echantillons)
-                if (dev.get("baseline_active")
-                        and dev.get("deviation_score", 0) > 70
-                        and dev.get("sample_count", 0) >= MIN_SAMPLES_FOR_DEVIATION):
-                    current_alert = triage.get("alert", "none")
-                    alert_priority = {"none": 0, "monitor": 1, "consult": 2, "urgent": 3}
-                    if alert_priority.get(current_alert, 0) < alert_priority.get("consult", 2):
-                        triage["alert"] = "consult"
-                        triage.setdefault("alert_notes", [])
-                        triage["alert_notes"].append(
-                            "Alerte escaladee par Babbl Baseline : deviation significative "
-                            f"({dev['deviation_score']}/100) par rapport au profil acoustique habituel."
-                        )
-            except Exception as e:
-                print(f"[baseline] deviation check failed: {e}")
 
     return jsonify(
         {

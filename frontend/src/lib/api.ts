@@ -5,6 +5,8 @@
  * Override via the VITE_API_URL env var.
  */
 
+import { extensionForMime } from './recorder';
+
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5001';
 
 /** Full URL for a backend path (e.g. "/api/analyze"). */
@@ -22,7 +24,7 @@ export async function analyzeAudio(
   opts?: { voiceId?: string; parentLabel?: string; babyAgeMonths?: number },
 ) {
   const form = new FormData();
-  form.append('audio', audioBlob, 'recording.webm');
+  form.append('audio', audioBlob, `recording.${extensionForMime(audioBlob.type)}`);
   form.append('context', JSON.stringify(context));
   if (opts?.voiceId) form.append('voice_id', opts.voiceId);
   if (opts?.parentLabel) form.append('parent_label', opts.parentLabel);
@@ -42,7 +44,7 @@ export async function analyzeAudio(
  */
 export async function cloneVoice(audioBlob: Blob, name: string) {
   const form = new FormData();
-  form.append('audio', audioBlob, 'voice_sample.webm');
+  form.append('audio', audioBlob, `voice_sample.${extensionForMime(audioBlob.type)}`);
   form.append('name', name);
 
   const res = await fetch(apiUrl('/api/voice/clone'), { method: 'POST', body: form });

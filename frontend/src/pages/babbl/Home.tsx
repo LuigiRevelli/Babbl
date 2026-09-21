@@ -18,10 +18,11 @@ import {
 } from '@/components/babbl/primitives';
 import { analyzeAudio as apiAnalyze } from '@/lib/api';
 import { getUserData, saveUserData } from '@/lib/userData';
+import { CRY_AUDIO_CONSTRAINTS, CRY_RECORD_MS, createRecorder, chunksToBlob } from '@/lib/recorder';
 import { useAuth } from '@/lib/AuthContext';
 import { saveAnalysis as saveAnalysisToSupabase } from '@/lib/supabaseData';
 
-const RECORD_MS = 10_000; // auto-stop after ~10s (design copy says 8–12 s)
+const RECORD_MS = CRY_RECORD_MS; // durée fixe, définie dans lib/recorder.ts
 
 type Phase = 'idle' | 'listening' | 'analyzing';
 
@@ -53,15 +54,15 @@ export default function BabblHome() {
   const startRecording = useCallback(async () => {
     if (phase !== 'idle') return;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: CRY_AUDIO_CONSTRAINTS });
+      const recorder = createRecorder(stream);
       chunksRef.current = [];
       recorder.ondataavailable = e => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
       recorder.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const blob = chunksToBlob(chunksRef.current, recorder);
         setPhase('analyzing');
         await runAnalysis(blob);
       };

@@ -4,6 +4,7 @@ import { Mic, Square } from 'lucide-react';
 import MobileLayout from '@/components/MobileLayout';
 import BackButton from '@/components/BackButton';
 import { getUserData, saveUserData } from '@/lib/userData';
+import { CRY_AUDIO_CONSTRAINTS, CRY_RECORD_MS, createRecorder, chunksToBlob } from '@/lib/recorder';
 import { analyzeAudio as apiAnalyze } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
@@ -21,11 +22,12 @@ export default function Record() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startRecording = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: CRY_AUDIO_CONSTRAINTS });
+      const recorder = createRecorder(stream);
       chunksRef.current = [];
 
       recorder.ondataavailable = (e) => {
@@ -34,7 +36,7 @@ export default function Record() {
 
       recorder.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const blob = chunksToBlob(chunksRef.current, recorder);
         await analyzeAudio(blob);
       };
 
@@ -43,6 +45,8 @@ export default function Record() {
       setIsRecording(true);
       setSeconds(0);
       timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
+      // Durée fixe : un clip plus long ne mesure rien de plus (SYMPTOMS.md).
+      stopTimerRef.current = setTimeout(() => stopRecording(), CRY_RECORD_MS);
     } catch {
       alert(t('micError'));
     }
@@ -53,11 +57,15 @@ export default function Record() {
       mediaRecorderRef.current.stop();
     }
     if (timerRef.current) clearInterval(timerRef.current);
+    if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
     setIsRecording(false);
   }, []);
 
   useEffect(() => {
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
+    };
   }, []);
 
   const analyzeAudio = async (blob: Blob) => {

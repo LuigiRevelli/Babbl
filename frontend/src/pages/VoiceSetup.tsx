@@ -7,6 +7,7 @@ import { cloneVoice } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { updateProfile } from '@/lib/supabaseData';
+import { createRecorder, chunksToBlob } from '@/lib/recorder';
 
 const AGE_OPTIONS: { value: AgeRange; label: string }[] = [
   { value: '0-3', label: t('age0_3') },
@@ -56,13 +57,15 @@ export default function VoiceSetup() {
 
   const startRecording = async () => {
     try {
+      // Voix du PARENT (clonage) : on garde la réduction de bruit du navigateur,
+      // elle aide le clone. Les contraintes brutes ne valent que pour le pleur.
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+      const mr = createRecorder(stream);
       chunksRef.current = [];
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       mr.onstop = () => {
         stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const blob = chunksToBlob(chunksRef.current, mr);
         const newBlobs = [...audioBlobs];
         newBlobs[currentPhrase] = blob;
         setAudioBlobs(newBlobs);
@@ -91,7 +94,7 @@ export default function VoiceSetup() {
     try {
       // Merge all recorded blobs into a single audio file for the API
       const allBlobs = audioBlobs.filter((b): b is Blob => b !== null);
-      const merged = new Blob(allBlobs, { type: 'audio/webm' });
+      const merged = new Blob(allBlobs, { type: allBlobs[0]?.type || 'audio/webm' });
 
       const { voice_id } = await cloneVoice(merged, userName || t('babblParent'));
 

@@ -1,35 +1,38 @@
 """
-Context-aware post-processing rules for cry prediction.
+Règles déterministes de Babbl — tout ce qui n'est PAS le LLM.
 
-The ML model provides audio-based probabilities. These helpers adjust the
-distribution using lightweight contextual rules from the dashboard and compute
-an interpretable reliability score for the user.
+Quatre fonctions pures, testables sans réseau :
+
+  recording_gate(features)        → refuser un enregistrement inexploitable
+  intensity_observation(features) → Couche 1, texte, jamais chiffré
+  context_hypotheses(context)     → Couche 2, depuis ce que le parent a saisi
+  safety_cards(context, age)      → cartes statiques, jamais déduites du son
+
+Ce module ne produit ni probabilité, ni pourcentage, ni niveau d'alerte, ni
+nom de maladie. Voir SYMPTOMS.md pour la raison de chaque absence.
 """
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Dict, Tuple
 
-from taxonomy import CAUSES
+from taxonomy import (
+    CONTEXT_HYPOTHESES,
+    HYPOTHESIS_DISCLAIMER,
+    INTENSITY_DISCLAIMER,
+    INTENSITY_OBSERVATIONS,
+    SAFETY_CARDS,
+    SAFETY_FOOTER,
+)
 
 
-def _clamp(value: float, minimum: float, maximum: float) -> float:
-    return max(minimum, min(maximum, value))
-
-
-def _normalize(probabilities: Dict[str, float]) -> Dict[str, float]:
-    total = sum(max(float(probabilities.get(c, 0.0)), 0.0) for c in CAUSES)
-    if total <= 0:
-        return {cause: 1.0 / len(CAUSES) for cause in CAUSES}
-    return {cause: max(float(probabilities.get(cause, 0.0)), 0.0) / total for cause in CAUSES}
-
+# ─── Helpers contexte ────────────────────────────────────────────────
 
 def _minutes_since_iso(iso_value: str | None) -> float | None:
     if not iso_value:
         return None
     try:
-        parsed = datetime.fromisoformat(iso_value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(str(iso_value).replace("Z", "+00:00"))
         now = datetime.now(timezone.utc)
         if parsed.tzinfo is None:
             parsed = parsed.replace(tzinfo=timezone.utc)
@@ -40,208 +43,196 @@ def _minutes_since_iso(iso_value: str | None) -> float | None:
 
 def _bucket_to_minutes(bucket: str | None) -> float | None:
     mapping = {
-        "<1h": 30,
-        "1-2h": 90,
-        "2-3h": 150,
-        "3-4h": 210,
-        "4h+": 300,
-        "<30min": 15,
-        "30min-1h": 45,
-        "2h+": 120,
+        "<30min": 15, "30min-1h": 45, "<1h": 30, "1-2h": 90,
+        "2h+": 120, "2-3h": 150, "3-4h": 210, "4h+": 300,
     }
-    if not bucket:
-        return None
-    return mapping.get(bucket)
+    return mapping.get(bucket) if bucket else None
 
 
 def _meal_minutes(context: dict) -> float | None:
-    iso_minutes = _minutes_since_iso(context.get("lastMealAt") or context.get("last_meal_at"))
-    if iso_minutes is not None:
-        return iso_minutes
+    for key in ("lastMealAt", "last_meal_at", "lastFeedingTime", "lastMeal"):
+        m = _minutes_since_iso(context.get(key))
+        if m is not None:
+            return m
     return _bucket_to_minutes(context.get("time_since_last_feeding"))
 
 
 def _diaper_minutes(context: dict) -> float | None:
-    iso_minutes = _minutes_since_iso(context.get("lastDiaperAt") or context.get("last_diaper_at"))
-    if iso_minutes is not None:
-        return iso_minutes
+    for key in ("lastDiaperAt", "last_diaper_at", "lastDiaperTime", "lastDiaper"):
+        m = _minutes_since_iso(context.get(key))
+        if m is not None:
+            return m
     return _bucket_to_minutes(context.get("time_since_last_diaper"))
 
 
-def apply_context_rules(probabilities: Dict[str, float], context: dict) -> tuple[Dict[str, float], list[str]]:
-    """Adjust a probability distribution using lightweight contextual rules."""
-    probs = _normalize(probabilities)
-    notes: list[str] = []
-
-    meal_minutes = _meal_minutes(context)
-    if meal_minutes is not None:
-        if meal_minutes < 60:
-            probs["hunger"] *= 0.55
-            # A recent feeding makes trapped air / burping the likelier cause.
-            probs["gas"] *= 1.30
-            notes.append("Recent feeding lowers hunger and raises the gas prior.")
-        elif meal_minutes < 120:
-            probs["hunger"] *= 0.85
-            probs["gas"] *= 1.10
-            notes.append("Feeding within the last 2 hours keeps hunger moderate.")
-        elif meal_minutes < 240:
-            probs["hunger"] *= 1.15
-            notes.append("Feeding more than 2 hours ago increases hunger slightly.")
-        else:
-            probs["hunger"] *= 1.35
-            notes.append("Feeding far in the past increases hunger strongly.")
-
-    diaper_minutes = _diaper_minutes(context)
-    if diaper_minutes is not None:
-        if diaper_minutes < 60:
-            probs["discomfort"] *= 0.7
-            probs["pain"] *= 0.9
-            notes.append("A recent diaper change lowers discomfort-related causes.")
-        elif diaper_minutes < 180:
-            probs["discomfort"] *= 0.95
-        else:
-            probs["discomfort"] *= 1.2
-            probs["pain"] *= 1.05
-            notes.append("A long time since the last diaper change increases discomfort.")
-
-    posture = (context.get("posture") or context.get("position") or "").lower()
-    meal_hint = meal_minutes is not None and meal_minutes < 120
-
-    if posture in {"on tummy", "belly", "tummy"}:
-        probs["discomfort"] *= 1.15
-        probs["pain"] *= 1.08
-        notes.append("Tummy posture slightly increases discomfort-related causes.")
-    elif posture in {"lying on back", "back", "on back"} and meal_hint:
-        probs["discomfort"] *= 1.12
-        notes.append("A recent meal while lying on the back can raise discomfort slightly.")
-    elif posture in {"held upright", "upright", "cradled", "sitting up"}:
-        probs["need_for_comfort"] *= 1.08
-
-    age_months_raw = context.get("babyAgeMonths") or context.get("baby_age_months")
+def _awake_minutes(context: dict) -> float | None:
+    for key in ("awakeSinceAt", "awake_since_at", "lastSleepEndAt"):
+        m = _minutes_since_iso(context.get(key))
+        if m is not None:
+            return m
+    raw = context.get("awakeMinutes") or context.get("awake_minutes")
     try:
-        age_months = int(age_months_raw) if age_months_raw is not None else None
-    except Exception:
-        age_months = None
-
-    if age_months is not None:
-        if age_months < 3:
-            probs["need_for_comfort"] *= 1.1
-        elif age_months < 6:
-            probs["fatigue"] *= 1.08
-        elif age_months >= 12:
-            probs["overstimulation"] *= 1.05
-
-    adjusted = _normalize(probs)
-    return adjusted, notes
+        return float(raw) if raw is not None else None
+    except (TypeError, ValueError):
+        return None
 
 
-def reliability_score(features: dict, probabilities: Dict[str, float], context: dict) -> tuple[int, str, list[str]]:
-    """Compute a simple, explainable reliability score out of 100."""
-    ordered = sorted(probabilities.values(), reverse=True)
-    top = ordered[0] if ordered else 0.0
-    second = ordered[1] if len(ordered) > 1 else 0.0
-    margin = max(top - second, 0.0)
+def _age_months(context: dict, fallback: int | None = None) -> int | None:
+    raw = context.get("babyAgeMonths") or context.get("baby_age_months")
+    try:
+        return int(raw) if raw is not None else fallback
+    except (TypeError, ValueError):
+        return fallback
 
+
+def _age_days(context: dict) -> int | None:
+    raw = context.get("babyAgeDays") or context.get("baby_age_days")
+    try:
+        return int(raw) if raw is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _fmt_delay(minutes: float) -> str:
+    if minutes < 60:
+        return f"{int(round(minutes))} min"
+    hours = minutes / 60.0
+    return f"{hours:.0f} h" if abs(hours - round(hours)) < 0.1 else f"{hours:.1f} h".replace(".", ",")
+
+
+# ─── 1. Porte d'entrée : enregistrement exploitable ? ────────────────
+
+MIN_DURATION_S = 3.0
+MAX_SILENCE_RATIO = 0.90
+
+
+def recording_gate(features: dict) -> tuple[bool, str | None, str | None]:
+    """Retourne (ok, code, message_fr). Babbl refuse de répondre plutôt que de
+    répondre sur rien : dans l'étude de référence, 79,6 % des séquences ont été
+    écartées pour bruit avant analyse."""
     duration = float(features.get("duration_seconds", 0.0) or 0.0)
-    silence_ratio = float(features.get("silence_ratio", 0.0) or 0.0)
+    silence = float(features.get("silence_ratio", 0.0) or 0.0)
+    pitch = float(features.get("pitch_mean_hz", 0.0) or 0.0)
 
-    if 5 <= duration <= 20:
-        audio_quality = 1.0
-    elif 3 <= duration < 5 or 20 < duration <= 30:
-        audio_quality = 0.78
+    if duration < MIN_DURATION_S:
+        return False, "too_short", (
+            f"L'enregistrement dure {duration:.1f} s. Il en faut au moins "
+            f"{MIN_DURATION_S:.0f} pour que Babbl entende quelque chose. Recommencez."
+        )
+    if silence > MAX_SILENCE_RATIO or pitch <= 0.0:
+        return False, "no_cry_detected", (
+            "Babbl n'a pas entendu de pleur sur cet enregistrement. Rapprochez "
+            "le téléphone (20 à 30 cm) et recommencez."
+        )
+    return True, None, None
+
+
+# ─── 2. Couche 1 : observation sonore (texte, jamais chiffré) ────────
+
+def intensity_observation(features: dict) -> dict:
+    """Observation coarse, en trois niveaux, à partir de deux grandeurs peu
+    dépendantes du volume capté : la continuité du pleur sur le clip et sa
+    hauteur moyenne. Ce n'est pas une échelle validée — c'est le maximum que
+    SYMPTOMS.md autorise (« observation textuelle non stockée ») en attendant
+    les expériences 0-2 (chaîne de capture, dégradation, test-retest).
+    Le résultat ne doit être ni stocké, ni historisé, ni chiffré au parent."""
+    duration = float(features.get("duration_seconds", 0.0) or 0.0)
+    silence = float(features.get("silence_ratio", 0.0) or 0.0)
+    pitch = float(features.get("pitch_mean_hz", 0.0) or 0.0)
+    continuity = max(0.0, min(1.0, 1.0 - silence))
+
+    if continuity < 0.30 or pitch <= 0.0:
+        level = "faible"
+    elif continuity >= 0.60 and pitch >= 450.0:
+        level = "intense"
     else:
-        audio_quality = 0.55
+        level = "modere"
 
-    if silence_ratio > 0.82:
-        audio_quality *= 0.8
-    elif silence_ratio < 0.03:
-        audio_quality *= 0.9
+    seconds = int(round(duration)) if duration >= 1 else 1
+    return {
+        "level": level,
+        "observation": INTENSITY_OBSERVATIONS[level].format(seconds=seconds),
+        "disclaimer": INTENSITY_DISCLAIMER,
+    }
 
-    context_count = sum(
-        1
-        for key in ("posture", "lastMealAt", "lastMeal", "lastDiaperAt", "lastDiaper", "babyAgeMonths", "baby_age_months")
-        if context.get(key) not in (None, "")
-    )
-    context_quality = _clamp(context_count / 4.0, 0.0, 1.0)
 
-    score = (0.48 * top + 0.27 * margin + 0.15 * audio_quality + 0.10 * context_quality) * 100.0
-    score = int(round(_clamp(score, 0.0, 100.0)))
+# ─── 3. Couche 2 : hypothèses contextuelles ──────────────────────────
 
-    if score >= 75:
-        label = "high"
-    elif score >= 50:
-        label = "medium"
+def context_hypotheses(context: dict, baby_age_months: int | None = None) -> list[dict]:
+    """Hypothèses ordonnées, chacune avec sa raison en français et
+    `source: "context"`. Rien ici ne lit l'audio."""
+    hyps: list[tuple[int, str, str]] = []  # (poids, clé, pourquoi)
+
+    meal = _meal_minutes(context)
+    if meal is not None:
+        if meal >= 180:
+            hyps.append((3, "hunger", f"Dernière tétée il y a {_fmt_delay(meal)} — proposez le sein ou le biberon sans attendre."))
+        elif meal >= 120:
+            hyps.append((2, "hunger", f"Dernière tétée il y a {_fmt_delay(meal)}."))
+        elif meal < 60:
+            hyps.append((1, "discomfort", f"Tétée il y a {_fmt_delay(meal)} : un rot ou une position redressée peuvent aider."))
+
+    diaper = _diaper_minutes(context)
+    if diaper is not None and diaper >= 180:
+        hyps.append((2, "discomfort", f"Dernière couche il y a {_fmt_delay(diaper)}."))
+
+    awake = _awake_minutes(context)
+    age = _age_months(context, baby_age_months)
+    if awake is not None:
+        limit = 60 if (age is not None and age < 3) else 120
+        if awake >= limit:
+            hyps.append((2, "fatigue", f"Éveillé depuis {_fmt_delay(awake)}."))
+
+    if age is not None and age < 3:
+        hyps.append((1, "need_for_comfort", "Avant 3 mois, le contact et le portage apaisent souvent."))
     else:
-        label = "low"
+        hyps.append((0, "need_for_comfort", "Le contact et votre voix apaisent souvent."))
 
-    notes = []
-    if audio_quality >= 0.9:
-        notes.append("Audio length is in the ideal range.")
-    elif audio_quality < 0.7:
-        notes.append("Audio quality is limited by short length or heavy silence.")
-    if context_quality >= 0.75:
-        notes.append("Enough context is available to refine the prediction.")
+    # dédoublonner par clé en gardant le poids le plus fort, puis trier
+    best: dict[str, tuple[int, str]] = {}
+    for weight, key, why in hyps:
+        if key not in best or weight > best[key][0]:
+            best[key] = (weight, why)
+    ordered = sorted(best.items(), key=lambda kv: -kv[1][0])
 
-    return score, label, notes
+    return [
+        {
+            "key": key,
+            "label": CONTEXT_HYPOTHESES[key]["fr"],
+            "why": why,
+            "source": "context",
+            "disclaimer": HYPOTHESIS_DISCLAIMER,
+        }
+        for key, (_, why) in ordered
+    ]
 
 
-# ─── Alert escalation ────────────────────────────────────────
+# ─── 4. Cartes de sécurité (statiques) ───────────────────────────────
 
-ALERT_LEVELS = ("none", "monitor", "consult_recommended", "urgent")
-
-
-def _alert_rank(level: str) -> int:
-    """Higher = more severe."""
+def safety_cards(context: dict, baby_age_months: int | None = None) -> dict:
+    """Les trois cartes, toujours. `emphasized` dépend de l'âge et de ce que
+    le parent a saisi — jamais du son."""
+    age_m = _age_months(context, baby_age_months)
+    age_d = _age_days(context)
+    fever = context.get("feverMeasuredC") or context.get("fever_measured_c")
     try:
-        return ALERT_LEVELS.index(level)
-    except ValueError:
-        # Backward compat: map old value
-        if level == "seek_medical_advice":
-            return 2  # consult_recommended
-        return 0
+        fever = float(fever) if fever is not None else None
+    except (TypeError, ValueError):
+        fever = None
 
+    cards = []
+    for key, meta in SAFETY_CARDS.items():
+        rule = meta["emphasize_when"]
+        if rule == "always":
+            emphasized = True
+        elif rule == "age_months < 3":
+            emphasized = (age_m is not None and age_m < 3) or (fever is not None and fever >= 38.0)
+        elif rule == "age_days < 15":
+            emphasized = (age_d is not None and age_d < 15) or (age_m == 0)
+        else:
+            emphasized = False
+        cards.append({"key": key, "title": meta["title"], "body": meta["body"], "emphasized": emphasized})
 
-def escalate_alert(
-    ai_alert: str,
-    probabilities: Dict[str, float],
-    features: dict,
-    context: dict,
-) -> tuple[str, list[str]]:
-    """
-    Apply rule-based escalation on top of the AI-determined alert level.
-    Returns the (potentially escalated) alert level and explanatory notes.
-    """
-    current = _alert_rank(ai_alert)
-    notes: list[str] = []
-
-    pain = float(probabilities.get("pain", 0.0))
-    discomfort = float(probabilities.get("discomfort", 0.0))
-
-    # Rule 1: high pain probability → at least monitor
-    if pain >= 0.40 and current < 1:
-        current = 1
-        notes.append("Probabilité de douleur élevée (≥40%) → surveillance recommandée.")
-
-    # Rule 2: very high pain → consult recommended
-    if pain >= 0.60 and current < 2:
-        current = 2
-        notes.append("Probabilité de douleur très élevée (≥60%) → consultation recommandée.")
-
-    # Rule 3: extreme pain → urgent
-    if pain >= 0.80 and current < 3:
-        current = 3
-        notes.append("Probabilité de douleur extrême (≥80%) → contact professionnel urgent.")
-
-    # Rule 4: high pain + high discomfort combined → escalate
-    if (pain + discomfort) >= 0.75 and current < 2:
-        current = 2
-        notes.append("Douleur + inconfort combinés élevés → consultation recommandée.")
-
-    # Rule 5: very short, high-pitch cry (potential distress signal)
-    pitch_mean = float(features.get("pitch_mean_hz", 0) or 0)
-    duration = float(features.get("duration_seconds", 0) or 0)
-    if pitch_mean > 600 and pain >= 0.30 and current < 1:
-        current = 1
-        notes.append("Pitch élevé (>600 Hz) associé à de la douleur → surveillance.")
-
-    return ALERT_LEVELS[current], notes
+    # Les cartes mises en avant d'abord, ordre stable ensuite.
+    cards.sort(key=lambda c: 0 if c["emphasized"] else 1)
+    return {"cards": cards, "footer": SAFETY_FOOTER}

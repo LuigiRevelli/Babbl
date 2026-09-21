@@ -40,7 +40,7 @@ export default function History() {
       const nightCauses: Record<string, number> = {};
       nightAnalyses.forEach(a => { nightCauses[a.topCause] = (nightCauses[a.topCause] || 0) + 1; });
       const topNight = Object.entries(nightCauses).sort(([, a], [, b]) => b - a)[0];
-      return `Les pleurs sont plus fréquents entre 2h et 5h du matin. Cause principale nocturne : ${translateCause(topNight[0])}.`;
+      return `Les pleurs sont plus fréquents entre 2h et 5h du matin. Hypothèse la plus fréquente la nuit (d'après vos saisies) : ${translateCause(topNight[0])}.`;
     }
     return null;
   }, [data.analyses]);

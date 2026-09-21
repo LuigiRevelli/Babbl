@@ -49,6 +49,8 @@ export default function Dashboard() {
             sosModeUsed: false,
             key_signals: a.key_signals ?? [],
             recommended_actions: a.recommended_actions ?? [],
+            hypotheses: a.hypotheses ?? [],
+            safety_cards: a.safety_cards ?? [],
             audio_url: a.audio_url,
             comfort_audio_url: a.comfort_audio_url,
             comfort_text: a.comfort_text,

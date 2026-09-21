@@ -1,0 +1,125 @@
+"""
+Tests des règles déterministes et du garde-fou LLM. Sans réseau.
+
+Lancer :  cd backend && .venv/bin/python -m tests.test_rules
+(ou pytest si installé)
+"""
+
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from datetime import datetime, timedelta, timezone
+
+from mistral_client import fallback_guidance, sanitize_llm_output
+from taxonomy import HYPOTHESIS_KEYS, SAFETY_CARDS
+from triage_rules import context_hypotheses, intensity_observation, recording_gate, safety_cards
+
+
+def _iso_ago(minutes: float) -> str:
+    return (datetime.now(timezone.utc) - timedelta(minutes=minutes)).isoformat()
+
+
+GOOD = {"duration_seconds": 9.8, "silence_ratio": 0.25, "pitch_mean_hz": 480.0}
+
+
+def test_gate_rejects_short_and_silent():
+    assert recording_gate({"duration_seconds": 1.2, "silence_ratio": 0.1, "pitch_mean_hz": 400})[1] == "too_short"
+    assert recording_gate({"duration_seconds": 8.0, "silence_ratio": 0.95, "pitch_mean_hz": 400})[1] == "no_cry_detected"
+    assert recording_gate({"duration_seconds": 8.0, "silence_ratio": 0.2, "pitch_mean_hz": 0.0})[1] == "no_cry_detected"
+    ok, code, msg = recording_gate(GOOD)
+    assert ok and code is None and msg is None
+
+
+def test_intensity_is_text_only_and_never_reassuring():
+    for feats, level in (
+        (GOOD, "intense"),
+        ({"duration_seconds": 9.0, "silence_ratio": 0.5, "pitch_mean_hz": 380.0}, "modere"),
+        ({"duration_seconds": 9.0, "silence_ratio": 0.8, "pitch_mean_hz": 380.0}, "faible"),
+    ):
+        out = intensity_observation(feats)
+        assert out["level"] == level
+        assert set(out) == {"level", "observation", "disclaimer"}  # aucun score chiffré
+        assert "%" not in out["observation"]
+        assert "n'est jamais rassurant" in out["disclaimer"]
+        assert "normal" not in out["observation"].lower()
+
+
+def test_hypotheses_come_from_context_only():
+    ctx = {"lastFeedingTime": _iso_ago(250), "lastDiaperTime": _iso_ago(200), "babyAgeMonths": 2}
+    hyps = context_hypotheses(ctx, 2)
+    keys = [h["key"] for h in hyps]
+    assert keys[0] == "hunger", keys
+    assert "discomfort" in keys and "need_for_comfort" in keys
+    assert all(h["source"] == "context" for h in hyps)
+    assert all(h["key"] in HYPOTHESIS_KEYS for h in hyps)
+    assert all("Le son ne permet pas" in h["disclaimer"] for h in hyps)
+    # sans contexte : uniquement le réconfort, jamais une cause inventée
+    assert [h["key"] for h in context_hypotheses({}, None)] == ["need_for_comfort"]
+
+
+def test_safety_cards_always_all_three():
+    for ctx, age in (({}, 8), ({"babyAgeMonths": 1}, 1), ({"babyAgeDays": 5}, 0), ({"feverMeasuredC": 38.4}, 6)):
+        out = safety_cards(ctx, age)
+        assert {c["key"] for c in out["cards"]} == set(SAFETY_CARDS)
+        assert out["footer"].startswith("En cas de doute")
+    young = {c["key"]: c["emphasized"] for c in safety_cards({}, 1)["cards"]}
+    assert young["fever_under_3_months"] and young["breathing"]
+    fever = {c["key"]: c["emphasized"] for c in safety_cards({"feverMeasuredC": 38.4}, 6)["cards"]}
+    assert fever["fever_under_3_months"]
+    newborn = {c["key"]: c["emphasized"] for c in safety_cards({"babyAgeDays": 5}, 0)["cards"]}
+    assert newborn["newborn_under_15_days"]
+
+
+def test_sanitizer_blocks_medical_claims_percentages_and_alerts():
+    hyps = context_hypotheses({"lastFeedingTime": _iso_ago(200)}, 3)
+    inten = intensity_observation(GOOD)
+    bad = {
+        "probabilities": {"hunger": 0.8},
+        "alert": "urgent",
+        "medical_considerations": [{"condition": "colic"}],
+        "parent_summary": "Il a 80% de chances d'avoir une colique, le son l'indique.",
+        "recommended_actions": [
+            {"priority": 1, "action": "Consulte pour une otite.", "reasoning": "douleur probable"},
+            {"priority": 2, "action": "Propose le sein.", "reasoning": "Dernière tétée il y a longtemps."},
+        ],
+        "key_signals": [
+            {"signal": "pitch 600 Hz détecté", "source": "audio"},
+            {"signal": "Dernière tétée il y a 3 h", "source": "context"},
+        ],
+    }
+    out = sanitize_llm_output(bad, hyps, inten, "Léa")
+    assert set(out) == {"parent_summary", "recommended_actions", "key_signals", "guidance_source"}
+    assert "%" not in out["parent_summary"] and "colique" not in out["parent_summary"].lower()
+    assert out["guidance_source"] == "deterministic"
+    assert [a["action"] for a in out["recommended_actions"]] == ["Propose le sein."]
+    assert all(s["source"] in ("context", "intensity") for s in out["key_signals"])
+    assert not any("audio" == s["source"] for s in out["key_signals"])
+
+
+def test_sanitizer_keeps_a_clean_llm_answer():
+    hyps = context_hypotheses({"lastFeedingTime": _iso_ago(200)}, 3)
+    inten = intensity_observation(GOOD)
+    good = {
+        "parent_summary": "D'après ta dernière tétée il y a 3 h, la faim est l'hypothèse la plus simple. Essaie d'abord ça.",
+        "recommended_actions": [{"priority": 1, "action": "Propose le sein ou le biberon.", "reasoning": "C'est le plus simple à tester."}],
+        "key_signals": [{"signal": "Dernière tétée il y a 3 h", "source": "context"}],
+    }
+    out = sanitize_llm_output(good, hyps, inten)
+    assert out["guidance_source"] == "llm"
+    assert out["parent_summary"] == good["parent_summary"]
+
+
+def test_fallback_never_empty():
+    out = fallback_guidance([], intensity_observation(GOOD), None)
+    assert out["parent_summary"] and out["recommended_actions"] and out["key_signals"]
+    assert "%" not in out["parent_summary"]
+
+
+if __name__ == "__main__":
+    fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
+    for fn in fns:
+        fn()
+        print(f"ok  {fn.__name__}")
+    print(f"{len(fns)} tests passed")

@@ -1,15 +1,34 @@
-import { useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Volume2, Home, ThumbsUp, ThumbsDown, Heart, Phone, MapPin, Stethoscope, AlertTriangle } from 'lucide-react';
+/**
+ * Écran de résultat (route legacy /legacy/analysis/:id).
+ *
+ * Deux couches, rien d'autre (SYMPTOMS.md) : l'observation sonore en texte,
+ * transitoire (état de navigation, jamais stockée), puis les hypothèses
+ * d'après ce que le parent a saisi. Aucune barre, aucun pourcentage, aucun
+ * niveau d'alerte. Les trois cartes de sécurité sont toujours affichées.
+ */
+
+import { useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Volume2, Home, ThumbsUp, ThumbsDown, Heart, Phone } from 'lucide-react';
 import MobileLayout from '@/components/MobileLayout';
 import BabblReport from '@/components/BabblReport';
 import { getUserData, saveUserData } from '@/lib/userData';
 import { apiUrl } from '@/lib/api';
-import { t, translateCause } from '@/lib/i18n';
+import { t } from '@/lib/i18n';
+import type { SafetyCard, TransientObservation } from '@/lib/analysis';
+import { HYPOTHESIS_DISCLAIMER, INTENSITY_DISCLAIMER, SAFETY_CARDS, SAFETY_FOOTER, hypothesisFr } from '@/lib/taxonomy';
+
+const LEVEL_WORD: Record<string, string> = {
+  intense: 'Pleur intense',
+  modere: 'Pleur modéré',
+  faible: 'Pleur faible',
+};
 
 export default function AnalysisResult() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const observation = (location.state as { observation?: TransientObservation } | null)?.observation;
   const data = getUserData();
   const analysis = data.analyses.find(a => a.id === id);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -28,13 +47,15 @@ export default function AnalysisResult() {
     );
   }
 
-  const confidenceLabel =
-    analysis.confidence_level === 'high' ? t('confidenceHigh')
-    : analysis.confidence_level === 'medium' ? t('confidenceMedium')
-    : t('confidenceLow');
-
-  const probEntries = Object.entries(analysis.probabilities).sort(([, a], [, b]) => b - a);
-  const alertLevel = analysis.alert ?? 'none';
+  const hypotheses = analysis.hypotheses ?? [];
+  const cards: SafetyCard[] =
+    analysis.safety_cards && analysis.safety_cards.length > 0
+      ? analysis.safety_cards
+      : (Object.keys(SAFETY_CARDS) as Array<keyof typeof SAFETY_CARDS>).map(key => ({ key, ...SAFETY_CARDS[key], emphasized: false }));
+  const footer = analysis.safety_footer ?? SAFETY_FOOTER;
+  const actions: string[] = (analysis.recommended_actions ?? [])
+    .map((a: any) => (typeof a === 'string' ? a : a?.action ?? ''))
+    .filter(Boolean);
 
   const playAudio = (url: string, onEnd: () => void) => {
     if (audioRef.current) {
@@ -85,131 +106,62 @@ export default function AnalysisResult() {
         <h1 className="font-serif text-2xl font-bold">{t('accordingToBabbl')}</h1>
       </div>
 
-      {/* ═══ ALERT BANNER ═══ */}
-      {alertLevel === 'monitor' && (
-        <div
-          className="rounded-2xl p-4 mb-4 animate-fade-in border-2"
-          style={{ background: 'hsl(45 100% 94%)', borderColor: 'hsl(45 90% 60%)' }}
-        >
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-6 h-6 shrink-0 mt-0.5" style={{ color: 'hsl(45 90% 40%)' }} />
-            <div>
-              <p className="font-bold text-sm" style={{ color: 'hsl(45 90% 30%)' }}>{t('alertMonitorTitle')}</p>
-              <p className="text-xs mt-1 leading-relaxed" style={{ color: 'hsl(45 50% 30%)' }}>{t('alertMonitorDesc')}</p>
-            </div>
-          </div>
+      {/* Couche 1 — ce que Babbl a entendu (transitoire) */}
+      <div className="rounded-2xl bg-card border border-border/50 p-5 mb-4 animate-scale-in">
+        <p className="text-xs text-muted-foreground mb-2 font-semibold uppercase tracking-wider">{t('observationTitle')}</p>
+        {observation ? (
+          <>
+            <p className="font-serif text-2xl font-bold text-primary mb-2">{LEVEL_WORD[observation.intensity.level] ?? 'Pleur'}</p>
+            <p className="text-sm leading-relaxed">{observation.intensity.observation}</p>
+            <p className="text-xs text-muted-foreground mt-2 italic leading-relaxed">{observation.intensity.disclaimer || INTENSITY_DISCLAIMER}</p>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground italic leading-relaxed">{t('observationNotKept')}</p>
+        )}
+      </div>
+
+      {/* Couche 2 — d'après ce que vous avez saisi */}
+      <div className="rounded-2xl bg-card border border-border/50 p-5 mb-4 animate-fade-in" style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}>
+        <p className="text-xs text-muted-foreground mb-3 font-semibold uppercase tracking-wider">{t('hypothesesTitle')}</p>
+        {hypotheses.length === 0 ? (
+          <p className="text-sm text-muted-foreground leading-relaxed">{t('hypothesesEmpty')}</p>
+        ) : (
+          <ol className="space-y-3">
+            {hypotheses.map((h, i) => (
+              <li key={h.key} className="flex items-start gap-3">
+                <span className="mt-0.5 w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                  <span className="text-primary text-sm font-bold">{i + 1}</span>
+                </span>
+                <div>
+                  <p className={`font-serif ${i === 0 ? 'text-xl font-bold' : 'text-base font-semibold text-muted-foreground'}`}>
+                    {h.label || hypothesisFr(h.key)}
+                  </p>
+                  <p className="text-sm text-muted-foreground leading-snug">{h.why}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+        <p className="text-xs text-muted-foreground mt-3 italic">{HYPOTHESIS_DISCLAIMER}</p>
+      </div>
+
+      {/* Résumé */}
+      {analysis.parent_summary && (
+        <div className="rounded-2xl bg-card border border-border/50 p-4 mb-4 animate-fade-in" style={{ animationDelay: '0.15s', animationFillMode: 'backwards' }}>
+          <p className="text-xs text-muted-foreground mb-2 font-semibold uppercase tracking-wider">{t('summary')}</p>
+          <p className="text-sm leading-relaxed">{analysis.parent_summary}</p>
         </div>
       )}
 
-      {alertLevel === 'consult_recommended' && (
-        <div
-          className="rounded-2xl p-4 mb-4 animate-fade-in border-2"
-          style={{ background: 'hsl(25 100% 94%)', borderColor: 'hsl(25 90% 55%)' }}
-        >
-          <div className="flex items-start gap-3">
-            <Stethoscope className="w-6 h-6 shrink-0 mt-0.5" style={{ color: 'hsl(25 90% 40%)' }} />
-            <div>
-              <p className="font-bold text-sm" style={{ color: 'hsl(25 90% 30%)' }}>{t('alertConsultTitle')}</p>
-              <p className="text-xs mt-1 leading-relaxed" style={{ color: 'hsl(25 50% 30%)' }}>{t('alertConsultDesc')}</p>
-            </div>
-          </div>
-          <a
-            href="https://www.doctolib.fr/pediatre"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 w-full py-3 rounded-xl flex items-center justify-center gap-2 font-bold text-sm text-white transition-all active:scale-[0.98]"
-            style={{ background: 'hsl(25 90% 50%)' }}
-          >
-            <Stethoscope className="w-4 h-4" />
-            {t('alertFindPediatrician')}
-          </a>
-        </div>
-      )}
-
-      {alertLevel === 'urgent' && (
-        <div
-          className="rounded-2xl p-4 mb-4 animate-fade-in border-2"
-          style={{ background: 'hsl(0 100% 95%)', borderColor: 'hsl(0 80% 50%)' }}
-        >
-          <div className="flex items-start gap-3">
-            <Phone className="w-6 h-6 shrink-0 mt-0.5 text-destructive animate-pulse" />
-            <div>
-              <p className="font-bold text-sm text-destructive">{t('alertUrgentTitle')}</p>
-              <p className="text-xs mt-1 leading-relaxed" style={{ color: 'hsl(0 50% 30%)' }}>{t('alertUrgentDesc')}</p>
-            </div>
-          </div>
-          <div className="flex gap-2 mt-3">
-            <a
-              href="tel:15"
-              className="flex-1 py-3 rounded-xl flex items-center justify-center gap-2 font-bold text-sm text-white bg-destructive transition-all active:scale-[0.98]"
-            >
-              <Phone className="w-4 h-4" />
-              {t('alertCall15')}
-            </a>
-            <a
-              href="https://maps.google.com/maps?q=urgences+p%C3%A9diatriques+pr%C3%A8s+de+moi"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 py-3 rounded-xl flex items-center justify-center gap-2 font-bold text-sm border-2 border-destructive text-destructive transition-all active:scale-[0.98]"
-            >
-              <MapPin className="w-4 h-4" />
-              {t('alertFindER')}
-            </a>
-          </div>
-        </div>
-      )}
-
-      {/* Main cause */}
-      <div
-        className="rounded-2xl p-6 mb-4 text-center animate-scale-in"
-        style={{ background: 'linear-gradient(135deg, hsl(0 100% 74%), hsl(0 85% 62%))' }}
-      >
-        <p className="text-white/70 text-sm mb-1">{t('mainCause')}</p>
-        <p className="text-white text-3xl font-serif font-bold mb-2">{translateCause(analysis.topCause)}</p>
-        <p className={`text-sm font-semibold ${analysis.confidence_level === 'high' ? 'text-white' : 'text-white/70'}`}>
-          {t('confidence')} : {confidenceLabel}
-        </p>
-      </div>
-
-      {/* Summary */}
-      <div className="rounded-2xl bg-card border border-border/50 p-4 mb-4 animate-fade-in" style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}>
-        <p className="text-xs text-muted-foreground mb-2 font-semibold uppercase tracking-wider">{t('summary')}</p>
-        <p className="text-sm leading-relaxed">{analysis.parent_summary}</p>
-      </div>
-
-      {/* Probabilities */}
-      <div className="rounded-2xl bg-card border border-border/50 p-4 mb-4 animate-fade-in" style={{ animationDelay: '0.15s', animationFillMode: 'backwards' }}>
-        <p className="text-xs text-muted-foreground mb-3 font-semibold uppercase tracking-wider">{t('probabilities')}</p>
-        <div className="space-y-2">
-          {probEntries.map(([cause, prob]) => (
-            <div key={cause} className="flex items-center gap-3">
-              <span className="text-sm w-24 truncate">{translateCause(cause)}</span>
-              <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-primary transition-all duration-500"
-                  style={{ width: `${Math.round(prob * 100)}%` }}
-                />
-              </div>
-              <span className="text-xs text-muted-foreground w-10 text-right">{Math.round(prob * 100)}%</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Recommended actions */}
-      {analysis.recommended_actions && analysis.recommended_actions.length > 0 && (
+      {/* Gestes proposés */}
+      {actions.length > 0 && (
         <div
           className="rounded-2xl p-5 mb-4 animate-fade-in"
-          style={{
-            animationDelay: '0.2s',
-            animationFillMode: 'backwards',
-            background: 'linear-gradient(145deg, hsl(0 100% 92%), hsl(40 50% 92%))',
-            border: '2px solid hsl(0 100% 74% / 0.2)',
-          }}
+          style={{ animationDelay: '0.2s', animationFillMode: 'backwards', background: 'linear-gradient(145deg, hsl(0 100% 92%), hsl(40 50% 92%))', border: '2px solid hsl(0 100% 74% / 0.2)' }}
         >
           <p className="text-xs text-primary font-bold uppercase tracking-wider mb-4">{t('recommendedActions')}</p>
           <ul className="space-y-3">
-            {analysis.recommended_actions.map((action: string, i: number) => (
+            {actions.map((action, i) => (
               <li key={i} className="flex items-start gap-3">
                 <span className="mt-0.5 w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                   <span className="text-primary text-sm font-bold">{i + 1}</span>
@@ -221,7 +173,7 @@ export default function AnalysisResult() {
         </div>
       )}
 
-      {/* Listen button */}
+      {/* Écouter le résumé */}
       <button
         onClick={handleTTS}
         disabled={isPlaying}
@@ -232,55 +184,66 @@ export default function AnalysisResult() {
         <span className="font-semibold text-sm">{isPlaying ? t('playing') : t('listenSummary')}</span>
       </button>
 
-      {/* Comfort baby with cloned voice */}
+      {/* Réconforter avec la voix clonée */}
       {analysis.comfort_audio_url && (
         <button
           onClick={handleComfort}
           disabled={isComfortPlaying}
           className="w-full py-4 rounded-2xl flex items-center justify-center gap-3 mb-4 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 animate-fade-in"
-          style={{
-            animationDelay: '0.28s',
-            animationFillMode: 'backwards',
-            background: 'linear-gradient(135deg, hsl(0 100% 92%), hsl(340 60% 90%))',
-            border: '2px solid hsl(0 100% 74% / 0.2)',
-          }}
+          style={{ animationDelay: '0.28s', animationFillMode: 'backwards', background: 'linear-gradient(135deg, hsl(0 100% 92%), hsl(340 60% 90%))', border: '2px solid hsl(0 100% 74% / 0.2)' }}
         >
           <Heart className={`w-5 h-5 text-primary ${isComfortPlaying ? 'animate-pulse' : ''}`} />
-          <span className="font-semibold text-sm text-primary">
-            {isComfortPlaying ? t('playing') : t('comfortBaby')}
-          </span>
+          <span className="font-semibold text-sm text-primary">{isComfortPlaying ? t('playing') : t('comfortBaby')}</span>
         </button>
       )}
 
-      {/* Babbl Report — share with doctor */}
-      {alertLevel !== 'none' && (
-        <BabblReport analysis={analysis as any} />
-      )}
+      {/* Repères de sécurité — toujours affichés, jamais déduits du son */}
+      <div className="rounded-2xl bg-card border border-border/50 p-5 mb-4 animate-fade-in" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
+        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">{t('safetyTitle')}</p>
+        <p className="text-xs text-muted-foreground italic mb-3">{t('safetyNote')}</p>
+        <div className="space-y-2">
+          {cards.map(card => (
+            <div
+              key={card.key}
+              className="rounded-xl p-3 border"
+              style={card.emphasized ? { background: 'hsl(25 100% 95%)', borderColor: 'hsl(25 90% 55%)' } : { background: 'hsl(0 0% 100% / 0.4)', borderColor: 'hsl(0 0% 0% / 0.08)' }}
+            >
+              <p className="font-semibold text-sm" style={card.emphasized ? { color: 'hsl(25 90% 30%)' } : undefined}>{card.title}</p>
+              <p className="text-xs mt-1 leading-relaxed text-muted-foreground">{card.body}</p>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-3 mt-3">
+          <a href="tel:15" className="py-2 px-4 rounded-xl flex items-center gap-2 font-bold text-sm text-white bg-destructive transition-all active:scale-[0.98]">
+            <Phone className="w-4 h-4" />
+            {t('alertCall15')}
+          </a>
+          <p className="text-xs text-muted-foreground leading-snug">{footer}</p>
+        </div>
+      </div>
+
+      {/* Rapport pour le médecin */}
+      <BabblReport analysis={analysis} />
 
       {/* Feedback */}
-      <div className="rounded-2xl bg-card border border-border/50 p-4 mb-6 mt-4 text-center animate-fade-in" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
+      <div className="rounded-2xl bg-card border border-border/50 p-4 mb-6 mt-4 text-center animate-fade-in" style={{ animationDelay: '0.35s', animationFillMode: 'backwards' }}>
         <p className="text-xs text-muted-foreground mb-3">{t('feedbackQuestion')}</p>
         <div className="flex justify-center gap-4">
           <button
             onClick={() => handleFeedback('positive')}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 ${
-              feedback === 'positive' ? 'bg-success/20 scale-110' : 'bg-muted hover:bg-success/10'
-            }`}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 ${feedback === 'positive' ? 'bg-success/20 scale-110' : 'bg-muted hover:bg-success/10'}`}
           >
             <ThumbsUp className={`w-5 h-5 ${feedback === 'positive' ? 'text-success' : 'text-muted-foreground'}`} />
           </button>
           <button
             onClick={() => handleFeedback('negative')}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 ${
-              feedback === 'negative' ? 'bg-destructive/20 scale-110' : 'bg-muted hover:bg-destructive/10'
-            }`}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 ${feedback === 'negative' ? 'bg-destructive/20 scale-110' : 'bg-muted hover:bg-destructive/10'}`}
           >
             <ThumbsDown className={`w-5 h-5 ${feedback === 'negative' ? 'text-destructive' : 'text-muted-foreground'}`} />
           </button>
         </div>
       </div>
 
-      {/* Back to dashboard */}
       <button
         onClick={() => navigate('/dashboard')}
         className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-bold text-base flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"

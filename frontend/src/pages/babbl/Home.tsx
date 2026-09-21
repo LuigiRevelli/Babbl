@@ -19,6 +19,7 @@ import {
 import { analyzeAudio as apiAnalyze } from '@/lib/api';
 import { getUserData, saveUserData } from '@/lib/userData';
 import { CRY_AUDIO_CONSTRAINTS, CRY_RECORD_MS, createRecorder, chunksToBlob } from '@/lib/recorder';
+import { toStoredAnalysis, toSupabaseRow, transientObservation, type AnalyzeResponse } from '@/lib/analysis';
 import { useAuth } from '@/lib/AuthContext';
 import { saveAnalysis as saveAnalysisToSupabase } from '@/lib/supabaseData';
 
@@ -101,61 +102,27 @@ export default function BabblHome() {
       const ageMap: Record<string, number> = { '0-3': 2, '3-6': 5, '6-12': 9, '1-2': 18, '2+': 30 };
       const babyAgeMonths = ageMap[userData.parentProfile?.ageRange ?? '0-3'] ?? 3;
 
-      const result = await apiAnalyze(blob, ctx, {
+      const result = (await apiAnalyze(blob, ctx, {
         voiceId: userData.voiceProfile?.voiceId,
         parentLabel: userData.voiceProfile?.role ?? userData.parentProfile?.role ?? 'father',
         babyAgeMonths,
-      });
+      })) as AnalyzeResponse;
 
-      const probs: Record<string, number> = result.probabilities ?? {};
-      const topCause = Object.entries(probs).sort(([, a], [, b]) => (b as number) - (a as number))[0]?.[0] ?? 'unknown';
-      const actions: string[] = (result.recommended_actions ?? []).map((a: any) =>
-        typeof a === 'string' ? a : a.action ?? '',
-      );
-      const signals: string[] = (result.key_signals ?? []).map((s: any) =>
-        typeof s === 'string' ? s : s.signal ?? '',
-      );
-
-      const analysis = {
-        id: crypto.randomUUID(),
-        timestamp: new Date().toISOString(),
-        topCause,
-        probabilities: probs,
-        parent_summary: result.parent_summary ?? '',
-        confidence_level: result.confidence_level ?? 'medium',
-        alert: result.alert ?? 'none',
-        feedback: null,
-        actualCause: null,
-        sosModeUsed: false,
-        key_signals: signals,
-        recommended_actions: actions,
-        audio_url: result.audio_url ?? undefined,
-        comfort_audio_url: result.comfort_audio_url ?? undefined,
-        comfort_text: result.comfort_text ?? undefined,
-      };
+      // L'historique ne garde que le contexte, le résumé et les gestes.
+      const analysis = toStoredAnalysis(result, crypto.randomUUID());
       userData.analyses.push(analysis);
       saveUserData(userData);
 
       if (user?.id) {
         try {
-          await saveAnalysisToSupabase(user.id, {
-            id: analysis.id,
-            top_cause: analysis.topCause,
-            probabilities: analysis.probabilities,
-            parent_summary: analysis.parent_summary,
-            confidence_level: analysis.confidence_level,
-            alert: analysis.alert,
-            key_signals: analysis.key_signals,
-            recommended_actions: analysis.recommended_actions,
-            audio_url: analysis.audio_url ?? null,
-            comfort_audio_url: analysis.comfort_audio_url ?? null,
-            comfort_text: analysis.comfort_text ?? null,
-          });
+          await saveAnalysisToSupabase(user.id, toSupabaseRow(analysis));
         } catch (e) {
           console.warn('[supabase] sauvegarde échouée, localStorage uniquement :', e);
         }
       }
-      navigate(`/analysis/${analysis.id}`);
+      // L'observation sonore n'est affichée qu'une fois : elle voyage dans
+      // l'état de navigation, jamais dans le stockage.
+      navigate(`/analysis/${analysis.id}`, { state: { observation: transientObservation(result) } });
     } catch (err: any) {
       alert(err?.message ?? "L'analyse a échoué. Réessayez.");
       setPhase('idle');
@@ -359,7 +326,7 @@ function ScreenAnalyzing() {
             on écoute…
           </div>
           <div style={{ fontSize: 14, color: C.cafeSoft, marginTop: 12, maxWidth: 260, lineHeight: 1.5, marginInline: 'auto' }}>
-            Deux modèles, deux secondes. Vos données ne quittent pas votre téléphone.
+            Babbl mesure le son et lit ce que vous avez saisi. Rien de plus.
           </div>
         </div>
 
@@ -377,19 +344,15 @@ function ScreenAnalyzing() {
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.8 }}>
-            <span>✓ Capture · 8,4 s</span>
-            <span>44.1 kHz</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.8 }}>
-            <span>✓ Filtrage bruit ambiant</span>
-            <span>-18 dB</span>
+            <span>✓ Enregistrement</span>
+            <span>10 s</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: C.terracotta }}>▸ Classification acoustique…</span>
+            <span style={{ color: C.terracotta }}>▸ Observation sonore…</span>
             <span>…</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.4 }}>
-            <span>&nbsp;&nbsp;Contextualisation</span>
+            <span>&nbsp;&nbsp;Lecture de ce que vous avez saisi</span>
             <span>—</span>
           </div>
         </div>

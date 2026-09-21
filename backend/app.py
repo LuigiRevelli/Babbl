@@ -3,6 +3,8 @@ Babbl backend — Flask API.
 
 Endpoints:
 - POST /api/analyze    : multipart form with `audio` file + `context` JSON string
+                         → observation sonore (texte) + hypothèses contextuelles + cartes de sécurité
+                         422 si l'enregistrement est inexploitable
 - GET  /api/audio/<f>  : serves the generated TTS mp3
 - GET  /api/health     : health check
 """
@@ -17,12 +19,11 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 from audio_analysis import extract_features
-from baseline import update_baseline, compute_deviation, MIN_SAMPLES_FOR_DEVIATION
+from baseline import update_baseline
 from comfort_messages import generate_comfort_message
 from elevenlabs_client import clone_voice, text_to_speech
-from ml_model import predict_probabilities
-from mistral_client import analyze_with_mistral
-from triage_rules import apply_context_rules, reliability_score, escalate_alert, _alert_rank
+from mistral_client import write_parent_guidance
+from triage_rules import context_hypotheses, intensity_observation, recording_gate, safety_cards
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Load .env from project root (one level up from backend/)
@@ -91,6 +92,17 @@ def voice_clone():
 
 @app.post("/api/analyze")
 def analyze():
+    """Pipeline (voir SYMPTOMS.md — deux couches, rien d'autre) :
+
+    1. descripteurs acoustiques
+    2. porte d'entrée : enregistrement exploitable, sinon 422
+    3. Couche 1 — observation sonore en texte (jamais chiffrée, jamais stockée)
+    4. Couche 2 — hypothèses depuis ce que le parent a saisi
+    5. cartes de sécurité statiques (âge + saisie parent, jamais le son)
+    6. résumé + gestes (LLM contraint, repli déterministe)
+    7. audio (résumé lu, message de réconfort en voix clonée)
+    8. profil acoustique mis à jour en silence ; persistance sans l'observation
+    """
     if "audio" not in request.files:
         return jsonify({"error": "Fichier audio manquant"}), 400
 
@@ -103,6 +115,7 @@ def analyze():
 
     voice_id = request.form.get("voice_id") or context.get("voiceId") or context.get("voice_id") or None
     parent_label = request.form.get("parent_label") or context.get("parentLabel") or context.get("parent_label") or "father"
+    baby_name = context.get("babyName") or context.get("baby_name") or None
     try:
         baby_age_months = int(
             request.form.get("baby_age_months")
@@ -113,13 +126,12 @@ def analyze():
     except ValueError:
         baby_age_months = 3
 
-    # Save the upload (browsers usually send webm/ogg; librosa can handle most)
     request_id = uuid.uuid4().hex
     ext = os.path.splitext(audio_file.filename or "")[1] or ".webm"
     audio_path = os.path.join(TMP_DIR, f"{request_id}{ext}")
     audio_file.save(audio_path)
 
-    # 1. Extract acoustic features
+    # 1. Descripteurs acoustiques
     try:
         features = extract_features(audio_path)
     except Exception as e:
@@ -127,77 +139,29 @@ def analyze():
         msg = str(e) or type(e).__name__
         return jsonify({"error": f"L'analyse audio a échoué : {msg}"}), 500
 
-    # 2. Predict with the supervised ML model (if available)
-    ml = None
-    try:
-        ml = predict_probabilities(features)
-    except Exception as e:
-        print(f"[ml] inference failed: {e}")
+    recording = {
+        "duration_seconds": features.get("duration_seconds", 0.0),
+        "continuity": round(1.0 - float(features.get("silence_ratio", 0.0) or 0.0), 3),
+        "pitch_mean_hz": features.get("pitch_mean_hz", 0.0),
+    }
 
-    if ml:
-        base_probs = ml["app_probabilities"]
-        raw_probs = ml["raw_model_probabilities"]
-    else:
-        base_probs = None
-        raw_probs = None
+    # 2. Porte d'entrée — Babbl refuse de répondre sur rien
+    ok, gate_code, gate_msg = recording_gate(features)
+    if not ok:
+        return jsonify({"error": gate_msg, "code": gate_code, "recording": recording}), 422
 
-    # 3. Ask Mistral for triage explanation and caregiver-friendly guidance
-    try:
-        triage = analyze_with_mistral(features, context, model_probabilities=base_probs)
-    except Exception as e:
-        traceback.print_exc()
-        if base_probs:
-            top_cause = max(base_probs, key=base_probs.get)
-            triage = {
-                "probabilities": base_probs,
-                "key_signals": [
-                    {
-                        "signal": "Prédiction basée sur les caractéristiques acoustiques extraites (MFCCs, énergie, spectre).",
-                        "source": "audio",
-                        "impact": "high",
-                    }
-                ],
-                "recommended_actions": [
-                    {
-                        "priority": 1,
-                        "action": "Observe le bébé pendant 5 à 10 minutes et essaie une action ciblée pour le calmer.",
-                        "reasoning": "Le modèle indique une cause dominante, mais une vérification contextuelle rapide reste utile.",
-                    }
-                ],
-                "confidence_level": "medium",
-                "alert": "monitor",
-                "parent_summary": f"La cause la plus probable est {top_cause}. Essaie d'abord une action qui correspond à cette hypothèse, puis réévalue si les pleurs continuent.",
-                "model_source": "ml_fallback",
-            }
-        else:
-            msg = str(e) or type(e).__name__
-            return jsonify({"error": f"L'analyse IA a échoué : {msg}", "features": features}), 500
+    # 3-5. Les deux couches + cartes de sécurité
+    intensity = intensity_observation(features)
+    hypotheses = context_hypotheses(context, baby_age_months)
+    safety = safety_cards(context, baby_age_months)
 
-    adjusted_probs, rule_notes = apply_context_rules(triage.get("probabilities", {}), context)
-    triage["probabilities"] = adjusted_probs
-    triage["rule_notes"] = rule_notes
+    # 6. Résumé et gestes
+    guidance = write_parent_guidance(hypotheses, intensity, context, baby_age_months, baby_name)
 
-    score, label, reliability_notes = reliability_score(features, adjusted_probs, context)
-    triage["reliability_score"] = score
-    triage["reliability_label"] = label
-    triage["reliability_notes"] = reliability_notes
-
-    # 3b. Alert escalation rules
-    escalated_alert, alert_notes = escalate_alert(
-        triage.get("alert", "none"), adjusted_probs, features, context
-    )
-    triage["alert"] = escalated_alert
-    triage["alert_notes"] = alert_notes
-
-    if ml:
-        triage["ml_raw_probabilities"] = raw_probs
-        triage["ml_model_name"] = ml["model_name"]
-        triage["ml_train_metrics"] = ml["train_metrics"]
-
-    # 4. Generate spoken outputs (best-effort, non-blocking failure)
+    # 7. Audio (best-effort)
     audio_url = None
     try:
-        summary = triage.get("parent_summary", "")
+        summary = guidance.get("parent_summary", "")
         if summary:
             mp3_bytes = text_to_speech(summary)
             mp3_name = f"{request_id}.mp3"
@@ -205,19 +169,15 @@ def analyze():
                 f.write(mp3_bytes)
             audio_url = f"/api/audio/{mp3_name}"
     except Exception as e:
-        # Don't fail the whole request just because TTS broke
         print(f"[elevenlabs] failed: {e}")
 
+    top_key = hypotheses[0]["key"] if hypotheses else "need_for_comfort"
     comfort_audio_url = None
     comfort_text = None
     if voice_id:
         try:
-            probs = triage.get("probabilities", {})
-            top_cause = max(probs.items(), key=lambda kv: kv[1])[0] if probs else "need_for_comfort"
             comfort_text = generate_comfort_message(
-                top_cause=top_cause,
-                age_months=baby_age_months,
-                parent_label=parent_label,
+                top_cause=top_key, age_months=baby_age_months, parent_label=parent_label,
             )
             comfort_bytes = text_to_speech(comfort_text, voice_id=voice_id)
             comfort_name = f"{request_id}_comfort.mp3"
@@ -227,87 +187,43 @@ def analyze():
         except Exception as e:
             print(f"[elevenlabs comfort] failed: {e}")
 
-    # ─── Identify the user (Supabase JWT in Authorization header) ──
+    # 8. Utilisateur (JWT Supabase dans Authorization), profil silencieux, persistance
     user_id = None
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         try:
             import base64
             token = auth_header.split(" ", 1)[1]
-            # Decode JWT payload without verification (the service-role
-            # client trusts the anon-key-signed token for user_id only).
             payload = token.split(".")[1]
-            payload += "=" * (-len(payload) % 4)  # pad base64
+            payload += "=" * (-len(payload) % 4)
             claims = json.loads(base64.urlsafe_b64decode(payload))
             user_id = claims.get("sub")
         except Exception:
             pass
 
-    # ─── Babbl Baseline — apprentissage du profil acoustique ────
-    baseline_result = {
-        "baseline_deviation_score": 0,
-        "baseline_anomalies": [],
-        "baseline_sample_count": 0,
-        "baseline_active": False,
-        "baseline_message": "",
-    }
     if user_id:
         sb = _get_supabase()
         if sb:
-            # Compare against the reference FIRST, then fold this cry into it.
-            # The previous order included the current cry in its own baseline,
-            # biasing every deviation toward "normal".
-            try:
-                dev = compute_deviation(sb, user_id, features)
-                baseline_result["baseline_deviation_score"] = dev.get("deviation_score", 0)
-                baseline_result["baseline_anomalies"] = dev.get("anomalies", [])
-                baseline_result["baseline_sample_count"] = dev.get("sample_count", 0)
-                baseline_result["baseline_active"] = dev.get("baseline_active", False)
-                baseline_result["baseline_message"] = dev.get("message", "")
-
-                # Escalade si deviation > 70 ET baseline active (>= 5 echantillons)
-                if (dev.get("baseline_active")
-                        and dev.get("deviation_score", 0) > 70
-                        and dev.get("sample_count", 0) >= MIN_SAMPLES_FOR_DEVIATION):
-                    # Use the canonical ALERT_LEVELS ranking. A previous version
-                    # looked up "consult" (not a canonical level), which ranked a
-                    # real "consult_recommended" alert as 0 and overwrote it with
-                    # a value the frontend cannot render.
-                    current_alert = triage.get("alert", "none")
-                    if _alert_rank(current_alert) < _alert_rank("consult_recommended"):
-                        triage["alert"] = "consult_recommended"
-                        triage.setdefault("alert_notes", [])
-                        triage["alert_notes"].append(
-                            "Alerte escaladee par Babbl Baseline : deviation significative "
-                            f"({dev['deviation_score']}/100) par rapport au profil acoustique habituel."
-                        )
-            except Exception as e:
-                print(f"[baseline] deviation check failed: {e}")
-
+            # Le profil acoustique continue de se constituer, sans rien afficher
+            # (SYMPTOMS.md : aucune sortie « déviation » n'est défendable aujourd'hui).
             try:
                 update_baseline(sb, user_id, features)
             except Exception as e:
                 print(f"[baseline] update failed: {e}")
 
-    # ─── Persist to Supabase (best-effort) — AFTER every alert change ──
-    # Written last so history and the doctor report never contradict the
-    # screen the parent actually saw.
-    if user_id:
-        sb = _get_supabase()
-        if sb:
+            # L'observation sonore n'est PAS persistée (texte transitoire, jamais
+            # historisé). Les colonnes héritées reçoivent des valeurs neutres.
             try:
-                probs = triage.get("probabilities", {})
-                top_cause = max(probs, key=probs.get) if probs else "unknown"
                 sb.table("analyses").insert({
                     "id": request_id,
                     "user_id": user_id,
-                    "top_cause": top_cause,
-                    "probabilities": probs,
-                    "parent_summary": triage.get("parent_summary", ""),
-                    "confidence_level": triage.get("confidence_level", "medium"),
-                    "alert": triage.get("alert", "none"),
-                    "key_signals": triage.get("key_signals", []),
-                    "recommended_actions": triage.get("recommended_actions", []),
+                    "top_cause": top_key,
+                    "probabilities": {},
+                    "parent_summary": guidance.get("parent_summary", ""),
+                    "confidence_level": "context",
+                    "alert": "none",
+                    "key_signals": [s for s in guidance.get("key_signals", []) if s.get("source") == "context"],
+                    "recommended_actions": guidance.get("recommended_actions", []),
                     "audio_url": audio_url,
                     "comfort_audio_url": comfort_audio_url,
                     "comfort_text": comfort_text,
@@ -317,10 +233,15 @@ def analyze():
 
     return jsonify(
         {
-            "features": features,
+            "recording": recording,
+            "intensity": intensity,
+            "hypotheses": hypotheses,
+            "safety": safety,
+            "parent_summary": guidance.get("parent_summary", ""),
+            "recommended_actions": guidance.get("recommended_actions", []),
+            "key_signals": guidance.get("key_signals", []),
+            "guidance_source": guidance.get("guidance_source", "deterministic"),
             "context": context,
-            **triage,
-            **baseline_result,
             "audio_url": audio_url,
             "comfort_audio_url": comfort_audio_url,
             "comfort_text": comfort_text,

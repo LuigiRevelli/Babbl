@@ -1,110 +1,97 @@
 /**
- * Babbl — Taxonomie canonique des causes (miroir frontend).
+ * Babbl — Taxonomie canonique (miroir frontend de `backend/taxonomy.py`).
+ * Mêmes clés, mêmes textes. Garder les deux fichiers synchronisés.
  *
- * Doit rester synchronisé avec `backend/taxonomy.py` (mêmes clés).
- * Le backend renvoie les causes via la clé `probabilities`, en snake_case
- * anglais (hunger, pain, gas…). Ce module fournit les libellés FR + descriptions
- * + la couche de détection, pour un affichage transparent au parent.
+ * Ce que dit l'étude (SYMPTOMS.md) : un pleur porte de façon fiable trois
+ * choses — le niveau de détresse à l'instant, l'âge approximatif, l'identité
+ * du bébé. Aucune cause, aucune maladie.
  *
- * 3 couches : 'acoustic' = prouvé au son · 'context' = déduit du contexte
- * · 'medical' = signalé pour consultation (jamais diagnostiqué).
+ * Deux couches, et rien d'autre :
+ *  - Couche 1, OBSERVATION SONORE : ce que le micro a mesuré, en texte.
+ *    Jamais chiffrée, jamais stockée, jamais rassurante.
+ *  - Couche 2, HYPOTHÈSES CONTEXTUELLES : déduites de ce que le parent a
+ *    saisi. Jamais du son. Jamais en pourcentage.
+ *
+ * Plus des CARTES DE SÉCURITÉ statiques, identiques sur tous les écrans.
+ *
+ * Règle structurelle : aucune clé ne porte un nom de maladie.
  */
 
-export type CauseLayer = 'acoustic' | 'context' | 'medical';
+export type HypothesisKey = 'hunger' | 'discomfort' | 'fatigue' | 'need_for_comfort';
 
-export interface CauseMeta {
+export interface HypothesisMeta {
   fr: string;
-  desc: string;
-  layer: CauseLayer;
-  /** Niveau de preuve acoustique : ce que le son prouve réellement. */
-  audioEvidence: 'strong' | 'moderate' | 'weak' | 'none';
+  basis: string;
 }
 
-/** Causes quotidiennes — affichées comme barres de probabilité. */
-export const CAUSE_META: Record<string, CauseMeta> = {
-  pain: {
-    fr: 'Douleur',
-    desc: 'Cri soudain, aigu, intense, avec blocage respiratoire.',
-    layer: 'acoustic',
-    audioEvidence: 'strong',
-  },
+/** Couche 2 — hypothèses contextuelles. Ordre = ordre d'affichage par défaut. */
+export const CONTEXT_HYPOTHESES: Record<HypothesisKey, HypothesisMeta> = {
   hunger: {
     fr: 'Faim',
-    desc: 'Pleur rythmé, répétitif, qui monte progressivement.',
-    layer: 'acoustic',
-    audioEvidence: 'moderate',
-  },
-  fatigue: {
-    fr: 'Fatigue',
-    desc: 'Pleur geignard, bâillements, yeux qui se ferment.',
-    layer: 'context',
-    audioEvidence: 'weak',
+    basis: 'Délai depuis la dernière tétée, saisi par le parent. Les pleurs sont un signe tardif de faim.',
   },
   discomfort: {
     fr: 'Inconfort',
-    desc: 'Agitation, pleurs intermittents. Couche, position, vêtement.',
-    layer: 'context',
-    audioEvidence: 'weak',
+    basis: 'Délai depuis la dernière couche, position, vêtement — saisis ou observés par le parent.',
   },
-  gas: {
-    fr: 'Gaz / besoin de roter',
-    desc: 'Décharges courtes après la tétée, jambes repliées.',
-    layer: 'context',
-    audioEvidence: 'weak',
-  },
-  overstimulation: {
-    fr: 'Surstimulation',
-    desc: 'Pleur qui monte dans un environnement bruyant ou lumineux.',
-    layer: 'context',
-    audioEvidence: 'none',
-  },
-  stress: {
-    fr: 'Stress / tension',
-    desc: 'Tension, difficulté à revenir au calme. Besoin d\'apaisement.',
-    layer: 'context',
-    audioEvidence: 'none',
+  fatigue: {
+    fr: 'Fatigue',
+    basis: "Durée d'éveil, si le parent l'a renseignée. Aucune signature sonore.",
   },
   need_for_comfort: {
     fr: 'Besoin de réconfort',
-    desc: 'S\'apaise au contact et au portage. Besoin de proximité.',
-    layer: 'context',
-    audioEvidence: 'none',
+    basis: 'Proximité, portage, voix du parent. Toujours plausible, surtout avant 3 mois.',
   },
 };
 
-/** Considérations médicales — triage, jamais un diagnostic. */
-export const MEDICAL_META: Record<string, { fr: string; desc: string }> = {
-  colic: { fr: 'Coliques', desc: 'Pleurs vespéraux intenses, jambes repliées (critère de Wessel).' },
-  reflux: { fr: 'Reflux (RGO)', desc: 'Pleurs pendant ou après la tétée, cambrure du dos.' },
-  teething: { fr: 'Poussée dentaire', desc: 'Salivation, joues rouges, à partir de ~6 mois.' },
-  ear_infection: { fr: 'Otite', desc: 'Pleurs aggravés en position couchée, fièvre possible.' },
-  fever_illness: { fr: 'Fièvre / maladie', desc: 'Pleur faible et plaintif, ou aigu et monotone.' },
-  allergy_cmpa: { fr: 'Allergie aux protéines de lait', desc: 'Pleurs avec signes digestifs ou cutanés.' },
-  neuro_redflag: { fr: 'Cri neurologique atypique', desc: 'Cri aigu, monotone, perçant. Avis médical conseillé.' },
+export const HYPOTHESIS_DISCLAIMER = 'Le son ne permet pas de le confirmer.';
+
+/** Couche 1 — niveaux d'observation sonore (texte uniquement). */
+export type IntensityLevel = 'faible' | 'modere' | 'intense';
+
+export const INTENSITY_DISCLAIMER =
+  "Babbl mesure un son ; il ne détecte aucune maladie. Un pleur faible, geignard ou éteint " +
+  "n'est jamais rassurant en soi : si votre bébé vous semble différent de d'habitude, consultez.";
+
+/** Cartes de sécurité — statiques, jamais déduites du son. Les trois sont toujours affichées. */
+export type SafetyCardKey = 'fever_under_3_months' | 'breathing' | 'newborn_under_15_days';
+
+export interface SafetyCardMeta {
+  title: string;
+  body: string;
+}
+
+export const SAFETY_CARDS: Record<SafetyCardKey, SafetyCardMeta> = {
+  fever_under_3_months: {
+    title: 'Moins de 3 mois et fièvre',
+    body: 'Si votre bébé a moins de 3 mois et une température mesurée à 38 °C ou plus : consultez un médecin sans délai, quel que soit le pleur.',
+  },
+  breathing: {
+    title: 'Respiration',
+    body: 'Respiration rapide ou difficile, creux entre les côtes, lèvres ou ongles bleutés, pauses respiratoires, refus de boire : appelez le 15. Ces signes s\'observent avec les yeux, pas avec le micro.',
+  },
+  newborn_under_15_days: {
+    title: 'Nouveau-né de moins de 15 jours',
+    body: 'Jaunisse qui s\'étend, tétées difficiles, somnolence inhabituelle ou pleur très faible : consultez sans attendre.',
+  },
 };
 
-export function causeFr(key: string): string {
-  return CAUSE_META[key]?.fr ?? MEDICAL_META[key]?.fr ?? key.charAt(0).toUpperCase() + key.slice(1);
+export const SAFETY_FOOTER = "En cas de doute, appelez le 15 (SAMU). Babbl n'est pas un dispositif médical.";
+
+/** Libellé français d'une hypothèse (ou de toute clé héritée de l'historique). */
+export function hypothesisFr(key: string): string {
+  const meta = (CONTEXT_HYPOTHESES as Record<string, HypothesisMeta>)[key];
+  if (meta) return meta.fr;
+  // Clés héritées d'anciennes analyses stockées localement.
+  const legacy: Record<string, string> = {
+    pain: 'Douleur (ancienne analyse)',
+    gas: 'Gaz (ancienne analyse)',
+    overstimulation: 'Surstimulation (ancienne analyse)',
+    stress: 'Stress (ancienne analyse)',
+    unknown: 'Analyse',
+  };
+  return legacy[key] ?? key.charAt(0).toUpperCase() + key.slice(1);
 }
 
-export function causeDesc(key: string): string {
-  return CAUSE_META[key]?.desc ?? MEDICAL_META[key]?.desc ?? '';
-}
-
-export function causeLayer(key: string): CauseLayer | undefined {
-  return CAUSE_META[key]?.layer;
-}
-
-/** Libellé court de la couche, pour signaler la provenance au parent. */
-export function layerLabel(layer: CauseLayer | undefined): string {
-  switch (layer) {
-    case 'acoustic':
-      return 'détecté au son';
-    case 'context':
-      return 'déduit du contexte';
-    case 'medical':
-      return 'à surveiller';
-    default:
-      return '';
-  }
-}
+/** Rappel de provenance, identique pour toute hypothèse. */
+export const HYPOTHESIS_SOURCE_LABEL = "d'après ce que vous avez saisi";

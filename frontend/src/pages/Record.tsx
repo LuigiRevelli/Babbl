@@ -5,6 +5,7 @@ import MobileLayout from '@/components/MobileLayout';
 import BackButton from '@/components/BackButton';
 import { getUserData, saveUserData } from '@/lib/userData';
 import { CRY_AUDIO_CONSTRAINTS, CRY_RECORD_MS, createRecorder, chunksToBlob } from '@/lib/recorder';
+import { toStoredAnalysis, toSupabaseRow, transientObservation, type AnalyzeResponse } from '@/lib/analysis';
 import { analyzeAudio as apiAnalyze } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
@@ -84,68 +85,25 @@ export default function Record() {
       const ageMap: Record<string, number> = { '0-3': 2, '3-6': 5, '6-12': 9, '1-2': 18, '2+': 30 };
       const babyAgeMonths = ageMap[userData.parentProfile?.ageRange ?? '0-3'] ?? 3;
 
-      const result = await apiAnalyze(blob, context, {
+      const result = (await apiAnalyze(blob, context, {
         voiceId: userData.voiceProfile?.voiceId,
         parentLabel: userData.voiceProfile?.role ?? userData.parentProfile?.role ?? 'father',
         babyAgeMonths,
-      });
+      })) as AnalyzeResponse;
 
-      // Determine top cause from probabilities
-      const probs: Record<string, number> = result.probabilities ?? {};
-      const topCause = Object.entries(probs).sort(([, a], [, b]) => (b as number) - (a as number))[0]?.[0] ?? 'unknown';
-
-      // Normalize recommended_actions to string[]
-      const actions: string[] = (result.recommended_actions ?? []).map((a: any) =>
-        typeof a === 'string' ? a : a.action ?? '',
-      );
-
-      // Normalize key_signals to string[]
-      const signals: string[] = (result.key_signals ?? []).map((s: any) =>
-        typeof s === 'string' ? s : s.signal ?? '',
-      );
-
-      const analysis = {
-        id: crypto.randomUUID(),
-        timestamp: new Date().toISOString(),
-        topCause,
-        probabilities: probs,
-        parent_summary: result.parent_summary ?? '',
-        confidence_level: result.confidence_level ?? 'medium',
-        alert: result.alert ?? 'none',
-        feedback: null,
-        actualCause: null,
-        sosModeUsed: false,
-        key_signals: signals,
-        recommended_actions: actions,
-        audio_url: result.audio_url ?? undefined,
-        comfort_audio_url: result.comfort_audio_url ?? undefined,
-        comfort_text: result.comfort_text ?? undefined,
-      };
+      const analysis = toStoredAnalysis(result, crypto.randomUUID());
       userData.analyses.push(analysis);
       saveUserData(userData);
 
-      // Persist to Supabase (best-effort, localStorage is the fallback)
       if (user?.id) {
         try {
-          await saveAnalysisToSupabase(user.id, {
-            id: analysis.id,
-            top_cause: analysis.topCause,
-            probabilities: analysis.probabilities,
-            parent_summary: analysis.parent_summary,
-            confidence_level: analysis.confidence_level,
-            alert: analysis.alert,
-            key_signals: analysis.key_signals,
-            recommended_actions: analysis.recommended_actions,
-            audio_url: analysis.audio_url ?? null,
-            comfort_audio_url: analysis.comfort_audio_url ?? null,
-            comfort_text: analysis.comfort_text ?? null,
-          });
+          await saveAnalysisToSupabase(user.id, toSupabaseRow(analysis));
         } catch (e) {
           console.warn('[supabase] Sauvegarde analyse échouée, localStorage utilisé :', e);
         }
       }
 
-      navigate(`/analysis/${analysis.id}`);
+      navigate(`/analysis/${analysis.id}`, { state: { observation: transientObservation(result) } });
     } catch (err: any) {
       alert(err?.message ?? "L'analyse a échoué. Veuillez réessayer.");
       setIsAnalyzing(false);

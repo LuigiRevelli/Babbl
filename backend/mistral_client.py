@@ -1,159 +1,239 @@
 """
-LLM client — sends acoustic features + parent context, gets back a
-structured JSON triage. Uses Claude Sonnet (Anthropic API).
+Client LLM — rédige le résumé chaleureux et les gestes à poser.
+(Nom de fichier historique ; le modèle est Claude Sonnet via l'API Anthropic.)
+
+Le LLM ne reçoit PAS les descripteurs acoustiques bruts et n'a PAS le droit de :
+  - produire des pourcentages ou des probabilités,
+  - nommer une maladie ou un symptôme médical,
+  - fixer un niveau d'alerte,
+  - affirmer entendre une cause dans le son.
+Il rédige à partir des hypothèses contextuelles (Couche 2) et de
+l'observation sonore en texte (Couche 1). Sa sortie passe par
+`sanitize_llm_output()` ; en cas de doute, le résumé déterministe
+`fallback_guidance()` prend le relais. Voir SYMPTOMS.md.
 """
+
+from __future__ import annotations
 
 import json
 import os
+import re
+
 import requests
 
-from taxonomy import CAUSES, EVERYDAY_CAUSES, MEDICAL_CONSIDERATIONS
-
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
-ANTHROPIC_MODEL = "claude-sonnet-4-20250514"
+ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
 
+MAX_ACTIONS = 3
+ALLOWED_SIGNAL_SOURCES = ("context", "intensity")
 
-def _build_causes_doc() -> str:
-    """One descriptive line per everyday cause, grouped by detection layer."""
-    lines = []
-    for key, meta in EVERYDAY_CAUSES.items():
-        layer = {
-            "acoustic": "AUDIO",
-            "context": "CONTEXTE",
-            "medical": "MÉDICAL",
-        }.get(meta["layer"], meta["layer"].upper())
-        lines.append(f'- "{key}" [{layer}, preuve audio: {meta["audio_evidence"]}] '
-                     f'{meta["fr"]} — {meta["basis"]}')
-    return "\n".join(lines)
+# Mots interdits dans toute phrase adressée au parent. Un seul suffit à
+# remplacer le résumé par la version déterministe. Liste volontairement
+# large : la maladie, la douleur et les chiffres n'ont rien à faire ici.
+_FORBIDDEN = re.compile(
+    r"(\d+\s?%|pour ?cent|probabilit|diagnos|détect|detect|acoustiq|"
+    r"colique|reflux|rgo\b|otite|dentaire|dents?\b|allergi|aplv|"
+    r"méningite|meningite|sepsis|infection|neuro|autis|asphyxie|"
+    r"ictère|ictere|jaunisse|fièvre|fievre|maladie|douleur|souffr|"
+    r"le son (montre|indique|révèle|revele|confirme))",
+    re.IGNORECASE,
+)
 
+SYSTEM_PROMPT = """Tu es Babbl, une aide pour parents épuisés, à 3 h du matin.
 
-def _build_probabilities_skeleton() -> str:
-    return "{\n" + ",\n".join(f'    "{c}": 0.0' for c in CAUSES) + "\n  }"
+Tu reçois :
+1. Une observation sonore EN TEXTE (ce que le micro a mesuré sur quelques secondes).
+2. Des hypothèses déduites de ce que le parent a saisi (dernière tétée, couche, âge).
+3. Le contexte saisi par le parent.
 
+Ce que la science autorise (et rien de plus) : un pleur ne dit pas sa cause.
+Les hypothèses viennent du contexte, jamais du son. Tu ne devines pas.
 
-def _build_medical_doc() -> str:
-    lines = []
-    for key, meta in MEDICAL_CONSIDERATIONS.items():
-        lines.append(f'- "{key}" (alerte: {meta["alert"]}) {meta["fr"]} — {meta["basis"]}')
-    return "\n".join(lines)
+INTERDIT, sans exception :
+- Tout chiffre de confiance ou pourcentage.
+- Tout nom de maladie ou de symptôme médical (colique, reflux, otite, dents,
+  allergie, fièvre, douleur, infection, etc.). Les repères de sécurité sont
+  affichés ailleurs, en texte fixe ; ce n'est pas ton rôle.
+- Toute phrase qui affirme que le son indique, révèle ou confirme quelque chose.
+- Tout niveau d'alerte, toute recommandation de consulter ou de ne pas consulter.
+- Rassurer sur l'état de santé du bébé. Tu ne sais pas s'il va bien.
 
+Ce que tu fais :
+- Un résumé de 2 à 3 phrases, tutoiement, chaleureux, qui reprend l'hypothèse
+  principale EN DISANT qu'elle vient de ce que le parent a saisi
+  (ex. « D'après ta dernière tétée il y a 4 h, ... »).
+- 1 à 3 gestes concrets à essayer, du plus simple au suivant, chacun avec une
+  raison en une phrase.
+- key_signals : uniquement ce qui a servi, avec source "context" ou "intensity".
 
-SYSTEM_PROMPT = f"""You are BabblAI, a clinical-grade infant cry triage system.
-You receive:
-1. Acoustic features extracted from a baby's cry audio (scientifically measured)
-2. Caregiver-reported context (feeding schedule, sleep, diaper, posture, age)
-3. Optional probabilities from a supervised ML classifier trained on Donate-a-Cry
-
-═══════════════════════════════════════════════════════════════
-SCIENTIFIC HONESTY — 3 detection layers (this is what makes us credible)
-═══════════════════════════════════════════════════════════════
-Only TWO things are truly provable from the SOUND alone:
-  • PAIN (sudden onset, high f0 >600 Hz, breath-holding) — strong evidence.
-  • The LEVEL OF DISTRESS (intensity/pitch) — strong evidence.
-"hunger" is moderate (confirm with time-since-feeding). EVERYTHING ELSE
-(fatigue, discomfort, gas, overstimulation, stress, need_for_comfort) has NO
-distinct acoustic signature — it is DEDUCED FROM CONTEXT, not heard.
-
-So: when you raise a context-layer cause, the driving key_signal MUST have
-source "context" (never "audio"). Be transparent about which layer each
-conclusion comes from — never pretend to hear what the signal cannot carry.
-
-═══════════════════════════════════════════════════════════════
-EVERYDAY CAUSES — the only keys allowed in "probabilities" (must sum ~1.0)
-═══════════════════════════════════════════════════════════════
-{_build_causes_doc()}
-
-If ML probabilities are provided, treat them as the audio prior: keep the
-audio-layer causes (pain, hunger) close to them, and redistribute the rest
-using context. If none are provided, estimate yourself.
-
-═══════════════════════════════════════════════════════════════
-MEDICAL CONSIDERATIONS — triage only, NEVER a diagnosis, NEVER in probabilities
-═══════════════════════════════════════════════════════════════
-When audio + context evoke a possible medical cause, list it in
-"medical_considerations" as a piste à évoquer avec un pédiatre. Allowed keys:
-{_build_medical_doc()}
-
-IMPORTANT: All human-readable text (key_signals, recommended_actions,
-reasoning, parent_summary, alert_message, medical_considerations.why) MUST be
-in FRENCH, warm and reassuring ("tu" form, as if speaking to an exhausted
-parent at 3 AM). Never claim a medical diagnosis — you are a triage and
-decision-support tool.
-
-Respond ONLY in this exact JSON format, no markdown, no prose around it:
-{{
-  "probabilities": {_build_probabilities_skeleton()},
-  "distress_level": 0,
-  "key_signals": [
-    {{"signal": "description", "source": "audio|context|posture", "impact": "high|medium|low"}}
-  ],
+Réponds UNIQUEMENT avec ce JSON, sans texte autour :
+{
+  "parent_summary": "2-3 phrases en français, tutoiement",
   "recommended_actions": [
-    {{"priority": 1, "action": "description", "reasoning": "why"}}
+    {"priority": 1, "action": "geste concret", "reasoning": "pourquoi, en une phrase"}
   ],
-  "medical_considerations": [
-    {{"condition": "colic|reflux|teething|ear_infection|fever_illness|allergy_cmpa|neuro_redflag", "why": "raison en français", "recommended_alert": "none|monitor|consult_recommended|urgent"}}
-  ],
-  "confidence_level": "high|medium|low",
-  "alert": "none|monitor|consult_recommended|urgent",
-  "alert_message": "Si alert != none, un court message en français expliquant pourquoi l'alerte est déclenchée et ce que le parent devrait faire.",
-  "parent_summary": "Un résumé chaleureux et rassurant de 2-3 phrases en FRANÇAIS, expliquant la cause la plus probable et quoi essayer en premier, en tutoyant le parent."
-}}
-
-"distress_level" is an integer 0-100 estimated from intensity and pitch — the
-acoustic urgency, independent of the cause. "medical_considerations" may be an
-empty list when nothing medical is evoked.
-
-ALERT LEVELS — Use these precise rules:
-- "none": Situation standard, cause identifiée avec confiance. Pas d'inquiétude.
-- "monitor": Quelque chose d'inhabituel ou confiance faible. Le parent devrait re-analyser dans 1h. Exemples : pattern ambigu, confiance basse, pleurs prolongés mais pas alarmants.
-- "consult_recommended": Pattern anormal suggérant un problème médical potentiel. Le parent devrait consulter un pédiatre dans les 24h. Exemples : douleur récurrente, pattern compatible avec coliques sévères, otite, reflux.
-- "urgent": Signaux de détresse aiguë. Le parent devrait contacter un professionnel IMMÉDIATEMENT. Exemples : cri strident inhabituel, douleur intense persistante, pattern neurologique anormal, pleurs inconsolables depuis plus de 45 minutes.
+  "key_signals": [
+    {"signal": "ce qui a été utilisé", "source": "context|intensity"}
+  ]
+}
 """
 
 
-def analyze_with_mistral(features: dict, context: dict, model_probabilities=None) -> dict:
-    """Name kept for backward compatibility — now calls Claude Sonnet."""
+def _post_anthropic(system: str, user_msg: str) -> str:
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         raise RuntimeError("ANTHROPIC_API_KEY is not set")
-
-    user_msg = (
-        "Audio features:\n"
-        f"{json.dumps(features, indent=2)}\n\n"
-        "Context:\n"
-        f"{json.dumps(context, indent=2)}\n\n"
-        "Model probabilities (optional, preserve if present):\n"
-        f"{json.dumps(model_probabilities, indent=2) if model_probabilities else 'null'}\n\n"
-        "Analyze and provide triage assessment."
-    )
-
     payload = {
         "model": ANTHROPIC_MODEL,
-        "max_tokens": 1024,
-        "system": SYSTEM_PROMPT,
-        "messages": [
-            {"role": "user", "content": user_msg},
-        ],
+        "max_tokens": 700,
+        "system": system,
+        "messages": [{"role": "user", "content": user_msg}],
         "temperature": 0.3,
     }
-
     headers = {
         "x-api-key": api_key,
         "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
     }
-
     r = requests.post(ANTHROPIC_URL, headers=headers, json=payload, timeout=60)
     r.raise_for_status()
-    data = r.json()
-    content = data["content"][0]["text"]
+    return r.json()["content"][0]["text"]
 
-    # Be defensive: try to parse JSON, fallback to extracting between braces
+
+def _parse_json(content: str) -> dict:
     try:
         return json.loads(content)
     except json.JSONDecodeError:
-        start = content.find("{")
-        end = content.rfind("}")
+        start, end = content.find("{"), content.rfind("}")
         if start != -1 and end != -1:
-            return json.loads(content[start : end + 1])
+            return json.loads(content[start:end + 1])
         raise
+
+
+# ─── Sortie déterministe (repli) ─────────────────────────────────────
+
+def fallback_guidance(hypotheses: list[dict], intensity: dict, baby_name: str | None = None) -> dict:
+    """Résumé et gestes sans LLM. Toujours vrai, jamais personnalisé au-delà
+    de ce que le parent a saisi."""
+    name = baby_name.strip() if baby_name and baby_name.strip() else "ton bébé"
+    top = hypotheses[0] if hypotheses else None
+
+    if top:
+        summary = (
+            f"{top['why']} D'après ce que tu as saisi, « {top['label'].lower()} » est "
+            f"l'hypothèse la plus simple à essayer en premier pour {name}. "
+            f"{top['disclaimer']}"
+        )
+    else:
+        summary = (
+            f"Tu n'as rien saisi sur les dernières heures de {name}, donc Babbl ne "
+            "peut pas proposer d'hypothèse. Le contact et ta voix apaisent souvent."
+        )
+
+    actions_by_key = {
+        "hunger": ("Propose le sein ou le biberon.", "Les pleurs sont un signe tardif de faim : autant essayer tout de suite."),
+        "discomfort": ("Vérifie la couche, la position et les vêtements.", "Un inconfort simple se règle en une minute."),
+        "fatigue": ("Baisse la lumière et le bruit, puis berce-le.", "Un bébé éveillé depuis longtemps a du mal à s'endormir seul."),
+        "need_for_comfort": ("Prends-le contre toi, peau contre peau, et parle-lui.", "Le contact et ta voix sont ce qui apaise le plus souvent."),
+    }
+    actions = []
+    for i, h in enumerate(hypotheses[:MAX_ACTIONS]):
+        action, why = actions_by_key.get(h["key"], actions_by_key["need_for_comfort"])
+        actions.append({"priority": i + 1, "action": action, "reasoning": why})
+    if not actions:
+        a, w = actions_by_key["need_for_comfort"]
+        actions.append({"priority": 1, "action": a, "reasoning": w})
+
+    signals = [{"signal": h["why"], "source": "context"} for h in hypotheses[:MAX_ACTIONS]]
+    signals.append({"signal": intensity["observation"], "source": "intensity"})
+
+    return {
+        "parent_summary": summary,
+        "recommended_actions": actions,
+        "key_signals": signals,
+        "guidance_source": "deterministic",
+    }
+
+
+# ─── Nettoyage de la sortie LLM ──────────────────────────────────────
+
+def _clean_text(value) -> str:
+    return str(value).strip() if isinstance(value, (str, int, float)) else ""
+
+
+def sanitize_llm_output(raw: dict, hypotheses: list[dict], intensity: dict, baby_name: str | None = None) -> dict:
+    """Ne garde que les champs autorisés ; remplace tout texte qui enfreint
+    les interdits par la version déterministe. Ne lève jamais."""
+    fb = fallback_guidance(hypotheses, intensity, baby_name)
+    if not isinstance(raw, dict):
+        return fb
+
+    summary = _clean_text(raw.get("parent_summary"))
+    if not summary or _FORBIDDEN.search(summary):
+        summary = fb["parent_summary"]
+
+    actions = []
+    for item in (raw.get("recommended_actions") or [])[:MAX_ACTIONS]:
+        if not isinstance(item, dict):
+            continue
+        action = _clean_text(item.get("action"))
+        reasoning = _clean_text(item.get("reasoning"))
+        if not action or _FORBIDDEN.search(action) or _FORBIDDEN.search(reasoning):
+            continue
+        actions.append({"priority": len(actions) + 1, "action": action, "reasoning": reasoning})
+    if not actions:
+        actions = fb["recommended_actions"]
+
+    signals = []
+    for item in (raw.get("key_signals") or []):
+        if not isinstance(item, dict):
+            continue
+        signal = _clean_text(item.get("signal"))
+        source = _clean_text(item.get("source")).lower()
+        if not signal or source not in ALLOWED_SIGNAL_SOURCES or _FORBIDDEN.search(signal):
+            continue
+        signals.append({"signal": signal, "source": source})
+    if not signals:
+        signals = fb["key_signals"]
+
+    return {
+        "parent_summary": summary,
+        "recommended_actions": actions,
+        "key_signals": signals,
+        "guidance_source": "llm" if summary != fb["parent_summary"] else "deterministic",
+    }
+
+
+# ─── Point d'entrée ──────────────────────────────────────────────────
+
+def write_parent_guidance(
+    hypotheses: list[dict],
+    intensity: dict,
+    context: dict,
+    baby_age_months: int | None,
+    baby_name: str | None = None,
+) -> dict:
+    """Résumé + gestes, via le LLM si disponible, sinon déterministe.
+    Le LLM ne voit ni descripteurs acoustiques ni score : uniquement du texte."""
+    parent_visible_context = {
+        k: v for k, v in context.items()
+        if k in ("lastFeedingTime", "lastMealAt", "lastDiaperTime", "lastDiaperAt",
+                 "babyAgeRange", "babyName", "posture", "awakeMinutes", "awakeSinceAt")
+    }
+    user_msg = (
+        "Observation sonore (texte) :\n"
+        f"{intensity['observation']}\n\n"
+        "Hypothèses (depuis ce que le parent a saisi, dans l'ordre) :\n"
+        f"{json.dumps(hypotheses, ensure_ascii=False, indent=1)}\n\n"
+        "Contexte saisi par le parent :\n"
+        f"{json.dumps(parent_visible_context, ensure_ascii=False, indent=1)}\n\n"
+        f"Âge du bébé en mois : {baby_age_months if baby_age_months is not None else 'inconnu'}\n"
+        f"Prénom : {baby_name or 'non renseigné'}\n\n"
+        "Rédige le JSON."
+    )
+    try:
+        raw = _parse_json(_post_anthropic(SYSTEM_PROMPT, user_msg))
+    except Exception as e:  # réseau, clé, JSON — jamais bloquant
+        print(f"[llm] guidance failed, deterministic fallback: {e}")
+        return fallback_guidance(hypotheses, intensity, baby_name)
+    return sanitize_llm_output(raw, hypotheses, intensity, baby_name)

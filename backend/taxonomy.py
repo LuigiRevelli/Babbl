@@ -1,174 +1,126 @@
 """
-Babbl — Taxonomie canonique des causes de pleurs.
+Babbl — Taxonomie canonique.
 
-SOURCE UNIQUE DE VÉRITÉ partagée par tout le backend :
-  - ml_model.py          (mappe les classes du dataset vers ces clés)
-  - triage_rules.py      (ajuste la distribution sur ces clés)
-  - mistral_client.py    (le LLM ne renvoie QUE ces clés)
-  - comfort_messages.py  (un message par cause)
-
-Le frontend reflète cette taxonomie dans `frontend/src/lib/taxonomy.ts`.
-Garder les deux fichiers synchronisés.
+SOURCE UNIQUE DE VÉRITÉ backend. Miroir frontend : `frontend/src/lib/taxonomy.ts`.
+Garder les deux fichiers synchronisés (mêmes clés, mêmes textes).
 
 ────────────────────────────────────────────────────────────────────────
-Architecture en 3 couches — honnêteté scientifique
+Ce que dit l'étude (SYMPTOMS.md — 21 candidats, 399 sources, vérification adverse)
 ────────────────────────────────────────────────────────────────────────
-On ne prétend PAS deviner 15 causes au son : ce serait faux et destructeur
-de crédibilité. On sépare ce que chaque couche prouve réellement.
+Un pleur de nourrisson porte de façon fiable trois choses : le niveau de
+détresse à l'instant, l'âge approximatif, et l'identité du bébé.
+AUCUNE cause. AUCUNE maladie. Le modèle ML précédent faisait moins bien
+qu'un programme répondant toujours « faim » ; il n'est plus branché.
 
-  Couche A « acoustique »   : ce que le SON prouve (douleur, détresse).
-  Couche B « contextuelle » : ce qui est DÉDUIT du contexte (heure, âge…).
-  Couche C « triage médical »: ce qu'on SIGNALE pour consultation, jamais
-                               ce qu'on diagnostique.
+Deux couches, et rien d'autre :
 
-Niveau de preuve audio (`audio_evidence`) :
-  "strong"   — signature acoustique validée par la littérature.
-  "moderate" — reconnu en labo, à confirmer par le contexte.
-  "weak"     — pas de signature propre, le contexte porte l'information.
-  "none"     — purement contextuel, l'audio n'apporte rien.
+  Couche 1 — OBSERVATION SONORE. Ce que le micro a mesuré sur les secondes
+    enregistrées (continuité, hauteur). Rendue en TEXTE, jamais chiffrée,
+    jamais stockée, jamais rassurante. Un pleur faible ou éteint n'est jamais
+    présenté comme normal.
+
+  Couche 2 — HYPOTHÈSES CONTEXTUELLES. Déduites de ce que le parent a saisi
+    (dernière tétée, dernière couche, âge). Jamais du son. Jamais en
+    pourcentage. Chaque hypothèse dit d'où elle vient.
+
+Plus des CARTES DE SÉCURITÉ statiques : contenu fixe, déclenché uniquement par
+l'âge du bébé et par ce que le parent saisit, identique sur tous les écrans —
+leur absence ne peut jamais se lire comme un feu vert.
+
+Règle structurelle : AUCUNE clé ne porte un nom de maladie. Une clé qui porte
+ce nom finit toujours par produire une chaîne qui le porte — c'est ainsi
+qu'un « drapeau neurologique » a survécu jusqu'en production.
+
+Les formulations destinées aux parents doivent être relues par un
+professionnel de santé français avant publication (SYMPTOMS.md, Méthode).
 """
 
 from __future__ import annotations
 
-# ─── Couches ────────────────────────────────────────────────
-LAYER_ACOUSTIC = "acoustic"
-LAYER_CONTEXT = "context"
-LAYER_MEDICAL = "medical"
-
-
-# ─── Couches A + B : causes quotidiennes (barres de probabilité) ──
-# Ces 8 causes sont affichées au parent. La probabilité vient du modèle
-# audio pour les causes acoustiques, et du raisonnement contextuel (Claude)
-# pour les autres. Le champ `source` de chaque key_signal indique au parent
-# d'où vient la conclusion ("audio" vs "context").
-EVERYDAY_CAUSES: dict[str, dict] = {
-    "pain": {
-        "fr": "Douleur",
-        "layer": LAYER_ACOUSTIC,
-        "audio_evidence": "strong",
-        "basis": "Début soudain, f0 élevé (>600 Hz), longue expiration puis "
-                 "blocage respiratoire. Signature acoustique la mieux validée "
-                 "(Porter 1986, Wasz-Höckert).",
-        "default_alert": "monitor",
-    },
+# ─── Couche 2 : hypothèses contextuelles ────────────────────────────
+# Ordre = ordre d'affichage par défaut. `source` est toujours "context".
+CONTEXT_HYPOTHESES: dict[str, dict] = {
     "hunger": {
         "fr": "Faim",
-        "layer": LAYER_ACOUSTIC,
-        "audio_evidence": "moderate",
-        "basis": "Pleur rythmé, répétitif, montée progressive en rise-fall. "
-                 "Reconnu en labo (Wasz-Höckert) et confirmé par le délai "
-                 "depuis la dernière tétée.",
-        "default_alert": "none",
-    },
-    "fatigue": {
-        "fr": "Fatigue",
-        "layer": LAYER_CONTEXT,
-        "audio_evidence": "weak",
-        "basis": "Pleur geignard, vocalisé, bâillements, yeux qui se ferment. "
-                 "Déduit de la durée d'éveil.",
-        "default_alert": "none",
+        "basis": "Délai depuis la dernière tétée, saisi par le parent. "
+                 "Les pleurs sont un signe tardif de faim.",
     },
     "discomfort": {
         "fr": "Inconfort",
-        "layer": LAYER_CONTEXT,
-        "audio_evidence": "weak",
-        "basis": "Agitation, pleurs intermittents. Couche, position, "
-                 "vêtement. Déduit du contexte.",
-        "default_alert": "none",
+        "basis": "Délai depuis la dernière couche, position, vêtement — "
+                 "saisis ou observés par le parent.",
     },
-    "gas": {
-        "fr": "Gaz / besoin de roter",
-        "layer": LAYER_CONTEXT,
-        "audio_evidence": "weak",
-        "basis": "Décharges courtes après la tétée, jambes repliées. "
-                 "Déduit du contexte post-repas.",
-        "default_alert": "none",
-    },
-    "overstimulation": {
-        "fr": "Surstimulation",
-        "layer": LAYER_CONTEXT,
-        "audio_evidence": "none",
-        "basis": "Pleur qui monte dans un environnement bruyant ou lumineux. "
-                 "Déduit du contexte.",
-        "default_alert": "none",
-    },
-    "stress": {
-        "fr": "Stress / tension",
-        "layer": LAYER_CONTEXT,
-        "audio_evidence": "none",
-        "basis": "Dysrégulation, tension, difficulté à revenir au calme. "
-                 "Besoin de retour à un état apaisé.",
-        "default_alert": "none",
+    "fatigue": {
+        "fr": "Fatigue",
+        "basis": "Durée d'éveil, si le parent l'a renseignée. "
+                 "Aucune signature sonore.",
     },
     "need_for_comfort": {
         "fr": "Besoin de réconfort",
-        "layer": LAYER_CONTEXT,
-        "audio_evidence": "none",
-        "basis": "S'apaise au contact et au portage (réponse d'apaisement "
-                 "au portage, Esposito 2013). Besoin de proximité.",
-        "default_alert": "none",
+        "basis": "Proximité, portage, voix du parent. Toujours plausible, "
+                 "surtout avant 3 mois.",
     },
 }
 
-# Ordre canonique des clés — toute distribution de probabilité porte ces clés.
-CAUSES: list[str] = list(EVERYDAY_CAUSES.keys())
+HYPOTHESIS_KEYS: list[str] = list(CONTEXT_HYPOTHESES.keys())
+
+# Phrase fixe accolée à toute hypothèse : elle vient du contexte, pas du son.
+HYPOTHESIS_DISCLAIMER = "Le son ne permet pas de le confirmer."
 
 
-# ─── Couche C : considérations médicales (triage, JAMAIS diagnostic) ──
-# Ne figurent PAS dans les barres de probabilité. Claude les remonte comme
-# pistes à évoquer avec un pédiatre quand l'audio + le contexte les évoquent.
-# Chacune porte un niveau d'alerte par défaut.
-MEDICAL_CONSIDERATIONS: dict[str, dict] = {
-    "colic": {
-        "fr": "Coliques",
-        "alert": "monitor",
-        "basis": "Critère de Wessel (>3h/j, >3j/sem, >3 sem), pleurs "
-                 "vespéraux, jambes repliées.",
+# ─── Couche 1 : observation sonore ──────────────────────────────────
+INTENSITY_LEVELS = ("faible", "modere", "intense")
+
+INTENSITY_OBSERVATIONS: dict[str, str] = {
+    "intense": "Sur ces {seconds} secondes, Babbl a entendu un pleur soutenu et aigu. "
+               "Un pleur intense est très fréquent chez un bébé en bonne santé.",
+    "modere":  "Sur ces {seconds} secondes, Babbl a entendu un pleur d'intensité moyenne.",
+    "faible":  "Sur ces {seconds} secondes, le pleur était faible ou discontinu.",
+}
+
+# Toujours affiché avec l'observation. Volontairement asymétrique : on ne
+# rassure jamais sur un pleur faible (sepsis, méningite et hypertension
+# intracrânienne se présentent par un nourrisson léthargique qui pleure peu).
+INTENSITY_DISCLAIMER = (
+    "Babbl mesure un son ; il ne détecte aucune maladie. Un pleur faible, "
+    "geignard ou éteint n'est jamais rassurant en soi : si votre bébé vous "
+    "semble différent de d'habitude, consultez."
+)
+
+
+# ─── Cartes de sécurité (statiques, jamais déduites du son) ─────────
+# Déclenchement : l'âge du bébé et ce que le parent saisit. Les trois cartes
+# sont TOUJOURS renvoyées ; `emphasized` indique celles à mettre en avant.
+# Repères issus des recommandations grand public HAS ; formulation à faire
+# relire par un professionnel de santé avant publication.
+SAFETY_CARDS: dict[str, dict] = {
+    "fever_under_3_months": {
+        "title": "Moins de 3 mois et fièvre",
+        "body": "Si votre bébé a moins de 3 mois et une température mesurée à "
+                "38 °C ou plus : consultez un médecin sans délai, quel que soit "
+                "le pleur.",
+        "emphasize_when": "age_months < 3",
     },
-    "reflux": {
-        "fr": "Reflux (RGO)",
-        "alert": "consult_recommended",
-        "basis": "Pleurs pendant ou après la tétée, cambrure du dos.",
+    "breathing": {
+        "title": "Respiration",
+        "body": "Respiration rapide ou difficile, creux entre les côtes, lèvres "
+                "ou ongles bleutés, pauses respiratoires, refus de boire : "
+                "appelez le 15. Ces signes s'observent avec les yeux, pas avec "
+                "le micro.",
+        "emphasize_when": "always",
     },
-    "teething": {
-        "fr": "Poussée dentaire",
-        "alert": "none",
-        "basis": "Salivation, joues rouges, à partir de ~6 mois.",
-    },
-    "ear_infection": {
-        "fr": "Otite",
-        "alert": "consult_recommended",
-        "basis": "Pleurs aggravés en position couchée, fièvre possible.",
-    },
-    "fever_illness": {
-        "fr": "Fièvre / maladie",
-        "alert": "consult_recommended",
-        "basis": "Pleur faible et plaintif, ou aigu et monotone.",
-    },
-    "allergy_cmpa": {
-        "fr": "Allergie aux protéines de lait de vache",
-        "alert": "consult_recommended",
-        "basis": "Pleurs associés à des signes digestifs ou cutanés.",
-    },
-    "neuro_redflag": {
-        "fr": "Cri neurologique atypique",
-        "alert": "urgent",
-        "basis": "Cri aigu, monotone, perçant (f0 très élevé constant). "
-                 "Drapeau rouge acoustique → avis médical.",
+    "newborn_under_15_days": {
+        "title": "Nouveau-né de moins de 15 jours",
+        "body": "Jaunisse qui s'étend, tétées difficiles, somnolence inhabituelle "
+                "ou pleur très faible : consultez sans attendre.",
+        "emphasize_when": "age_days < 15",
     },
 }
 
-
-def empty_distribution() -> dict[str, float]:
-    """Prior uniforme sur les causes quotidiennes."""
-    p = 1.0 / len(CAUSES)
-    return {cause: p for cause in CAUSES}
+SAFETY_FOOTER = "En cas de doute, appelez le 15 (SAMU). Babbl n'est pas un dispositif médical."
 
 
 def fr_label(key: str) -> str:
-    """Libellé français d'une cause ou d'une considération médicale."""
-    if key in EVERYDAY_CAUSES:
-        return EVERYDAY_CAUSES[key]["fr"]
-    if key in MEDICAL_CONSIDERATIONS:
-        return MEDICAL_CONSIDERATIONS[key]["fr"]
-    return key
+    """Libellé français d'une hypothèse contextuelle."""
+    meta = CONTEXT_HYPOTHESES.get(key)
+    return meta["fr"] if meta else key

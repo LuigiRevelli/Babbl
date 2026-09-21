@@ -1,8 +1,12 @@
 """
-Machine-learning inference utilities for infant cry classification.
+ARTEFACT DE RECHERCHE — NON BRANCHÉ SUR L'APPLICATION.
 
-This module loads a trained model artifact and predicts class probabilities
-from live audio features extracted with librosa.
+Ce module chargeait le XGBoost entraîné sur Donate-a-Cry. Il a été débranché
+du pipeline (SYMPTOMS.md) : le modèle obtient 82,6 % là où répondre toujours
+« faim » obtient 83,6 % (382/457), et un rappel de 0,000 sur quatre classes
+sur cinq. Il n'a rien appris. Conservé uniquement pour l'expérience 6 du plan
+de données (benchmark d'honnêteté contre le plafond 36 % vs 33 % du corpus
+EnesBabyCries1). Ne pas importer depuis app.py.
 """
 
 import json
@@ -12,7 +16,12 @@ from typing import Dict
 import joblib
 import numpy as np
 
-from taxonomy import empty_distribution
+
+
+def empty_distribution() -> Dict[str, float]:
+    """Prior uniforme sur les anciennes classes (module autonome, ne dépend plus de taxonomy)."""
+    keys = ("pain", "hunger", "fatigue", "discomfort", "gas", "overstimulation", "stress", "need_for_comfort")
+    return {k: 1.0 / len(keys) for k in keys}
 
 
 # Order must match training feature matrix columns.

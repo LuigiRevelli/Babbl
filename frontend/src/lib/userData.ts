@@ -1,4 +1,5 @@
 import { t } from '@/lib/i18n';
+import type { Hypothesis, SafetyCard } from '@/lib/analysis';
 
 const STORAGE_KEY = 'babbl_user_data_v1';
 
@@ -15,6 +16,11 @@ export interface Analysis {
   sosModeUsed: boolean;
   key_signals?: any[];
   recommended_actions?: any[];
+  /** Couche 2 — d'après ce que le parent a saisi. Absent sur les anciennes entrées. */
+  hypotheses?: Hypothesis[];
+  /** Cartes de sécurité telles qu'affichées. Absent sur les anciennes entrées. */
+  safety_cards?: SafetyCard[];
+  safety_footer?: string;
   audio_url?: string;
   comfort_audio_url?: string;
   comfort_text?: string;

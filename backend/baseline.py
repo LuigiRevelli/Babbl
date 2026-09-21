@@ -1,13 +1,22 @@
 """
-Babbl Baseline -- Apprentissage du profil acoustique unique de chaque bebe.
+Babbl Baseline -- profil acoustique de chaque bebe, constitue EN SILENCE.
 
-Ce module maintient une ligne de base (baseline) des caracteristiques acoustiques
-des pleurs de chaque bebe. Apres chaque analyse, la baseline est mise a jour avec
-une formule incrementale (moyenne courante). Quand suffisamment d'echantillons ont
-ete collectes (>= 5), on peut detecter les deviations significatives par rapport
-au profil normal du bebe.
+Apres chaque analyse exploitable, la ligne de base est mise a jour (moyenne et
+ecart-type incrementaux, Welford). Rien n'est affiche au parent : l'etude
+SYMPTOMS.md a etabli qu'aucune sortie « deviation » n'est defendable
+aujourd'hui (le score mesurait surtout la distance du telephone, et un
+message rassurant n'a aucune base probante). Le corpus continue de se
+constituer pour les experiences 3-4 du plan de donnees (composantes de
+variance, residu intra-bebe).
 
-Deviation elevee = "ce pleur est ANORMAL pour ce bebe en particulier".
+Ne sont PAS suivies : energy_total et amplitude_mean (proprietes de
+l'enregistrement, pas du bebe) ni le coefficient MFCC 0 (reagit au volume
+capte). Le stockage garde 13 coefficients pour rester aligne avec les lignes
+existantes ; le coefficient 0 est ecrit a 0.0.
+
+Suite connue (schema Supabase) : la reference est attachee a user_id, pas au
+bebe -- jumeaux, deuxieme enfant et comptes partages sont fondus. A migrer
+vers une cle bebe + champ d'age.
 """
 
 import json
@@ -25,8 +34,8 @@ from supabase import Client
 # Scalar features that are tracked as running averages + std
 _SCALAR_FEATURES = {
     "pitch_mean_hz":            ("avg_pitch_mean",          "std_pitch_mean"),
-    "energy_total":             ("avg_energy",              "std_energy"),
-    "amplitude_mean":           ("avg_amplitude",           "std_amplitude"),
+    # energy_total / amplitude_mean volontairement absents : ce sont des
+    # proprietes de l'enregistrement (distance, gain), pas du bebe.
     "spectral_centroid_mean":   ("avg_spectral_centroid",   None),
     "spectral_bandwidth_mean":  ("avg_spectral_bandwidth",  None),
     "spectral_rolloff_mean":    ("avg_spectral_rolloff",    None),
@@ -40,12 +49,6 @@ _MINMAX_FEATURES = {
     "pitch_min_hz": "min_pitch",
     "pitch_max_hz": "max_pitch",
 }
-
-# How many standard deviations to flag as anomaly
-_ANOMALY_THRESHOLD = 1.5
-
-# Minimum samples before baseline deviation is meaningful
-MIN_SAMPLES_FOR_DEVIATION = 5
 
 
 # ---------------------------------------------------------------------------
@@ -70,6 +73,15 @@ def _incremental_std(old_std: float, old_mean: float, new_value: float, new_mean
     old_var = old_std ** 2 if old_std else 0.0
     new_var = ((n - 2) * old_var + (new_value - new_mean) * (new_value - old_mean)) / (n - 1)
     return math.sqrt(max(new_var, 0.0))
+
+
+def _without_c0(mfcc: List[float]) -> List[float]:
+    """Neutralise le coefficient 0 (sensible au volume capte) en gardant 13 valeurs."""
+    if not mfcc:
+        return []
+    out = [float(v) for v in mfcc]
+    out[0] = 0.0
+    return out
 
 
 def _incremental_mfcc_mean(old_mfcc: List[float], new_mfcc: List[float], n: int) -> List[float]:
@@ -120,7 +132,7 @@ def update_baseline(sb: Client, user_id: str, features: Dict[str, Any]) -> Optio
 
             # Update MFCC running means
             old_mfcc = row.get("avg_mfcc") or []
-            new_mfcc = features.get("mfcc_means") or []
+            new_mfcc = _without_c0(features.get("mfcc_means") or [])
             if new_mfcc:
                 updates["avg_mfcc"] = _incremental_mfcc_mean(old_mfcc, new_mfcc, n)
 
@@ -160,7 +172,7 @@ def update_baseline(sb: Client, user_id: str, features: Dict[str, Any]) -> Optio
                     insert[std_col] = 0.0
 
             insert["avg_pitch_std"] = round(float(features.get("pitch_std_hz", 0)), 6)
-            insert["avg_mfcc"] = features.get("mfcc_means") or []
+            insert["avg_mfcc"] = _without_c0(features.get("mfcc_means") or [])
 
             pitch_min = features.get("pitch_min_hz")
             if pitch_min and pitch_min > 0:
@@ -175,145 +187,3 @@ def update_baseline(sb: Client, user_id: str, features: Dict[str, Any]) -> Optio
     except Exception as e:
         print(f"[baseline] update_baseline failed: {e}")
         return None
-
-
-def compute_deviation(sb: Client, user_id: str, features: Dict[str, Any]) -> Dict[str, Any]:
-    """Compare current cry features against the baby's learned baseline.
-
-    Returns:
-        {
-            "deviation_score": int (0-100),
-            "anomalies": [{"feature": str, "current": float, "baseline": float, "std": float, "z_score": float}],
-            "sample_count": int,
-            "baseline_active": bool,  # True if sample_count >= MIN_SAMPLES_FOR_DEVIATION
-            "message": str,           # French user-facing message
-        }
-    """
-    result: Dict[str, Any] = {
-        "deviation_score": 0,
-        "anomalies": [],
-        "sample_count": 0,
-        "baseline_active": False,
-        "message": "",
-    }
-
-    try:
-        resp = sb.table("baby_baselines").select("*").eq("user_id", user_id).execute()
-        rows = resp.data or []
-        if not rows:
-            result["message"] = "Profil acoustique en cours de construction (premiere analyse)."
-            return result
-
-        row = rows[0]
-        sample_count = row.get("sample_count") or 0
-        result["sample_count"] = sample_count
-
-        if sample_count < MIN_SAMPLES_FOR_DEVIATION:
-            remaining = MIN_SAMPLES_FOR_DEVIATION - sample_count
-            result["message"] = (
-                f"Profil acoustique en cours d'apprentissage "
-                f"({sample_count}/{MIN_SAMPLES_FOR_DEVIATION} echantillons). "
-                f"Encore {remaining} analyse(s) avant activation."
-            )
-            return result
-
-        # Baseline is active
-        result["baseline_active"] = True
-
-        anomalies: List[Dict[str, Any]] = []
-        z_scores: List[float] = []
-
-        # Check each scalar feature with known std
-        for feat_key, (avg_col, std_col) in _SCALAR_FEATURES.items():
-            if std_col is None:
-                continue  # no std tracked for this feature
-            current = features.get(feat_key)
-            if current is None:
-                continue
-            baseline_avg = row.get(avg_col)
-            baseline_std = row.get(std_col)
-            if baseline_avg is None or baseline_std is None:
-                continue
-            if baseline_std < 1e-9:
-                # Std is essentially zero — skip to avoid division by zero
-                continue
-
-            z = abs(current - baseline_avg) / baseline_std
-            z_scores.append(z)
-
-            if z > _ANOMALY_THRESHOLD:
-                # Feature name mapping for user-facing labels
-                feature_labels = {
-                    "pitch_mean_hz": "Hauteur du cri (pitch)",
-                    "energy_total": "Energie totale",
-                    "amplitude_mean": "Amplitude moyenne",
-                }
-                anomalies.append({
-                    "feature": feature_labels.get(feat_key, feat_key),
-                    "feature_key": feat_key,
-                    "current": round(current, 4),
-                    "baseline": round(baseline_avg, 4),
-                    "std": round(baseline_std, 4),
-                    "z_score": round(z, 2),
-                })
-
-        # Check MFCC deviations (compare each coefficient)
-        baseline_mfcc = row.get("avg_mfcc") or []
-        current_mfcc = features.get("mfcc_means") or []
-        if baseline_mfcc and current_mfcc and sample_count >= MIN_SAMPLES_FOR_DEVIATION:
-            mfcc_diffs = []
-            for i in range(min(len(baseline_mfcc), len(current_mfcc))):
-                diff = abs(current_mfcc[i] - baseline_mfcc[i])
-                mfcc_diffs.append(diff)
-            if mfcc_diffs:
-                avg_mfcc_diff = sum(mfcc_diffs) / len(mfcc_diffs)
-                # MFCC values typically range -50 to 50; a diff > 10 is significant
-                if avg_mfcc_diff > 10:
-                    anomalies.append({
-                        "feature": "Timbre vocal (MFCC)",
-                        "feature_key": "mfcc_means",
-                        "current": round(avg_mfcc_diff, 2),
-                        "baseline": 0.0,
-                        "std": 0.0,
-                        "z_score": round(avg_mfcc_diff / 5.0, 2),  # normalized
-                    })
-                    z_scores.append(avg_mfcc_diff / 5.0)
-
-        # Compute deviation score (0-100)
-        if z_scores:
-            # Use the max z-score, clamped to 0-100
-            max_z = max(z_scores)
-            avg_z = sum(z_scores) / len(z_scores)
-            # Weighted: 60% max anomaly + 40% average anomaly
-            raw_score = (0.6 * max_z + 0.4 * avg_z) * 20  # scale so z=5 -> 100
-            deviation_score = int(min(max(raw_score, 0), 100))
-        else:
-            deviation_score = 0
-
-        result["deviation_score"] = deviation_score
-        result["anomalies"] = anomalies
-
-        # Generate French message
-        if deviation_score == 0:
-            result["message"] = "Ce pleur correspond au profil acoustique habituel de votre bebe."
-        elif deviation_score < 30:
-            result["message"] = "Ce pleur est globalement normal pour votre bebe, avec de legeres variations."
-        elif deviation_score < 70:
-            result["message"] = (
-                "Ce pleur presente des variations notables par rapport au profil habituel de votre bebe. "
-                "Surveillez l'evolution."
-            )
-        else:
-            n_anomalies = len(anomalies)
-            result["message"] = (
-                f"Ce pleur devie significativement du profil habituel de votre bebe "
-                f"({n_anomalies} caracteristique(s) anormale(s)). "
-                "Attention recommandee."
-            )
-
-        return result
-
-    except Exception as e:
-        print(f"[baseline] compute_deviation failed: {e}")
-        result["message"] = "Impossible de calculer la deviation (erreur interne)."
-        return result

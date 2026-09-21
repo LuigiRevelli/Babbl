@@ -1,84 +1,60 @@
 /**
- * BabblReport — Generates a shareable text summary of an analysis
- * that the parent can send to their pediatrician.
+ * BabblReport — texte partageable avec le médecin.
+ *
+ * Reprend ce que le parent a saisi et ce que l'application a affiché.
+ * Aucun pourcentage, aucun niveau d'alerte, aucune observation sonore :
+ * Babbl ne détecte aucune maladie dans le son (SYMPTOMS.md).
  */
 
 import { useState } from 'react';
-import { Share2, Copy, Check } from 'lucide-react';
-import { t, translateCause } from '@/lib/i18n';
-import { getUserData } from '@/lib/userData';
-
-interface Analysis {
-  id: string;
-  timestamp: string;
-  topCause: string;
-  probabilities: Record<string, number>;
-  parent_summary: string;
-  confidence_level: string;
-  alert: string;
-  key_signals: string[];
-  recommended_actions: string[];
-}
+import { Share2, Check } from 'lucide-react';
+import { t } from '@/lib/i18n';
+import { getUserData, type Analysis } from '@/lib/userData';
+import { HYPOTHESIS_DISCLAIMER, hypothesisFr } from '@/lib/taxonomy';
 
 function generateReportText(analysis: Analysis): string {
   const data = getUserData();
-  const babyName = data.voiceProfile?.userName
-    ? `Bébé de ${data.voiceProfile.userName}`
-    : 'Bébé';
-  const age = data.voiceProfile?.ageRange ?? 'Non renseigné';
-  const date = new Date(analysis.timestamp).toLocaleString('fr-FR', {
-    dateStyle: 'long',
-    timeStyle: 'short',
-  });
+  const babyName = data.babyName || data.parentProfile?.babyName;
+  const who = babyName ? `Bébé : ${babyName}` : 'Bébé';
+  const age = data.parentProfile?.ageRange ?? data.voiceProfile?.ageRange ?? 'Non renseigné';
+  const date = new Date(analysis.timestamp).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' });
 
-  const alertLabels: Record<string, string> = {
-    none: '🟢 Normal',
-    monitor: '🟡 Surveillance',
-    consult_recommended: '🟠 Consultation recommandée',
-    urgent: '🔴 Urgent',
-  };
+  const hypotheses = analysis.hypotheses ?? [];
+  const hypLines = hypotheses.length
+    ? hypotheses.map((h, i) => `  ${i + 1}. ${h.label || hypothesisFr(h.key)} — ${h.why}`).join('\n')
+    : '  Aucune saisie sur les dernières heures.';
 
-  const probLines = Object.entries(analysis.probabilities)
-    .sort(([, a], [, b]) => b - a)
-    .map(([cause, prob]) => `  • ${translateCause(cause)}: ${Math.round(prob * 100)}%`)
+  const actionLines = (analysis.recommended_actions ?? [])
+    .map((a: any, i: number) => `  ${i + 1}. ${typeof a === 'string' ? a : a?.action ?? ''}`)
     .join('\n');
 
-  const signalLines = analysis.key_signals
-    .map((s, i) => `  ${i + 1}. ${s}`)
-    .join('\n');
-
-  const actionLines = analysis.recommended_actions
-    .map((a, i) => `  ${i + 1}. ${a}`)
-    .join('\n');
+  const safetyLines = (analysis.safety_cards ?? []).map(c => `  • ${c.title}`).join('\n');
 
   return `═══════════════════════════════
   RAPPORT BABBL
 ═══════════════════════════════
 
-👶 ${babyName}
+👶 ${who}
 📅 ${date}
-👶 Âge : ${age}
+🗓 Âge (tranche) : ${age}
 
-── Résultat ──────────────────
-Cause principale : ${translateCause(analysis.topCause)}
-Confiance : ${analysis.confidence_level === 'high' ? 'Élevée' : analysis.confidence_level === 'medium' ? 'Moyenne' : 'Faible'}
-Alerte : ${alertLabels[analysis.alert] ?? analysis.alert}
+── Hypothèses, d'après ce que le parent a saisi ──
+${hypLines}
+  ${HYPOTHESIS_DISCLAIMER}
 
-── Probabilités ──────────────
-${probLines}
+── Gestes proposés ──────────────
+${actionLines || '  Aucun geste spécifique.'}
 
-── Signaux clés ──────────────
-${signalLines || '  Aucun signal spécifique détecté.'}
-
-── Actions recommandées ──────
-${actionLines || '  Aucune action spécifique.'}
-
-── Résumé ────────────────────
+── Résumé affiché au parent ─────
 ${analysis.parent_summary}
 
+── Repères de sécurité affichés ─
+${safetyLines || '  (repères standard)'}
+
 ═══════════════════════════════
-⚠️ Ce rapport est généré par Babbl, un outil d'aide au triage.
-Il ne constitue pas un diagnostic médical.
+Babbl n'est pas un dispositif médical. Il ne détecte aucune
+maladie dans le son. Ce rapport reprend uniquement ce que le
+parent a saisi et ce que l'application a affiché.
 Généré le ${date}
 ═══════════════════════════════`;
 }
@@ -89,35 +65,27 @@ export default function BabblReport({ analysis }: { analysis: Analysis }) {
   const handleShare = async () => {
     const text = generateReportText(analysis);
 
-    // Try native share first (mobile)
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: 'Rapport Babbl',
-          text,
-        });
+        await navigator.share({ title: 'Rapport Babbl', text });
         return;
       } catch {
-        // User cancelled or not supported, fall through to clipboard
+        // annulé ou non supporté → presse-papiers
       }
     }
 
-    // Fallback: copy to clipboard
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
     } catch {
-      // Last resort: select text
       const textarea = document.createElement('textarea');
       textarea.value = text;
       document.body.appendChild(textarea);
       textarea.select();
       document.execCommand('copy');
       document.body.removeChild(textarea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   return (

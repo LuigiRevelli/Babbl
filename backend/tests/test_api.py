@@ -79,21 +79,45 @@ def test_analyze_end_to_end():
         assert word not in text, word
 
 
+SAFETY_KEYS = {"fever_under_3_months", "breathing", "newborn_under_15_days"}
+
+
+def _assert_refusal_invariant(body: dict):
+    """INVARIANT : un refus embarque toujours les trois cartes et le rappel."""
+    assert {c["key"] for c in body["safety"]["cards"]} == SAFETY_KEYS
+    assert body["safety"]["footer"].startswith("En cas de doute")
+    assert "jamais rassurant" in body["reminder"]
+    assert body["hint"]
+    assert set(body["recording"]) == {"duration_seconds"}   # aucun chiffre acoustique
+    assert "rapprochez" not in body["error"].lower()          # le refus n'impute pas le micro
+
+
 def test_analyze_rejects_too_short():
     client = babbl_app.app.test_client()
-    r = _post(client, _wav_bytes(1.0), {})
+    r = _post(client, _wav_bytes(1.0), {"babyAgeMonths": 1}, age=1)
     assert r.status_code == 422
     body = r.get_json()
-    assert body["code"] == "too_short" and "recording" in body
+    assert body["code"] == "too_short"
+    _assert_refusal_invariant(body)
+    emphasized = {c["key"] for c in body["safety"]["cards"] if c["emphasized"]}
+    assert "fever_under_3_months" in emphasized                # mise en avant par l'âge, comme sur le 200
 
 
 def test_analyze_rejects_silence():
     client = babbl_app.app.test_client()
-    sr = 22050
     silent = _wav_bytes(6.0, silent_tail=5.9)
     r = _post(client, silent, {})
     assert r.status_code == 422
-    assert r.get_json()["code"] == "no_cry_detected"
+    body = r.get_json()
+    assert body["code"] == "no_cry_detected"
+    _assert_refusal_invariant(body)
+
+
+def test_success_response_has_no_acoustic_numbers():
+    client = babbl_app.app.test_client()
+    r = _post(client, _wav_bytes(8.0, silent_tail=1.0), {"lastFeedingTime": "2000-01-01T00:00:00Z"})
+    assert r.status_code == 200
+    assert set(r.get_json()["recording"]) == {"duration_seconds"}
 
 
 if __name__ == "__main__":

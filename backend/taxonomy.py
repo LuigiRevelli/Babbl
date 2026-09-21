@@ -72,8 +72,7 @@ HYPOTHESIS_DISCLAIMER = "Le son ne permet pas de le confirmer."
 INTENSITY_LEVELS = ("faible", "modere", "intense")
 
 INTENSITY_OBSERVATIONS: dict[str, str] = {
-    "intense": "Sur ces {seconds} secondes, Babbl a entendu un pleur soutenu et aigu. "
-               "Un pleur intense est très fréquent chez un bébé en bonne santé.",
+    "intense": "Sur ces {seconds} secondes, Babbl a entendu un pleur soutenu et aigu.",
     "modere":  "Sur ces {seconds} secondes, Babbl a entendu un pleur d'intensité moyenne.",
     "faible":  "Sur ces {seconds} secondes, le pleur était faible ou discontinu.",
 }
@@ -118,6 +117,19 @@ SAFETY_CARDS: dict[str, dict] = {
 }
 
 SAFETY_FOOTER = "En cas de doute, appelez le 15 (SAMU). Babbl n'est pas un dispositif médical."
+
+
+# ─── Refus d'enregistrement ──────────────────────────────────────────
+# Quand Babbl n'entend pas de pleur, c'est potentiellement le cas le plus
+# grave (nourrisson léthargique). Le refus n'impute jamais le silence à un
+# défaut de captation avant d'avoir rappelé ceci — et il embarque toujours
+# les trois cartes de sécurité.
+NO_CRY_REMINDER = (
+    "Un bébé qui pleure peu, faiblement ou pas du tout n'est jamais rassurant "
+    "en soi. Si votre bébé vous semble différent de d'habitude, consultez."
+)
+NO_CRY_HINT = "Si votre bébé pleurait bien, rapprochez le téléphone (20 à 30 cm) et recommencez."
+TOO_SHORT_HINT = "Il faut au moins 3 secondes pour que Babbl entende quelque chose. Recommencez."
 
 
 def fr_label(key: str) -> str:

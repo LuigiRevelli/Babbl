@@ -5,7 +5,8 @@ import MobileLayout from '@/components/MobileLayout';
 import BackButton from '@/components/BackButton';
 import { getUserData, saveUserData } from '@/lib/userData';
 import { CRY_AUDIO_CONSTRAINTS, CRY_RECORD_MS, createRecorder, chunksToBlob } from '@/lib/recorder';
-import { toStoredAnalysis, toSupabaseRow, transientObservation, type AnalyzeResponse } from '@/lib/analysis';
+import { toStoredAnalysis, toSupabaseRow, transientObservation, refusalFromError, type AnalyzeResponse, type Refusal } from '@/lib/analysis';
+import SafetyCardsBlock from '@/components/SafetyCardsBlock';
 import { analyzeAudio as apiAnalyze } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
@@ -19,6 +20,7 @@ export default function Record() {
 
   const [isRecording, setIsRecording] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [refusal, setRefusal] = useState<Refusal | null>(null);
   const [seconds, setSeconds] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -104,9 +106,11 @@ export default function Record() {
       }
 
       navigate(`/analysis/${analysis.id}`, { state: { observation: transientObservation(result) } });
-    } catch (err: any) {
-      alert(err?.message ?? "L'analyse a échoué. Veuillez réessayer.");
+    } catch (err: unknown) {
+      // INVARIANT : jamais une popup vide — les trois cartes de sécurité restent.
+      setRefusal(refusalFromError(err, getUserData().parentProfile?.ageRange));
       setIsAnalyzing(false);
+      setSeconds(0);
     }
   };
 
@@ -115,6 +119,22 @@ export default function Record() {
     const sec = s % 60;
     return `${m}:${sec.toString().padStart(2, '0')}`;
   };
+
+  if (refusal) {
+    return (
+      <MobileLayout className="flex flex-col min-h-screen pb-8">
+        <BackButton />
+        <p className="text-xs text-muted-foreground uppercase tracking-wider mt-2 mb-1">Babbl n'a pas répondu</p>
+        <h1 className="font-serif text-2xl font-bold mb-3">{refusal.message}</h1>
+        <p className="text-sm text-primary font-semibold leading-relaxed mb-4">{refusal.reminder}</p>
+        <SafetyCardsBlock cards={refusal.cards} footer={refusal.footer} />
+        {refusal.hint && <p className="text-sm text-muted-foreground mb-4">{refusal.hint}</p>}
+        <button onClick={() => setRefusal(null)} className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-bold text-base active:scale-[0.98] transition-transform">
+          Réessayer
+        </button>
+      </MobileLayout>
+    );
+  }
 
   return (
     <MobileLayout className="flex flex-col min-h-screen">

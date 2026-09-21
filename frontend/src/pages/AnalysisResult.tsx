@@ -9,9 +9,10 @@
 
 import { useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Volume2, Home, ThumbsUp, ThumbsDown, Heart, Phone } from 'lucide-react';
+import { Volume2, Home, ThumbsUp, ThumbsDown, Heart } from 'lucide-react';
 import MobileLayout from '@/components/MobileLayout';
 import BabblReport from '@/components/BabblReport';
+import SafetyCardsBlock from '@/components/SafetyCardsBlock';
 import { getUserData, saveUserData } from '@/lib/userData';
 import { apiUrl } from '@/lib/api';
 import { t } from '@/lib/i18n';
@@ -198,29 +199,7 @@ export default function AnalysisResult() {
       )}
 
       {/* Repères de sécurité — toujours affichés, jamais déduits du son */}
-      <div className="rounded-2xl bg-card border border-border/50 p-5 mb-4 animate-fade-in" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
-        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">{t('safetyTitle')}</p>
-        <p className="text-xs text-muted-foreground italic mb-3">{t('safetyNote')}</p>
-        <div className="space-y-2">
-          {cards.map(card => (
-            <div
-              key={card.key}
-              className="rounded-xl p-3 border"
-              style={card.emphasized ? { background: 'hsl(25 100% 95%)', borderColor: 'hsl(25 90% 55%)' } : { background: 'hsl(0 0% 100% / 0.4)', borderColor: 'hsl(0 0% 0% / 0.08)' }}
-            >
-              <p className="font-semibold text-sm" style={card.emphasized ? { color: 'hsl(25 90% 30%)' } : undefined}>{card.title}</p>
-              <p className="text-xs mt-1 leading-relaxed text-muted-foreground">{card.body}</p>
-            </div>
-          ))}
-        </div>
-        <div className="flex items-center gap-3 mt-3">
-          <a href="tel:15" className="py-2 px-4 rounded-xl flex items-center gap-2 font-bold text-sm text-white bg-destructive transition-all active:scale-[0.98]">
-            <Phone className="w-4 h-4" />
-            {t('alertCall15')}
-          </a>
-          <p className="text-xs text-muted-foreground leading-snug">{footer}</p>
-        </div>
-      </div>
+      <SafetyCardsBlock cards={cards} footer={footer} />
 
       {/* Rapport pour le médecin */}
       <BabblReport analysis={analysis} />

@@ -19,7 +19,7 @@ import {
 import { analyzeAudio as apiAnalyze } from '@/lib/api';
 import { getUserData, saveUserData } from '@/lib/userData';
 import { CRY_AUDIO_CONSTRAINTS, CRY_RECORD_MS, createRecorder, chunksToBlob } from '@/lib/recorder';
-import { toStoredAnalysis, toSupabaseRow, transientObservation, type AnalyzeResponse } from '@/lib/analysis';
+import { toStoredAnalysis, toSupabaseRow, transientObservation, refusalFromError, type AnalyzeResponse, type Refusal } from '@/lib/analysis';
 import { useAuth } from '@/lib/AuthContext';
 import { saveAnalysis as saveAnalysisToSupabase } from '@/lib/supabaseData';
 
@@ -31,7 +31,8 @@ export default function BabblHome() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [phase, setPhase] = useState<Phase>('idle');
+  const [phase, setPhase] = useState<Phase | 'refused'>('idle');
+  const [refusal, setRefusal] = useState<Refusal | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -123,13 +124,18 @@ export default function BabblHome() {
       // L'observation sonore n'est affichée qu'une fois : elle voyage dans
       // l'état de navigation, jamais dans le stockage.
       navigate(`/analysis/${analysis.id}`, { state: { observation: transientObservation(result) } });
-    } catch (err: any) {
-      alert(err?.message ?? "L'analyse a échoué. Réessayez.");
-      setPhase('idle');
+    } catch (err: unknown) {
+      // INVARIANT : jamais une popup vide. Le refus (422), la panne (500) et le
+      // réseau coupé affichent tous les trois cartes de sécurité.
+      setRefusal(refusalFromError(err, getUserData().parentProfile?.ageRange));
+      setPhase('refused');
     }
   };
 
   if (phase === 'analyzing') return <ScreenAnalyzing />;
+  if (phase === 'refused' && refusal) {
+    return <ScreenRefused refusal={refusal} onRetry={() => { setRefusal(null); setPhase('idle'); }} />;
+  }
 
   // ─── Screen 01 Home ───
   return (
@@ -249,6 +255,64 @@ export default function BabblHome() {
         </div>
       </div>
 
+      <HomeIndicator />
+    </BabblShell>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Screen 02b Refused — Babbl n'a pas répondu. Les cartes restent.
+// ─────────────────────────────────────────────────────────────
+function ScreenRefused({ refusal, onRetry }: { refusal: Refusal; onRetry: () => void }) {
+  const label = (text: string) => (
+    <span style={{ fontFamily: C.mono, fontSize: 10, letterSpacing: '.18em', textTransform: 'uppercase', color: C.cafeMute }}>{text}</span>
+  );
+  return (
+    <BabblShell background={C.lait}>
+      <AppStatusBar />
+      <div style={{ padding: '24px 28px 0' }}>
+        <div style={{ marginBottom: 8 }}>{label('babbl n\'a pas répondu')}</div>
+        <div style={{ fontFamily: C.display, fontSize: 34, lineHeight: 1.0, letterSpacing: '-0.03em', color: C.cafe }}>
+          {refusal.message}
+        </div>
+        <div style={{ fontSize: 14, color: C.terracotta, marginTop: 14, lineHeight: 1.5, fontWeight: 500 }}>{refusal.reminder}</div>
+      </div>
+
+      <div style={{ padding: '24px 20px 0' }}>
+        <div style={{ background: C.coquille, borderRadius: 24, border: `1px solid ${C.ivoire}`, padding: 22, marginBottom: 14 }}>
+          <div style={{ marginBottom: 6 }}>{label('repères de sécurité')}</div>
+          <div style={{ fontSize: 12, color: C.cafeMute, marginBottom: 14, fontStyle: 'italic' }}>
+            Toujours affichés. Ils ne dépendent pas de l'enregistrement.
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {refusal.cards.map(card => (
+              <div
+                key={card.key}
+                style={{ borderRadius: 16, padding: '12px 14px', background: card.emphasized ? '#FBEDE6' : C.lait, border: `1px solid ${card.emphasized ? C.terracotta : C.ivoire}` }}
+              >
+                <div style={{ fontFamily: C.display, fontSize: 18, letterSpacing: '-0.01em', color: card.emphasized ? C.terracotta : C.cafe }}>{card.title}</div>
+                <div style={{ fontSize: 13, color: C.cafeSoft, marginTop: 4, lineHeight: 1.45 }}>{card.body}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 14 }}>
+            <a href="tel:15" style={{ padding: '10px 16px', borderRadius: 99, background: C.cafe, color: C.lait, textDecoration: 'none', fontFamily: C.body, fontSize: 13, fontWeight: 500 }}>
+              Appeler le 15
+            </a>
+            <div style={{ fontSize: 12, color: C.cafeMute, lineHeight: 1.4 }}>{refusal.footer}</div>
+          </div>
+        </div>
+
+        {refusal.hint && (
+          <div style={{ fontSize: 13, color: C.cafeSoft, lineHeight: 1.5, padding: '0 8px 16px' }}>{refusal.hint}</div>
+        )}
+        <button
+          onClick={onRetry}
+          style={{ width: '100%', padding: '14px 20px', borderRadius: 99, background: C.cafe, color: C.lait, border: 'none', cursor: 'pointer', fontFamily: C.body, fontSize: 14, fontWeight: 500, marginBottom: 24 }}
+        >
+          Réessayer
+        </button>
+      </div>
       <HomeIndicator />
     </BabblShell>
   );

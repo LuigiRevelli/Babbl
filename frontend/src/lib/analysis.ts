@@ -10,7 +10,8 @@
  */
 
 import type { Analysis } from './userData';
-import type { IntensityLevel, SafetyCardKey } from './taxonomy';
+import { INTENSITY_DISCLAIMER, SAFETY_CARDS, SAFETY_FOOTER, type IntensityLevel, type SafetyCardKey } from './taxonomy';
+import { ApiError } from './api';
 
 export interface Hypothesis {
   key: string;
@@ -116,3 +117,59 @@ export function toSupabaseRow(a: Analysis) {
     comfort_text: a.comfort_text ?? null,
   };
 }
+
+/** Corps d'un refus (422) — ou reconstruit côté client quand le réseau tombe. */
+export interface Refusal {
+  code: 'too_short' | 'no_cry_detected' | 'network' | 'server';
+  message: string;
+  reminder: string;
+  hint?: string;
+  cards: SafetyCard[];
+  footer: string;
+}
+
+/** Les trois cartes, mises en avant par l'âge seul — même logique que le backend. */
+export function staticSafety(ageRange?: string): { cards: SafetyCard[]; footer: string } {
+  const under3 = ageRange === '0-3';
+  const cards: SafetyCard[] = (Object.keys(SAFETY_CARDS) as SafetyCardKey[]).map(key => ({
+    key,
+    ...SAFETY_CARDS[key],
+    emphasized: key === 'breathing' || (key === 'fever_under_3_months' && under3),
+  }));
+  cards.sort((a, b) => Number(b.emphasized) - Number(a.emphasized));
+  return { cards, footer: SAFETY_FOOTER };
+}
+
+const NO_CRY_REMINDER =
+  "Un bébé qui pleure peu, faiblement ou pas du tout n'est jamais rassurant en soi. " +
+  "Si votre bébé vous semble différent de d'habitude, consultez.";
+
+/**
+ * INVARIANT : quoi qu'il arrive (refus, panne serveur, réseau coupé), le parent
+ * voit les trois cartes de sécurité. Jamais une popup vide.
+ */
+export function refusalFromError(err: unknown, ageRange?: string): Refusal {
+  const fallback = staticSafety(ageRange);
+  if (err instanceof ApiError && err.status === 422 && err.body) {
+    const b = err.body;
+    return {
+      code: b.code === 'too_short' ? 'too_short' : 'no_cry_detected',
+      message: b.error ?? "Babbl n'a pas entendu de pleur net sur cet enregistrement.",
+      reminder: b.reminder ?? NO_CRY_REMINDER,
+      hint: b.hint,
+      cards: b.safety?.cards?.length ? b.safety.cards : fallback.cards,
+      footer: b.safety?.footer ?? fallback.footer,
+    };
+  }
+  const network = !(err instanceof ApiError);
+  return {
+    code: network ? 'network' : 'server',
+    message: network ? "L'analyse n'a pas abouti (réseau ou délai dépassé)." : "L'analyse n'a pas abouti.",
+    reminder: NO_CRY_REMINDER,
+    hint: 'Vous pouvez réessayer. Les repères ci-dessous ne dépendent pas de l\'enregistrement.',
+    cards: fallback.cards,
+    footer: fallback.footer,
+  };
+}
+
+export { INTENSITY_DISCLAIMER };

@@ -6,6 +6,32 @@
  */
 
 import { extensionForMime } from './recorder';
+import { supabase } from './supabase';
+
+/** Erreur API avec le statut et le corps JSON — un 422 porte les cartes de sécurité. */
+export class ApiError extends Error {
+  status: number;
+  body: any;
+  constructor(status: number, body: any, message: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.body = body;
+  }
+}
+
+/** Délai maximal d'une analyse côté client. Le backend répond en < 15 s (repli déterministe). */
+const ANALYZE_TIMEOUT_MS = 25_000;
+
+async function authHeaders(): Promise<Record<string, string>> {
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5001';
 
@@ -30,10 +56,22 @@ export async function analyzeAudio(
   if (opts?.parentLabel) form.append('parent_label', opts.parentLabel);
   if (opts?.babyAgeMonths != null) form.append('baby_age_months', String(opts.babyAgeMonths));
 
-  const res = await fetch(apiUrl('/api/analyze'), { method: 'POST', body: form });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ANALYZE_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(apiUrl('/api/analyze'), {
+      method: 'POST',
+      body: form,
+      headers: await authHeaders(),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error ?? "L'analyse a échoué");
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new ApiError(res.status, body, body?.error ?? "L'analyse a échoué");
   }
   return res.json();
 }
@@ -47,10 +85,10 @@ export async function cloneVoice(audioBlob: Blob, name: string) {
   form.append('audio', audioBlob, `voice_sample.${extensionForMime(audioBlob.type)}`);
   form.append('name', name);
 
-  const res = await fetch(apiUrl('/api/voice/clone'), { method: 'POST', body: form });
+  const res = await fetch(apiUrl('/api/voice/clone'), { method: 'POST', body: form, headers: await authHeaders() });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error ?? "Le clonage vocal a échoué");
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new ApiError(res.status, body, body?.error ?? 'Le clonage vocal a échoué');
   }
   return res.json() as Promise<{ voice_id: string; name: string }>;
 }

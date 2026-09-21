@@ -23,6 +23,7 @@ from baseline import update_baseline
 from comfort_messages import generate_comfort_message
 from elevenlabs_client import clone_voice, text_to_speech
 from mistral_client import write_parent_guidance
+from taxonomy import NO_CRY_HINT, NO_CRY_REMINDER, TOO_SHORT_HINT
 from triage_rules import context_hypotheses, intensity_observation, recording_gate, safety_cards
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -139,16 +140,24 @@ def analyze():
         msg = str(e) or type(e).__name__
         return jsonify({"error": f"L'analyse audio a échoué : {msg}"}), 500
 
-    recording = {
-        "duration_seconds": features.get("duration_seconds", 0.0),
-        "continuity": round(1.0 - float(features.get("silence_ratio", 0.0) or 0.0), 3),
-        "pitch_mean_hz": features.get("pitch_mean_hz", 0.0),
-    }
+    # Aucun chiffre acoustique ne sort du serveur : un nombre finirait affiché
+    # ou stocké côté client. Seule la durée est renvoyée.
+    recording = {"duration_seconds": features.get("duration_seconds", 0.0)}
 
-    # 2. Porte d'entrée — Babbl refuse de répondre sur rien
+    # 2. Porte d'entrée — Babbl refuse de répondre sur rien.
+    # INVARIANT : un refus embarque toujours les trois cartes de sécurité et le
+    # rappel « un bébé qui pleure peu n'est jamais rassurant ». « Pas de pleur »
+    # est le cas potentiellement le plus grave, pas un défaut de micro.
     ok, gate_code, gate_msg = recording_gate(features)
     if not ok:
-        return jsonify({"error": gate_msg, "code": gate_code, "recording": recording}), 422
+        return jsonify({
+            "error": gate_msg,
+            "code": gate_code,
+            "recording": recording,
+            "reminder": NO_CRY_REMINDER,
+            "hint": TOO_SHORT_HINT if gate_code == "too_short" else NO_CRY_HINT,
+            "safety": safety_cards(context, baby_age_months),
+        }), 422
 
     # 3-5. Les deux couches + cartes de sécurité
     intensity = intensity_observation(features)

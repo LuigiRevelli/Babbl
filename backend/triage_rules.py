@@ -115,15 +115,11 @@ def recording_gate(features: dict) -> tuple[bool, str | None, str | None]:
     pitch = float(features.get("pitch_mean_hz", 0.0) or 0.0)
 
     if duration < MIN_DURATION_S:
-        return False, "too_short", (
-            f"L'enregistrement dure {duration:.1f} s. Il en faut au moins "
-            f"{MIN_DURATION_S:.0f} pour que Babbl entende quelque chose. Recommencez."
-        )
+        return False, "too_short", f"L'enregistrement dure {duration:.1f} s."
     if silence > MAX_SILENCE_RATIO or pitch <= 0.0:
-        return False, "no_cry_detected", (
-            "Babbl n'a pas entendu de pleur sur cet enregistrement. Rapprochez "
-            "le téléphone (20 à 30 cm) et recommencez."
-        )
+        # Le message ne dit PAS « rapprochez le téléphone » : le silence peut
+        # être le bébé, pas le micro. Le rappel et l'indice sont dans app.py.
+        return False, "no_cry_detected", "Babbl n'a pas entendu de pleur net sur cet enregistrement."
     return True, None, None
 
 

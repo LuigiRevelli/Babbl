@@ -39,8 +39,6 @@ const fr = {
   keepItAlive: "Continue comme ça !",
   lastMeal: "Dernier repas",
   diaperChange: "Dernier change",
-  babyMonitor: "Babyphone",
-  nightMode: "Mode nuit",
   cloneMyVoice: "Cloner ma voix",
   customize: "Personnaliser",
   diaperType: "Type de change",
@@ -64,13 +62,7 @@ const fr = {
   analysisNotFound: "Analyse introuvable",
   result: "Résultat",
   accordingToBabbl: "Selon Babbl",
-  mainCause: "Cause principale",
-  confidence: "Confiance",
-  confidenceHigh: "Élevée",
-  confidenceMedium: "Moyenne",
-  confidenceLow: "Faible",
   summary: "Résumé",
-  probabilities: "Probabilités",
   recommendedActions: "💡 Actions recommandées",
   listenSummary: "🔊 Écouter le résumé",
   comfortBaby: "Réconforter mon bébé avec ma voix",
@@ -114,10 +106,10 @@ const fr = {
   babblParent: "Parent Babbl",
 
   // ─── Phrases to read for voice clone ───────────────
-  phrase1: "Tout va bien, je suis là avec toi.",
+  phrase1: "Je suis là avec toi, tout contre toi.",
   phrase2: "Chut... dors bien mon bébé, je veille sur toi.",
   phrase3: "Tu es en sécurité, je t'aime tellement.",
-  phrase4: "Calme-toi mon ange, tout ira bien.",
+  phrase4: "Calme-toi mon ange, je suis là.",
   phrase5: "Bonne nuit petit trésor, fais de beaux rêves.",
 
   // ─── Breathing ─────────────────────────────────────
@@ -136,29 +128,14 @@ const fr = {
   // ─── History ───────────────────────────────────────
   historyTitle: "Historique",
   totalAnalyses: "analyses au total",
-  responseImproving: "Votre temps de réponse s'améliore de semaine en semaine 💪",
   mostFrequentCauses: "Hypothèses les plus fréquentes",
-  patternDetected: "📊 Tendance détectée",
+  patternDetected: "📊 Tendance dans vos saisies",
   thisWeek: "Cette semaine",
   thisMonth: "Ce mois",
   all: "Tout",
   historyEmpty: "Votre historique est encore vide. Lancez votre première analyse 🧡",
 
   // ─── Night Mode ────────────────────────────────────
-  nightModeTitle: "Mode Nuit",
-  nightModeEnabled: "Mode nuit activé",
-  nightModeDisabled: "Mode nuit désactivé",
-  dimmedAtmosphere: "Ambiance tamisée pour la nuit",
-  babyMonitorLabel: "Babyphone",
-  connecting: "Connexion...",
-  disconnectMonitor: "Déconnecter le babyphone",
-  connectMonitor: "Connecter un babyphone",
-  monitorTip: "💡 Quand le babyphone détecte des pleurs, Babbl peut automatiquement réconforter votre bébé avec une voix douce. Personnalisez la voix dans les réglages.",
-  statusDisconnected: "Déconnecté",
-  statusListening: "Écoute en cours...",
-  statusCryDetected: "👶 Pleurs détectés !",
-  statusComfortSent: "🎵 Réconfort envoyé",
-  statusBabySoothed: "😴 Bébé apaisé",
 
   // ─── Greetings ─────────────────────────────────────
   greetingNight: "Encore debout ?",
@@ -186,29 +163,10 @@ const fr = {
   weeksAgo: "semaines",
 
   // ─── Alerts ───────────────────────────────────────
-  alertMonitorTitle: "⚠️ Surveillance recommandée",
-  alertMonitorDesc: "Certains signaux sont inhabituels. Relancez une analyse dans 1 heure. Si les pleurs persistent, consultez un professionnel.",
-  alertConsultTitle: "🟠 Consultation recommandée",
-  alertConsultDesc: "Les signaux détectés méritent l'avis d'un professionnel de santé dans les 24 heures.",
-  alertUrgentTitle: "🔴 Contactez un professionnel",
-  alertUrgentDesc: "Les signaux détectés nécessitent une attention médicale immédiate.",
-  alertReanalyzeIn1h: "Relancer une analyse dans 1h",
-  alertFindPediatrician: "Trouver un pédiatre",
   alertCall15: "Appeler le 15 (SAMU)",
-  alertFindER: "Urgences à proximité",
   alertShareReport: "Partager avec mon médecin",
 
   // ─── Babbl Report ────────────────────────────────
-  reportTitle: "Rapport Babbl",
-  reportBabyName: "Bébé",
-  reportAge: "Âge",
-  reportDate: "Date",
-  reportMainCause: "Cause principale",
-  reportConfidence: "Confiance",
-  reportProbabilities: "Probabilités",
-  reportSignals: "Signaux clés",
-  reportActions: "Actions recommandées",
-  reportAlert: "Niveau d'alerte",
   hypothesesTitle: "D'après ce que vous avez saisi",
   hypothesesEmpty: "Vous n'avez rien saisi sur les dernières heures : Babbl ne peut pas proposer d'hypothèse.",
   observationTitle: "Ce que Babbl a entendu",
@@ -216,11 +174,8 @@ const fr = {
   safetyTitle: "Repères de sécurité",
   safetyNote: "Toujours affichés. Ils ne dépendent pas de l'enregistrement.",
   reportCopied: "Rapport copié !",
-  reportCopyFailed: "Échec de la copie",
-  reportDisclaimer: "Ce rapport est généré par Babbl, un outil d'aide au triage. Il ne constitue pas un diagnostic médical.",
 
   // ─── App title ─────────────────────────────────────
-  appTitle: "Babbl — Comprendre votre bébé",
 } as const;
 
 export type TranslationKey = keyof typeof fr;

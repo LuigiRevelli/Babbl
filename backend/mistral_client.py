@@ -28,17 +28,65 @@ MAX_ACTIONS = 3
 LLM_TIMEOUT_S = float(os.environ.get("LLM_TIMEOUT_S", "8"))
 ALLOWED_SIGNAL_SOURCES = ("context", "intensity")
 
-# Mots interdits dans toute phrase adressée au parent. Un seul suffit à
-# remplacer le résumé par la version déterministe. Liste volontairement
-# large : la maladie, la douleur et les chiffres n'ont rien à faire ici.
-_FORBIDDEN = re.compile(
-    r"(\d+\s?%|pour ?cent|probabilit|diagnos|détect|detect|acoustiq|"
-    r"colique|reflux|rgo\b|otite|dentaire|dents?\b|allergi|aplv|"
+# ─── Interdits ───────────────────────────────────────────────────────
+# Deux cribles, parce que deux régimes :
+#  - _FORBIDDEN_LLM : tout texte composé par le modèle. Large. Un seul motif
+#    suffit à remplacer la sortie par la version déterministe.
+#  - _FORBIDDEN_STATIC : tout texte fixe destiné au parent (taxonomie, messages
+#    de réconfort, repli, i18n). Même liste sans les motifs qui appartiennent
+#    légitimement aux textes fixes (« consultez » est le rôle des cartes de
+#    sécurité ; les phrases de non-réassurance sont des négations explicites,
+#    listées dans STATIC_ALLOWLIST).
+# `\bdents?\b` est ancré : « évidents » n'est pas « dents ».
+_MEDICAL = (
+    r"\d+\s?%|pour ?cent|probabilit|\bsur (dix|cent|mille)\b|chances? sur \w+|\b(une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix) chances?\b|"
+    r"diagnos|détect|detect|acoustiq|"
+    r"coliq|reflux|\brgo\b|otite|dentaire|\bdents?\b|allergi|aplv|"
     r"méningite|meningite|sepsis|infection|neuro|autis|asphyxie|"
     r"ictère|ictere|jaunisse|fièvre|fievre|maladie|douleur|souffr|"
-    r"le son (montre|indique|révèle|revele|confirme))",
-    re.IGNORECASE,
+    r"le son (montre|indique|révèle|revele|confirme|prouve)"
 )
+# Fausse réassurance : le mode d'échec le plus grave du produit.
+_REASSURANCE = (
+    r"\bnormal|\bhabituel|tout (va|est|ira) bien|va (très |tres )?bien|rassur|"
+    r"rien d'(inquiétant|inquietant|alarmant|grave)|aucun souci|pas de souci|"
+    r"en bonne santé|en bonne sante|en pleine forme|ne t'inquiète pas|ne t'inquiete pas|"
+    r"pas d'inquiétude|pas d'inquietude"
+)
+# Le modèle ne recommande ni de consulter ni de ne pas consulter.
+_TRIAGE = r"consult|médecin|medecin|pédiatre|pediatre|urgence|\ble 15\b|samu"
+
+_FORBIDDEN_LLM = re.compile(f"({_MEDICAL}|{_REASSURANCE}|{_TRIAGE})", re.IGNORECASE)
+_FORBIDDEN_STATIC = re.compile(f"({_MEDICAL}|{_REASSURANCE})", re.IGNORECASE)
+_FORBIDDEN = _FORBIDDEN_LLM  # compat
+
+# Textes fixes qui contiennent un motif de réassurance sous forme de NÉGATION
+# explicite (« n'est jamais rassurant »). Ils sont autorisés tels quels, et
+# uniquement tels quels — un seul caractère changé et le test échoue.
+STATIC_ALLOWLIST_FRAGMENTS = (
+    "n'est jamais rassurant",
+    "ne détecte aucune maladie",
+    "ne constitue pas un diagnostic",
+    "n'est pas un dispositif médical",
+)
+
+# Les cartes de sécurité sont LE seul endroit où un mot médical est légitime
+# (texte fixe HAS : fièvre, jaunisse). Même là : ni chiffre de confiance, ni
+# « détect », ni réassurance.
+_FORBIDDEN_SAFETY_CARD = re.compile(f"(\\d+\\s?%|pour ?cent|probabilit|diagnos|détect|detect|acoustiq|{_REASSURANCE})", re.IGNORECASE)
+
+
+def violates_static(text: str, allow_medical: bool = False) -> str | None:
+    """Motif interdit trouvé dans un texte fixe, ou None. Les négations listées
+    dans STATIC_ALLOWLIST_FRAGMENTS sont retirées avant le crible.
+    `allow_medical=True` est réservé aux cartes de sécurité."""
+    probe = text
+    for frag in STATIC_ALLOWLIST_FRAGMENTS:
+        probe = probe.replace(frag, "")
+    sieve = _FORBIDDEN_SAFETY_CARD if allow_medical else _FORBIDDEN_STATIC
+    m = sieve.search(probe)
+    return m.group(0) if m else None
+
 
 SYSTEM_PROMPT = """Tu es Babbl, une aide pour parents épuisés, à 3 h du matin.
 

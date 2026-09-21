@@ -18,7 +18,6 @@ import History from "./pages/History";
 import Record from "./pages/Record";
 import AnalysisResult from "./pages/AnalysisResult";
 import Breathing from "./pages/Breathing";
-import NightMode from "./pages/NightMode";
 import VoiceSetup from "./pages/VoiceSetup";
 import NotFound from "./pages/NotFound";
 
@@ -54,10 +53,8 @@ const App = () => (
             <Route path="/legacy/record" element={<Record />} />
             <Route path="/legacy/analysis/:id" element={<AnalysisResult />} />
             <Route path="/legacy/breathing" element={<Breathing />} />
-            <Route path="/legacy/night-mode" element={<NightMode />} />
             <Route path="/history" element={<History />} />
             <Route path="/breathing" element={<Breathing />} />
-            <Route path="/night-mode" element={<NightMode />} />
             <Route path="/voice-setup" element={<VoiceSetup />} />
 
             <Route path="*" element={<NotFound />} />

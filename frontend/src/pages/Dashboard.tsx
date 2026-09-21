@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Droplets, Utensils, Baby, Flame, Clock, Plus, Droplet, Moon, Mic, LogOut } from 'lucide-react';
+import { Droplets, Utensils, Baby, Flame, Clock, Plus, Droplet, Mic, LogOut } from 'lucide-react';
 import MobileLayout from '@/components/MobileLayout';
 import {
   getUserData, getGreeting, isStreakInDanger, formatRelativeDate, saveUserData,
@@ -245,24 +245,8 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* New feature cards */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        <div
-          onClick={() => navigate('/night-mode')}
-          className="rounded-2xl p-4 animate-fade-in cursor-pointer transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] border border-border/50"
-          style={{
-            background: 'linear-gradient(145deg, hsl(230 25% 18%), hsl(260 20% 22%))',
-            animationDelay: '0.3s',
-            animationFillMode: 'backwards',
-          }}
-        >
-          <div className="w-10 h-10 rounded-full bg-yellow-300/20 flex items-center justify-center mb-3">
-            <Moon className="w-5 h-5 text-yellow-300" strokeWidth={1.5} />
-          </div>
-          <p className="text-xs text-white/60 mb-0.5">{t('babyMonitor')}</p>
-          <p className="text-sm font-bold text-white leading-tight">{t('nightMode')}</p>
-        </div>
-
+      {/* Feature card */}
+      <div className="grid grid-cols-1 gap-3 mb-6">
         <div
           onClick={() => navigate('/voice-setup')}
           className="rounded-2xl p-4 animate-fade-in cursor-pointer transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"

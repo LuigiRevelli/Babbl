@@ -54,11 +54,6 @@ export default function History() {
         <div className="bg-card rounded-lg p-4 shadow-sm mb-4 text-center">
           <p className="font-serif text-4xl font-bold">{data.analyses.length}</p>
           <p className="text-sm text-muted-foreground">{t('totalAnalyses')}</p>
-          {data.analyses.length >= 5 && (
-            <p className="text-xs text-muted-foreground mt-2">
-              {t('responseImproving')}
-            </p>
-          )}
         </div>
 
         {/* Most frequent causes */}

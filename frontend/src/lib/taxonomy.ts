@@ -84,7 +84,7 @@ export function hypothesisFr(key: string): string {
   if (meta) return meta.fr;
   // Clés héritées d'anciennes analyses stockées localement.
   const legacy: Record<string, string> = {
-    pain: 'Douleur (ancienne analyse)',
+    pain: 'Ancienne analyse',
     gas: 'Gaz (ancienne analyse)',
     overstimulation: 'Surstimulation (ancienne analyse)',
     stress: 'Stress (ancienne analyse)',

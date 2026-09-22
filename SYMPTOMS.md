@@ -1,6 +1,8 @@
 # Babbl — Ce que le cri dit vraiment
 
 > Le résultat de l'étude, en français simple. Le détail technique (références, analyse réglementaire, revue du code ligne à ligne) est dans `SYMPTOMS-TECHNIQUE.md`.
+>
+> **Mise à jour 22/09/2026 :** la liste finale élargie à toute la voix du bébé (toux, babillage, respiration…) est dans `LISTE-FINALE-SYMPTOMES.md`. Elle remplace les tableaux de paliers ci-dessous.
 
 ## Le verdict, en cinq phrases
 

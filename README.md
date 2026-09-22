@@ -79,6 +79,7 @@ Le modèle de classification précédent (XGBoost sur Donate-a-Cry) atteignait 8
 
 | Document | Description |
 |---|---|
+| [LISTE-FINALE-SYMPTOMES.md](LISTE-FINALE-SYMPTOMES.md) | Liste finale : ce que la voix du bébé permet de dire (36 signaux vérifiés) |
 | [FEATURES.md](FEATURES.md) | Détail des 5 features signature + features complémentaires |
 | [BUSINESS_MODEL.md](BUSINESS_MODEL.md) | Pricing, projections financières, unit economics, concurrence |
 | [TODO.md](TODO.md) | Suivi complet de l'avancement du projet (Phase 0 à 5) |

@@ -13,7 +13,7 @@ Le son ne commande donc que **deux sorties** :
 1. **La porte d'entrée** : « Babbl n'a pas entendu de pleur net », jamais rassurante, toujours suivie des cartes de sécurité.
 2. **Au plus, une phrase qui décrit l'enregistrement** : « un pleur presque continu » ou « un pleur entrecoupé de pauses ». Elle remplace les trois niveaux « faible / modéré / intense » et n'est affichée qu'après l'expérience A/B sur le calme du parent (`ROADMAP-BACKEND.md`, n°5). Si l'expérience montre qu'elle inquiète, on la retire.
 
-**La vraie valeur de ce passage est ailleurs.** Il fournit le **contenu des cartes et repères** que Babbl peut afficher sans jamais écouter : toux, geignement, stridor, coqueluche, babillage à 10 mois, voix enrouée, spasme du sanglot. Et il met au jour **cinq défauts déjà en production**, à corriger avant d'ajouter quoi que ce soit (voir plus bas).
+**La vraie valeur de ce passage est ailleurs.** Il fournit le **contenu des cartes et repères** que Babbl peut afficher sans jamais écouter : toux, geignement, stridor, coqueluche, babillage à 10 mois, voix enrouée, spasme du sanglot. Et il met au jour **sept défauts déjà en production**, à corriger avant d'ajouter quoi que ce soit (voir plus bas).
 
 | Résultat | Nombre |
 |---|---|

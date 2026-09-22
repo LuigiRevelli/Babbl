@@ -113,9 +113,26 @@ Aucun n'est attendu au-delà de « carte statique » ; ils ferment les derniers 
 | L'observation dit « pleur soutenu et **aigu** » alors que la hauteur ne décide plus rien | `backend/taxonomy.py`, observation « intense » | Oui, par le critique |
 | « Les pleurs sont plus fréquents entre 2h et 5h » présente un nombre d'enregistrements comme une fréquence de pleurs | `frontend/src/pages/History.tsx` | Oui, par le critique |
 | Le prototype annonce « détection d'apnée entre pleurs » et « filtrage des bruits de fond » | `frontend/public/prototype/Babbl.html` | Oui, par le critique |
-| Le message en voix clonée reprend l'hypothèse de contexte comme un état (« tu es fatigué ») juste après l'analyse | `backend/comfort_messages.py` via `app.py` | Rapporté par les arbitres, non revérifié |
+| Le message en voix clonée reprend l'hypothèse de contexte comme un état (« Tu es fatigué, bébé ») juste après l'analyse | `backend/comfort_messages.py` via `app.py` | Oui, vérifié le 22/09 |
 | `FEATURES.md` et `TODO.md` affirment encore « 457 échantillons annotés par des pédiatres » et « 82,6 % » ; en réalité ce sont les parents qui ont étiqueté | `FEATURES.md`, `TODO.md` | Oui, via le fichier du corpus |
-| Le filtre de mots interdits laisse passer « a mal », « bobo », « encéphalopathie », « cerveau », « asphyxie », « hypoglycémie », « sevrage » | `backend/mistral_client.py` | Rapporté par les arbitres, non revérifié |
+| Le filtre de mots interdits laisse passer « a mal », « bobo », « encéphalopathie », « cerveau », « asphyxié », « hypoglycémie », « sevrage » | `backend/mistral_client.py` | Oui, vérifié le 22/09 (« asphyxie » exact est bloqué, pas ses variantes) |
+
+---
+
+## Prochaine étape
+
+Dans cet ordre. Les durées sont des estimations d'ingénierie.
+
+| # | Étape | Qui | Durée | Dépend de |
+|---|---|---|---|---|
+| 1 | **Corriger les défauts en production** du tableau ci-dessus : retirer « aigu », la phrase « 2h-5h » de l'historique et la phrase « apnée » du prototype ; rendre le message en voix clonée neutre vis-à-vis de l'état ; étendre le filtre de mots interdits ; corriger « 457 annotés par des pédiatres » et « 82,6 % » dans `FEATURES.md` et `TODO.md` | Luigi | ~1 jour | Rien |
+| 2 | **Durcir la porte d'entrée** : écrire d'abord les tests qui échouent (babillage 300 Hz, voix 270 Hz), puis le correctif, puis le banc de vrais clips téléphone | Luigi | ~1-2 semaines | Rien |
+| 3 | **Faire relire les cartes par un pédiatre** : une seule carte « Respiration et toux » avec un seul jeu de seuils d'âge, carte 15 « cri faible », carte anti-secouement, repères babillage et audition | Jérémie | 1 rendez-vous | Rien |
+| 4 | **Appel au conseil réglementaire**, avec deux questions précises : une carte déclenchée par une case cochée reste-t-elle hors dispositif médical, et l'enregistrement d'une toux pour le médecin impose-t-il un hébergement HDS ? | Jérémie | 1 appel | Rien |
+| 5 | **Intégrer les cartes relues** dans `taxonomy.py` et `taxonomy.ts`, et les menus « Toux », « Nez bouché », « Voix enrouée », « Quand appeler » | Luigi | ~3 jours | 3 et 4 |
+| 6 | **Test A/B** : la phrase de continuité calme-t-elle ou inquiète-t-elle ? Sinon, le son ne pilote plus que la porte | Luigi | ~2 semaines | 1 |
+
+Les étapes 1 à 4 peuvent démarrer le même jour.
 
 ---
 

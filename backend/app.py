@@ -31,7 +31,7 @@ from audio_analysis import FEATURE_VERSION, extract_features
 from baseline import update_baseline
 from comfort_messages import generate_comfort_message
 from elevenlabs_client import clone_voice, delete_voice, text_to_speech, tts_configured
-from mistral_client import ANTHROPIC_MODEL, PROMPT_VERSION, llm_configured, write_parent_guidance
+from mistral_client import ANTHROPIC_MODEL, PROMPT_VERSION, llm_configured, safe_baby_name, write_parent_guidance
 from security import RateLimiter, client_ip, is_safe_audio_name, safe_remove, sweep_old_files, verify_user
 from taxonomy import NO_CRY_HINT, NO_CRY_REMINDER, SOOTHED_BY, TAXONOMY_VERSION, TOO_SHORT_HINT
 from triage_rules import RULES_VERSION, cards_v2_enabled, context_hypotheses, intensity_observation, parent_menus, recording_gate, safety_cards
@@ -204,7 +204,12 @@ def analyze():
 
     voice_id = request.form.get("voice_id") or context.get("voiceId") or context.get("voice_id") or None
     parent_label = request.form.get("parent_label") or context.get("parentLabel") or context.get("parent_label") or "father"
-    baby_name = context.get("babyName") or context.get("baby_name") or None
+    baby_name = safe_baby_name(context.get("babyName") or context.get("baby_name"))
+    context.pop("baby_name", None)
+    if baby_name:
+        context["babyName"] = baby_name
+    else:
+        context.pop("babyName", None)
     # Âge inconnu = None, jamais une valeur par défaut : un « 3 mois » inventé
     # éteignait la carte « fièvre avant 3 mois » faute de date de naissance.
     raw_age = request.form.get("baby_age_months") or context.get("babyAgeMonths") or context.get("baby_age_months")

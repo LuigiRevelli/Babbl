@@ -30,7 +30,7 @@ import anthropic
 
 ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5")
 
-PROMPT_VERSION = "2026.09.23-1"   # incrémenter à chaque changement de SYSTEM_PROMPT ou des cribles
+PROMPT_VERSION = "2026.09.23-2"   # incrémenter à chaque changement de SYSTEM_PROMPT ou des cribles
 MAX_ACTIONS = 3
 LLM_TIMEOUT_S = float(os.environ.get("LLM_TIMEOUT_S", "8"))
 ALLOWED_SIGNAL_SOURCES = ("context", "intensity")
@@ -72,6 +72,23 @@ _GENDERED = r"\b[a-zàâçéèêëîïôûùüÿœ]+-(le|la)\b"
 _FORBIDDEN_LLM = re.compile(f"({_MEDICAL}|{_REASSURANCE}|{_TRIAGE}|{_GENDERED})", re.IGNORECASE)
 _FORBIDDEN_STATIC = re.compile(f"({_MEDICAL}|{_REASSURANCE})", re.IGNORECASE)
 _FORBIDDEN = _FORBIDDEN_LLM  # compat
+
+# Le prénom est recopié tel quel dans le texte fixe et envoyé au modèle : c'est
+# une saisie libre. Un « prénom » qui n'en est pas un (« Reflux », une consigne,
+# 120 caractères) devient « votre bébé » — jamais recopié au parent.
+_NAME_RE = re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿŒœ]+(?:[ '’-][A-Za-zÀ-ÖØ-öø-ÿŒœ]+){0,2}$")
+_NAME_IMPERATIVE = re.compile(r"-(moi|toi|nous|vous|le|la|les|lui|leur)\b", re.IGNORECASE)
+
+
+def safe_baby_name(raw) -> str | None:
+    if not isinstance(raw, str):
+        return None
+    name = " ".join(raw.split())
+    if not (1 <= len(name) <= 30) or not _NAME_RE.match(name):
+        return None
+    if _FORBIDDEN_LLM.search(name) or _NAME_IMPERATIVE.search(name):
+        return None
+    return name
 
 # Textes fixes qui contiennent un motif de réassurance sous forme de NÉGATION
 # explicite (« n'est jamais rassurant »). Ils sont autorisés tels quels, et
@@ -214,7 +231,7 @@ def fallback_guidance(hypotheses: list[dict], intensity: dict, baby_name: str | 
     """Résumé et gestes sans LLM. Toujours vrai, jamais personnalisé au-delà
     de ce que le parent a saisi. Vouvoiement, et aucun accord de genre : le
     sexe du bébé n'est pas connu."""
-    name = baby_name.strip() if baby_name and baby_name.strip() else "votre bébé"
+    name = safe_baby_name(baby_name) or "votre bébé"
     top = hypotheses[0] if hypotheses else None
 
     with_article = {"hunger": "la faim", "discomfort": "un inconfort", "fatigue": "la fatigue"}
@@ -316,6 +333,10 @@ def write_parent_guidance(
     Le LLM ne voit ni descripteurs acoustiques ni score : uniquement du texte."""
     parent_visible_context = {
         k: v for k, v in context.items()
+        if k != "babyName" or safe_baby_name(v)
+    }
+    parent_visible_context = {
+        k: v for k, v in parent_visible_context.items()
         if k in ("lastFeedingTime", "lastMealAt", "lastDiaperTime", "lastDiaperAt",
                  "babyAgeRange", "babyName", "posture", "awakeMinutes", "awakeSinceAt")
     }
@@ -327,7 +348,7 @@ def write_parent_guidance(
         "Contexte saisi par le parent :\n"
         f"{json.dumps(parent_visible_context, ensure_ascii=False, indent=1)}\n\n"
         f"Âge du bébé en mois : {baby_age_months if baby_age_months is not None else 'inconnu'}\n"
-        f"Prénom : {baby_name or 'non renseigné'}\n\n"
+        f"Prénom : {safe_baby_name(baby_name) or 'non renseigné'}\n\n"
         "Rédige le JSON."
     )
     try:

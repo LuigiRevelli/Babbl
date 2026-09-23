@@ -56,7 +56,7 @@ rendues en **texte**, sur trois niveaux (faible / modéré / intense).
 
 Déduites de la dernière tétée, de la dernière couche, de la durée d'éveil et
 de l'âge. **Jamais du son. Jamais en pourcentage.** Chaque hypothèse porte sa
-raison en une phrase et la mention « Le son ne permet pas de le confirmer ».
+raison en une phrase et la mention « Cette piste vient de ce que vous avez saisi, pas du son ».
 
 ### Cartes de sécurité (statiques)
 

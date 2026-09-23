@@ -55,7 +55,7 @@
 
 - Faut-il ajouter un numéro d'écoute parentale ?
 
-## Il arrête de respirer en pleurant
+## Votre bébé arrête de respirer en pleurant
 
 *ouverte par le parent.*
 

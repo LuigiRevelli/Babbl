@@ -13,7 +13,7 @@ const FORBIDDEN: Array<[RegExp, string]> = [
   [/n'[êe]tes pas (là|dans la pi[èe]ce)/i, 'pousse à laisser le bébé seul'],
   [/ne vous r[ée]veille que si/i, 'fausse promesse de surveillance'],
   [/tout va bien/i, 'réassurance'],
-  [/Laissez-le\b|calme-le\b|berce-le\b/, 'bébé genré'],
+  [/Laissez-le\b|calme-le\b|berce-le\b|>\s*(Il|Elle) pleure/, 'bébé genré'],
   [/Aucun paiement avant le \d+/i, 'date de facturation inventée'],
   [/apais[ée] en \d+ ?s\b/i, 'résultat inventé'],
   [/V[ée]rifie tes|Content de te revoir|Cr[ée]e ton compte/, 'tutoiement du parent'],

@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 // Le résultat aussi : il suit l'écoute, et ne doit pas attendre un second
 // téléchargement sur un réseau faible.
 import BabblResult from "./pages/babbl/Result";
+import WhenToCall from "./pages/WhenToCall";
 
 const BabblPaywall = lazy(() => import("./pages/babbl/Paywall"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -59,6 +60,7 @@ const App = () => (
 
             {/* Journal : la saisie de la tétée, de la couche et du réveil vit ici.
                 Plusieurs écrans y renvoient (connexion, bienvenue, respiration). */}
+            <Route path="/quand-appeler" element={<WhenToCall />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/history" element={<History />} />
             <Route path="/report" element={<Report />} />

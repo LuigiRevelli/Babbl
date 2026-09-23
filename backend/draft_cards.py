@@ -104,7 +104,7 @@ DRAFT_CARDS: dict[str, dict] = {
     },
     # ─── Menu « Quand appeler » et menus ouverts par le parent ────────
     "when_to_call_breath_holding": {
-        "title": "Il arrête de respirer en pleurant",
+        "title": "Votre bébé arrête de respirer en pleurant",
         "trigger": "parent_opens",
         "body": (
             "Si votre bébé, en pleurant ou à tout autre moment, arrête de respirer, devient "

@@ -69,13 +69,30 @@ const bodyText = (p) => p.evaluate(() => document.body.innerText);
   await b.close();
 }
 
+// 1b. « Quand appeler ? » : accessible depuis l'accueil, sans enregistrer.
+{
+  const b = await browserFor('silence.wav');
+  const p = await page(b);
+  await p.goto(APP + '/');
+  await p.getByText('Quand appeler le 15 ?').click();
+  await p.waitForURL(/quand-appeler/);
+  await p.waitForTimeout(800);
+  const text = await bodyText(p);
+  check(/Appeler le 15/.test(text), '« Quand appeler » affiche le 15');
+  const expectV2 = process.env.EXPECT_CARDS === 'v2';
+  check(/Si vous voyez/.test(text) === expectV2, `menus v2 ${expectV2 ? 'affichés' : 'absents'} (cartes ${expectV2 ? 'v2' : 'v1'})`);
+  for (const re of FORBIDDEN) check(!re.test(text), `« Quand appeler » sans ${re}`);
+  check(p.errors.length === 0, `aucune erreur de page (${p.errors.join(' | ')})`);
+  await b.close();
+}
+
 // 2. Du silence → refus, jamais une réponse, et toujours le 15.
 {
   const b = await browserFor('silence.wav');
   const p = await page(b);
   await p.goto(APP + '/');
   await p.getByLabel('Écouter mon bébé').click();
-  await p.waitForFunction(() => /15/.test(document.body.innerText) && !/Observation sonore…/.test(document.body.innerText), null, { timeout: 45_000 }).catch(() => undefined);
+  await p.waitForFunction(() => /rassurant/i.test(document.body.innerText), null, { timeout: 45_000 }).catch(() => undefined);
   await p.waitForTimeout(500);
   const text = await bodyText(p);
   check(!/\/analysis\//.test(p.url()), 'le silence ne mène pas à un résultat');

@@ -190,7 +190,7 @@ export default function BabblHome() {
             color: C.cafe,
           }}
         >
-          Il pleure.
+          Votre bébé pleure.
           <br />
           <span style={{ fontStyle: 'italic', fontWeight: 300, color: C.terracotta }}>On est là.</span>
         </div>
@@ -200,6 +200,16 @@ export default function BabblHome() {
       </div>
 
       {phase === 'idle' && <ContextStrip onOpenJournal={() => navigate('/dashboard')} />}
+      {phase === 'idle' && (
+        <div style={{ textAlign: 'center', padding: '4px 20px 24px' }}>
+          <button
+            onClick={() => navigate('/quand-appeler')}
+            style={{ background: 'none', border: 'none', padding: 8, fontFamily: C.body, fontSize: 13, color: C.cafe, textDecoration: 'underline', cursor: 'pointer' }}
+          >
+            Quand appeler le 15 ?
+          </button>
+        </div>
+      )}
 
       {soothedTarget && phase === 'idle' && <SoothedCard onAnswer={answer} />}
 

@@ -185,5 +185,6 @@ def update_baseline(sb: Client, user_id: str, features: Dict[str, Any]) -> Optio
             return (resp.data[0] if resp.data else None)
 
     except Exception as e:
-        print(f"[baseline] update_baseline failed: {e}")
+        from logs import log_event
+        log_event("integration_failed", "warning", component="baseline", error_type=type(e).__name__)
         return None

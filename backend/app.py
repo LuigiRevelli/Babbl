@@ -24,6 +24,9 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
+import logs
+from logs import log_event
+
 from audio_analysis import FEATURE_VERSION, extract_features
 from baseline import update_baseline
 from comfort_messages import generate_comfort_message
@@ -51,7 +54,7 @@ def _get_supabase():
                 from supabase import create_client
                 _supabase_client = create_client(sb_url, sb_key)
             except Exception as e:
-                print(f"[supabase] init failed: {e}")
+                log_event("integration_failed", "warning", component="supabase_init", error_type=type(e).__name__)
     return _supabase_client
 
 TMP_DIR = os.path.join(BASE_DIR, "tmp")
@@ -85,13 +88,14 @@ _executor = ThreadPoolExecutor(max_workers=4)
 # gunicorn, la compilation est faite une fois dans le maître puis héritée.
 if os.environ.get("BABBL_WARMUP") == "1":
     from audio_analysis import warmup
-    print(f"[startup] audio warm-up {warmup():.1f} s")
+    log_event("startup_warmup", seconds=round(warmup(), 1))
 
 app = Flask(__name__)
 # Origines autorisées : liste séparée par des virgules (ex. « https://babbl.fr,
 # https://www.babbl.fr »). Non définie = toutes (développement local).
 _origins = [o.strip() for o in os.environ.get("BABBL_ALLOWED_ORIGINS", "").split(",") if o.strip()]
 CORS(app, origins=_origins or "*")
+logs.install(app)
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 Mo : un clip de 10 s en pèse < 1
 
 
@@ -224,7 +228,8 @@ def analyze():
     try:
         features = extract_features(audio_path)
     except Exception as e:
-        traceback.print_exc()
+        log_event("analyze_failed", "error", step="features", error_type=type(e).__name__)
+        traceback.print_exc()  # pile d'appels seulement (aucune donnée du parent dans les cadres)
         return _refusal(500, "L'analyse audio a échoué.", "audio_error", context, baby_age_months)
     finally:
         safe_remove(audio_path)
@@ -239,6 +244,7 @@ def analyze():
     # est le cas potentiellement le plus grave, pas un défaut de micro.
     ok, gate_code, gate_msg = recording_gate(features)
     if not ok:
+        log_event("analyze", auth=auth.status, gate=gate_code, age_known=baby_age_months is not None)
         return jsonify({
             "error": gate_msg,
             "code": gate_code,
@@ -286,7 +292,7 @@ def analyze():
             else:
                 comfort_audio_url = url
         except Exception as e:
-            print(f"[elevenlabs {key}] failed: {type(e).__name__}")
+            log_event("integration_failed", "warning", component=f"tts_{key}", error_type=type(e).__name__)
 
     persisted = False
     # 8. Persistance — uniquement pour un compte VÉRIFIÉ. Le backend est le
@@ -301,7 +307,7 @@ def analyze():
                 try:
                     update_baseline(sb, auth.user_id, features)
                 except Exception as e:
-                    print(f"[baseline] update failed: {type(e).__name__}")
+                    log_event("integration_failed", "warning", component="baseline", error_type=type(e).__name__)
             row = {
                 "id": request_id,
                 "user_id": auth.user_id,
@@ -320,6 +326,19 @@ def analyze():
                 "comfort_text": comfort_text,
             }
             persisted = _insert_analysis(sb, row, guidance.get("guidance_source", "deterministic"))
+
+    log_event(
+        "analyze",
+        auth=auth.status,
+        gate="ok",
+        age_known=baby_age_months is not None,
+        hypotheses_count=len(hypotheses),
+        guidance_source=guidance.get("guidance_source", "deterministic"),
+        voice_requested=bool(voice_id),
+        tts_ok=sum(1 for u in (audio_url, comfort_audio_url) if u),
+        tts_failed=len(futures) - sum(1 for u in (audio_url, comfort_audio_url) if u),
+        persisted=persisted,
+    )
 
     return jsonify(
         {
@@ -351,7 +370,7 @@ def _insert_analysis(sb, row: dict, guidance_source: str) -> bool:
             sb.table("analyses").insert({**row, **extra}).execute()
             return True
         except Exception as e:
-            print(f"[supabase] save analysis failed{' (retry without new columns)' if extra else ''}: {type(e).__name__}")
+            log_event("integration_failed", "warning", component="supabase_insert" + ("" if extra else "_retry"), error_type=type(e).__name__)
     return False
 
 
@@ -396,7 +415,7 @@ def soothed(analysis_id: str):
                 .eq("id", analysis_id).eq("user_id", auth.user_id).execute())
     except Exception as e:
         # Colonne absente (migration non passée) : la réponse reste dans le téléphone.
-        print(f"[supabase] soothed update failed: {type(e).__name__}")
+        log_event("integration_failed", "warning", component="supabase_soothed", error_type=type(e).__name__)
         return jsonify({"stored": False, "reason": "not_stored"}), 202
     if not getattr(resp, "data", None):
         return jsonify({"error": "Analyse inconnue.", "code": "not_found"}), 404
@@ -453,6 +472,8 @@ def delete_me():
         report["account"] = "kept (retry: some data could not be deleted)"
 
     ok = all(v == "deleted" for v in report.values())
+    log_event("account_delete", "info" if ok else "warning", status=200 if ok else 207,
+              count=sum(1 for v in report.values() if v != "deleted"))
     return jsonify({"deleted": ok, "report": report}), (200 if ok else 207)
 
 

@@ -334,6 +334,7 @@ def write_parent_guidance(
         raw = _parse_json(_post_anthropic(SYSTEM_PROMPT, user_msg))
     except Exception as e:  # réseau, clé, JSON — jamais bloquant
         # Le type seulement : un message d'erreur peut recopier le contexte.
-        print(f"[llm] guidance failed, deterministic fallback: {type(e).__name__}")
+        from logs import log_event
+        log_event("integration_failed", "warning", component="llm", error_type=type(e).__name__)
         return fallback_guidance(hypotheses, intensity, baby_name)
     return sanitize_llm_output(raw, hypotheses, intensity, baby_name)

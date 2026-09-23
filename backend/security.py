@@ -102,7 +102,8 @@ def safe_remove(path: str | None) -> None:
     except FileNotFoundError:
         pass
     except OSError as e:
-        print(f"[files] remove failed for {os.path.basename(path)}: {type(e).__name__}")
+        from logs import log_event
+        log_event("integration_failed", "warning", component="file_remove", error_type=type(e).__name__)
 
 
 def sweep_old_files(directory: str, max_age_s: float, suffixes: tuple[str, ...] = (".mp3",)) -> int:

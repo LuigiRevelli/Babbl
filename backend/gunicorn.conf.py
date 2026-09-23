@@ -13,3 +13,6 @@ threads = 4
 timeout = 30
 graceful_timeout = 10
 keepalive = 5
+# Pas de journal d'accès gunicorn : il écrirait l'adresse IP et le chemin réel.
+# Chaque requête est journalisée par logs.py (JSON, request_id, sans donnée de la famille).
+accesslog = None

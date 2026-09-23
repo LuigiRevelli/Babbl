@@ -16,6 +16,7 @@ const FORBIDDEN: Array<[RegExp, string]> = [
   [/Laissez-le\b|calme-le\b|berce-le\b/, 'bébé genré'],
   [/Aucun paiement avant le \d+/i, 'date de facturation inventée'],
   [/apais[ée] en \d+ ?s\b/i, 'résultat inventé'],
+  [/V[ée]rifie tes|Content de te revoir|Cr[ée]e ton compte/, 'tutoiement du parent'],
 ];
 
 function files(dir: string): string[] {

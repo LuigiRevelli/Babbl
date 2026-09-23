@@ -33,7 +33,7 @@ export default function Auth() {
       if (err) {
         setError(err.message);
       } else {
-        setSuccess("Compte créé ! Vérifie tes emails pour confirmer ton inscription.");
+        setSuccess("Compte créé. Vérifiez vos e-mails pour confirmer votre inscription.");
       }
     }
     setLoading(false);
@@ -44,7 +44,7 @@ export default function Auth() {
       <div className="text-center mb-8">
         <h1 className="font-serif text-3xl font-bold mb-2">Babbl</h1>
         <p className="text-sm text-muted-foreground">
-          {isLogin ? "Content de te revoir !" : "Crée ton compte gratuit"}
+          {isLogin ? "Bon retour" : "Créer votre compte"}
         </p>
       </div>
 
@@ -55,7 +55,7 @@ export default function Auth() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="ton@email.com"
+            placeholder="vous@exemple.fr"
             required
             className="w-full rounded-xl border border-border/50 bg-card px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           />

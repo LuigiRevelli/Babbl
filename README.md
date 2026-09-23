@@ -10,8 +10,7 @@ Les pleurs de nourrisson sont l'une des expériences les plus universelles et le
 
 Les conséquences de ce jeu de devinettes sont gravement sous-estimées en santé publique :
 
-- **1 mère sur 7 en France** développe une dépression post-partum (Santé Publique France), et les épisodes de pleurs non résolus sont l'un des principaux déclencheurs.
-- **80% des nouveaux parents** déclarent se sentir « complètement démunis » face à un bébé qui pleure (OMS, 2022).
+- **Environ une mère sur six** présente des symptômes de dépression deux mois après l'accouchement (Santé publique France, Enquête nationale périnatale 2021 ; chiffre à revérifier avant toute publication).
 - La privation chronique de sommeil est cliniquement liée au burnout parental et aux ruptures de couple. Sur le syndrome du bébé secoué, la preuve est plus précise qu'on ne le dit : le facteur de risque mesuré n'est **pas** la quantité de pleurs mais le **jugement** du parent que ces pleurs sont excessifs (×2,6) et son inquiétude (×3,1) (Reijneveld 2004, n = 3 259), avec un pic de cas entre 1 et 2 mois (CDC). Une app qui dit « votre bébé pleure trop » fabrique ce facteur de risque ; Babbl est conçu pour ne jamais le faire.
 
 **Ce n'est pas un manque d'amour. C'est un manque d'information — et la première information honnête, c'est ce qu'un pleur ne dit pas.**
@@ -72,8 +71,10 @@ Le modèle de classification précédent (XGBoost sur Donate-a-Cry) atteignait 8
 1. **Babbl Cry** — Observation sonore honnête + hypothèses d'après la saisie du parent (Claude Sonnet, contraint)
 2. **Babbl Voice** — Voix clonée du parent pour réconforter le bébé
 3. **Babbl Lullaby** — Berceuses IA personnalisées chantées dans la voix du parent
-4. **Babbl Monitor** — Baby phone hardware connecté (micro HD, veilleuse, capteurs)
-5. **Babbl Alert** — Connexion directe au bon pédiatre en cas d'urgence
+4. **Babbl Repères** — Cartes de sécurité et repères de santé publique, toujours gratuits, jamais déduits du son
+5. **Ce qui l'a calmé** — La question posée au parent, seule étiquette honnête, base d'un résumé pour le médecin
+
+Abandonnés, avec la raison : Babbl Nuit (écoute continue), Babbl Monitor, Babbl Alert (triage depuis le son). Voir `FEATURES.md`.
 
 ## Documents
 

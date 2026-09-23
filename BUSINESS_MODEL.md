@@ -1,5 +1,7 @@
 # Babbl — Business Model Économique
 
+> **À refaire (septembre 2026).** Ce modèle repose en partie sur trois fonctionnalités abandonnées : Babbl Nuit (écoute continue), Babbl Monitor et Babbl Alert (triage depuis le son, commissions de téléconsultation). Toutes les lignes de revenus qui en dépendent sont caduques. Voir `FEATURES.md`, section « Abandonné ou gelé ».
+
 ## Psychologie du Parent qui Paie
 
 | Levier psychologique | Impact | Comment l'exploiter |

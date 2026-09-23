@@ -48,12 +48,26 @@
 
 ---
 
+## Phase 1 bis — Honnêteté du produit (septembre 2026) 🔄
+
+| Tâche | Statut | Détails |
+|---|---|---|
+| Liste finale des symptômes (36 signaux de la voix vérifiés) | ✅ | `LISTE-FINALE-SYMPTOMES.md` |
+| Sept défauts de production corrigés | ✅ | Vocabulaire, voix clonée, filtre, historique, prototype, docs |
+| Porte d'entrée mesurée sur 366 vrais pleurs | ✅ | Rejets à tort de 21 % à 1,9 % (`recherche/banc-porte-2026-09.md`) |
+| Brouillons des cartes et repères | ✅ | `backend/draft_cards.py`, à faire relire par un pédiatre |
+| Page d'accueil et maquettes réécrites | ✅ | Plus de pourcentage, de faux témoignage ni de fausses statistiques |
+| « Ce qui l'a calmé » | 🔄 | Question à la réouverture, liste fermée |
+| Relecture pédiatrique des cartes | ❌ | Bloque leur publication |
+| Appel conseil réglementaire | ❌ | Case cochée → carte : hors DM ? Enregistrement de toux : HDS ? |
+| Porte : rejeter babillage et voix au bébé | ❌ | Demande de vrais enregistrements négatifs |
+
 ## Phase 2 — Monétisation ❌
 
 | Tâche | Statut | Détails |
 |---|---|---|
 | Intégration Stripe | ❌ | Abonnements Babbl+ (6.99€/mois) et Babbl Voice (9.99€/mois) |
-| Paywall dans l'app | ❌ | Résultat gratuit = cause + %. Détails + actions + audio = payant |
+| Paywall dans l'app | ❌ | Gratuit : observation, pistes, 1 geste, repères de sécurité (toujours gratuits). Payant : tous les gestes, résumé vocal, voix clonée |
 | Landing page (babbl.fr) | ❌ | Site vitrine pour acquisition : explication produit, pricing, témoignages, CTA téléchargement |
 | Pages légales | ❌ | CGU, Politique de confidentialité, Mentions légales, conformité RGPD |
 
@@ -64,14 +78,16 @@
 | Tâche | Statut | Détails |
 |---|---|---|
 | Babbl Lullaby | ❌ | Berceuses IA personnalisées dans la voix clonée du parent. Intégration Suno/Udio + ElevenLabs singing mode |
-| Babbl Nuit complet | ❌ | Écoute continue en arrière-plan, détection auto des pleurs, réponse automatique, rapport matinal |
-| Babbl Alert (Phase 1 — Doctolib) | ✅ | Système d'alerte 4 niveaux (vert/jaune/orange/rouge) codé dans le frontend (bannières alertes, bouton Doctolib, appel 15, GPS urgences). Backend : escalade auto via triage_rules.py + baseline deviation. BabblReport.tsx génère un rapport partageable pour le médecin |
-| Notifications push | ❌ | Alertes parents quand Babbl Nuit détecte un pleur qui nécessite intervention |
+| ~~Babbl Nuit~~ | 🚫 Abandonné | Écoute continue : art. 226-1 du code pénal et règle 11b du MDR. Voir FEATURES.md |
+| ~~Babbl Alert (Phase 1)~~ | 🚫 Retiré | Le triage à 4 niveaux depuis le son a été retiré en septembre 2026 (dispositif médical sans preuve possible). Remplacé par les repères de sécurité |
+| Notifications push | ❌ | Rappels non sonores uniquement ; jamais la nuit, jamais pour inviter à enregistrer plus |
 | Mode co-parenting | ❌ | Dashboard partagé entre 2 parents, synchronisation des données |
 
 ---
 
-## Phase 4 — Hardware ⏳
+## Phase 4 — Hardware 🧊 Gelé
+
+> Un baby phone qui « comprend » et répond seul pose les mêmes problèmes que Babbl Nuit. Gelé tant qu'un conseil réglementaire n'a pas validé un usage sans analyse.
 
 | Tâche | Statut | Détails |
 |---|---|---|
@@ -87,13 +103,13 @@
 
 | Tâche | Statut | Détails |
 |---|---|---|
-| Babbl Alert (Phase 2 — Babbl Pro) | ⏳ | Propre réseau de pédiatres certifiés, téléconsultation intégrée, commission 20-25% |
+| ~~Babbl Alert (Phase 2 — Babbl Pro)~~ | 🚫 Abandonné | Orienter vers un pédiatre selon la cause détectée au son = triage, dispositif médical |
 | B2B Maternités | ⏳ | Partenariats avec maternités : 300-500€/mois/établissement |
 | B2B Mutuelles | ⏳ | Proposition comme avantage santé : 2-4€/assuré/mois |
 | Analytics (Mixpanel/PostHog) | ⏳ | Tracking conversion, rétention, funnel, A/B tests |
 | Multilingue | ⏳ | Anglais, Espagnol, Allemand, Italien pour expansion européenne |
 | App native (React Native) | ⏳ | Remplacement PWA par app native iOS/Android pour meilleures performances |
-| Certification HDS | ⏳ | Hébergeur de Données de Santé agréé pour Babbl Alert |
+| Hébergement HDS | ⏳ | Nécessaire seulement si Babbl conserve des données de santé (ex. enregistrement de toux pour le médecin). À trancher avec le conseil réglementaire |
 | Babbl Timeline | ⏳ | Frise chronologique audio du développement du bébé (premiers rires, premiers mots) |
 
 ---
@@ -141,5 +157,4 @@
 - Le backend utilise la service role key pour écrire en base côté serveur
 - Organisation Stripe "Babbl" créée (clés API test pas encore intégrées)
 - Babbl Baseline : apprentissage incrémental du profil acoustique unique de chaque bébé (algorithme de Welford)
-- Babbl Alert Phase 1 : bannières d'alerte dans AnalysisResult.tsx (jaune/orange/rouge), bouton Doctolib, appel SAMU 15, GPS urgences pédiatriques
 - BabblReport : composant qui génère un rapport structuré que le parent peut montrer au médecin

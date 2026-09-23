@@ -43,7 +43,11 @@ _MEDICAL = (
     r"\d+\s?%|pour ?cent|probabilit|\bsur (dix|cent|mille)\b|chances? sur \w+|\b(une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix) chances?\b|"
     r"diagnos|détect|detect|acoustiq|"
     r"coliq|reflux|\brgo\b|otite|dentaire|\bdents?\b|allergi|aplv|"
-    r"méningite|meningite|sepsis|infection|neuro|autis|asphyxie|"
+    r"méningite|meningite|sepsis|infection|neuro|autis|asphyx|"
+    r"\ba (très |tres )?mal\b(?! dormi)|\bmal aux?\b|\bbobo|"
+    r"encéphal|encephal|cérébr|cerebr|cerveau|\bEHI\b|\bHIE\b|hypox|"
+    r"hypoglyc|dénutri|denutri|malnutri|sevrage|mort subite|\bMSN\b|\bSIDS\b|\bTSA\b|"
+    r"coqueluch|bronchiolit|laryngit|asthm|pneumon|syndrome|"
     r"ictère|ictere|jaunisse|fièvre|fievre|maladie|douleur|souffr|"
     r"le son (montre|indique|révèle|revele|confirme|prouve)"
 )

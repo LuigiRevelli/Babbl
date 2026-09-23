@@ -16,7 +16,7 @@ import {
   Waveform,
   BabblShell,
 } from '@/components/babbl/primitives';
-import { analyzeAudio as apiAnalyze } from '@/lib/api';
+import { analyzeAudio as apiAnalyze, sendSoothed } from '@/lib/api';
 import { getUserData, saveUserData } from '@/lib/userData';
 import { CRY_AUDIO_CONSTRAINTS, CRY_RECORD_MS, createRecorder, chunksToBlob } from '@/lib/recorder';
 import { SOOTHED_BY, SOOTHED_QUESTION, type SoothedKey } from '@/lib/taxonomy';
@@ -50,6 +50,7 @@ export default function BabblHome() {
     const data = getUserData();
     data.analyses = answerSoothed(data.analyses, soothedTarget.id, key);
     saveUserData(data);
+    void sendSoothed(soothedTarget.id, key); // gardé dans le téléphone de toute façon
     setSoothedTarget(null);
   };
 

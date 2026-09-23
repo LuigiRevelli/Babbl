@@ -92,3 +92,39 @@ export async function cloneVoice(audioBlob: Blob, name: string) {
   }
   return res.json() as Promise<{ voice_id: string; name: string }>;
 }
+
+/**
+ * « Qu'est-ce qui a apaisé votre bébé ? » — envoyé au serveur si le parent est
+ * connecté. Best-effort : la réponse est déjà gardée dans le téléphone.
+ */
+export async function sendSoothed(analysisId: string, answer: string): Promise<boolean> {
+  try {
+    const headers = await authHeaders();
+    if (!headers.Authorization) return false;
+    const res = await fetch(apiUrl(`/api/analyses/${encodeURIComponent(analysisId)}/soothed`), {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answer }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Droit à l'effacement : supprime le compte, les analyses, le profil et la voix
+ * clonée. Le serveur répond 207 si une partie n'a pas pu être effacée.
+ */
+export async function deleteAccount(voiceIds: string[] = []) {
+  const res = await fetch(apiUrl('/api/me'), {
+    method: 'DELETE',
+    headers: { ...(await authHeaders()), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ voice_ids: voiceIds }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (res.status !== 200) {
+    throw new ApiError(res.status, body, body?.error ?? "La suppression n'a pas pu être terminée.");
+  }
+  return body as { deleted: boolean; report: Record<string, string> };
+}

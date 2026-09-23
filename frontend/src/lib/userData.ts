@@ -132,6 +132,11 @@ export function getUserData(): UserData {
   }
 }
 
+/** Efface tout ce que Babbl garde dans ce téléphone (suppression du compte). */
+export function clearUserData() {
+  localStorage.removeItem(STORAGE_KEY);
+}
+
 export function saveUserData(data: UserData) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }

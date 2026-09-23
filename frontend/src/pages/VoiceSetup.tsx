@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mic, Square, Check, Play, Volume2, Loader2 } from 'lucide-react';
 import MobileLayout from '@/components/MobileLayout';
-import { getUserData, saveUserData, ParentRole, AgeRange } from '@/lib/userData';
-import { cloneVoice } from '@/lib/api';
+import { getUserData, saveUserData, clearUserData, ParentRole, AgeRange } from '@/lib/userData';
+import { cloneVoice, deleteAccount } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { updateProfile } from '@/lib/supabaseData';
@@ -370,6 +370,46 @@ export default function VoiceSetup() {
           </button>
         </div>
       )}
+
+      {user && step !== 'recording' && <DeleteAccount />}
     </MobileLayout>
+  );
+}
+
+
+/** Droit à l'effacement (RGPD) : compte, analyses, profil, voix clonée. */
+function DeleteAccount() {
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const onDelete = async () => {
+    const ok = window.confirm(
+      'Supprimer votre compte ? Vos analyses, votre profil et votre voix clonée seront effacés définitivement.',
+    );
+    if (!ok) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const voiceId = getUserData().voiceProfile?.voiceId;
+      await deleteAccount(voiceId ? [voiceId] : []);
+      clearUserData();
+      await signOut().catch(() => undefined);
+      navigate('/auth');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "La suppression n'a pas pu être terminée.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-10 mb-6 text-center">
+      <button onClick={onDelete} disabled={busy} className="text-xs text-destructive underline disabled:opacity-60">
+        {busy ? 'Suppression…' : 'Supprimer mon compte et mes données'}
+      </button>
+      {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
+    </div>
   );
 }

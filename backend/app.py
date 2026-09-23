@@ -2,18 +2,23 @@
 Babbl backend — Flask API.
 
 Endpoints:
-- POST /api/analyze    : multipart form with `audio` file + `context` JSON string
-                         → observation sonore (texte) + hypothèses contextuelles + cartes de sécurité
-                         422 si l'enregistrement est inexploitable
-- GET  /api/audio/<f>  : serves the generated TTS mp3
-- GET  /api/health     : health check
+- POST   /api/analyze                  : multipart `audio` + `context` JSON
+                                         → observation (texte) + pistes + cartes de sécurité
+                                         422 si l'enregistrement est inexploitable
+- POST   /api/analyses/<id>/soothed    : « qu'est-ce qui a apaisé votre bébé ? » (compte vérifié)
+- DELETE /api/me                       : efface le compte, ses données et sa voix clonée (RGPD)
+- POST   /api/voice/clone              : clone la voix du parent (compte vérifié)
+- GET    /api/audio/<f>                : mp3 générés (24 h)
+- GET    /api/health                   : état + intégrations branchées + versions
 """
 
 import json
 import os
+import re
 import traceback
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
@@ -22,10 +27,10 @@ from flask_cors import CORS
 from audio_analysis import FEATURE_VERSION, extract_features
 from baseline import update_baseline
 from comfort_messages import generate_comfort_message
-from elevenlabs_client import clone_voice, text_to_speech
-from mistral_client import PROMPT_VERSION, write_parent_guidance
+from elevenlabs_client import clone_voice, delete_voice, text_to_speech, tts_configured
+from mistral_client import ANTHROPIC_MODEL, PROMPT_VERSION, llm_configured, write_parent_guidance
 from security import RateLimiter, client_ip, is_safe_audio_name, safe_remove, sweep_old_files, verify_user
-from taxonomy import NO_CRY_HINT, NO_CRY_REMINDER, TAXONOMY_VERSION, TOO_SHORT_HINT
+from taxonomy import NO_CRY_HINT, NO_CRY_REMINDER, SOOTHED_BY, TAXONOMY_VERSION, TOO_SHORT_HINT
 from triage_rules import RULES_VERSION, context_hypotheses, intensity_observation, recording_gate, safety_cards
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -77,7 +82,10 @@ _clone_limiter = RateLimiter(limit=int(os.environ.get("BABBL_CLONE_PER_DAY", "3"
 _executor = ThreadPoolExecutor(max_workers=4)
 
 app = Flask(__name__)
-CORS(app)
+# Origines autorisées : liste séparée par des virgules (ex. « https://babbl.fr,
+# https://www.babbl.fr »). Non définie = toutes (développement local).
+_origins = [o.strip() for o in os.environ.get("BABBL_ALLOWED_ORIGINS", "").split(",") if o.strip()]
+CORS(app, origins=_origins or "*")
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 Mo : un clip de 10 s en pèse < 1
 
 
@@ -95,7 +103,19 @@ def _refusal(status: int, error: str, code: str, context: dict, baby_age_months:
 
 @app.get("/api/health")
 def health():
-    return jsonify({"status": "ok"})
+    """Ce qui est réellement branché — sans jamais exposer une clé. Sert à
+    vérifier un déploiement : sans clé Anthropic, les résumés sont en texte fixe."""
+    return jsonify({
+        "status": "ok",
+        "versions": VERSIONS,
+        "integrations": {
+            "llm": llm_configured(),
+            "llm_model": ANTHROPIC_MODEL,
+            "voice": tts_configured(),
+            "database": _get_supabase() is not None,
+            "baseline_collection": BASELINE_ENABLED,
+        },
+    })
 
 
 @app.post("/api/voice/clone")
@@ -174,15 +194,13 @@ def analyze():
     voice_id = request.form.get("voice_id") or context.get("voiceId") or context.get("voice_id") or None
     parent_label = request.form.get("parent_label") or context.get("parentLabel") or context.get("parent_label") or "father"
     baby_name = context.get("babyName") or context.get("baby_name") or None
+    # Âge inconnu = None, jamais une valeur par défaut : un « 3 mois » inventé
+    # éteignait la carte « fièvre avant 3 mois » faute de date de naissance.
+    raw_age = request.form.get("baby_age_months") or context.get("babyAgeMonths") or context.get("baby_age_months")
     try:
-        baby_age_months = int(
-            request.form.get("baby_age_months")
-            or context.get("babyAgeMonths")
-            or context.get("baby_age_months")
-            or 3
-        )
-    except ValueError:
-        baby_age_months = 3
+        baby_age_months = int(raw_age) if raw_age not in (None, "") else None
+    except (TypeError, ValueError):
+        baby_age_months = None
 
     if auth.status == "invalid":
         return _refusal(401, "Session invalide. Reconnectez-vous.", "auth_invalid", context, baby_age_months)
@@ -263,6 +281,7 @@ def analyze():
         except Exception as e:
             print(f"[elevenlabs {key}] failed: {type(e).__name__}")
 
+    persisted = False
     # 8. Persistance — uniquement pour un compte VÉRIFIÉ. Le backend est le
     #    seul écrivain de `analyses` (le frontend n'écrit plus). L'observation
     #    sonore n'est jamais persistée ; les hypothèses le sont (dans
@@ -276,31 +295,29 @@ def analyze():
                     update_baseline(sb, auth.user_id, features)
                 except Exception as e:
                     print(f"[baseline] update failed: {type(e).__name__}")
-            try:
-                sb.table("analyses").insert({
-                    "id": request_id,
-                    "user_id": auth.user_id,
-                    "top_cause": top_key,
-                    "probabilities": {},
-                    "parent_summary": guidance.get("parent_summary", ""),
-                    "confidence_level": "context",
-                    "alert": "none",
-                    "key_signals": [
-                        {"signal": h["why"], "source": "context", "key": h["key"], "label": h["label"], "why": h["why"]}
-                        for h in hypotheses
-                    ],
-                    "recommended_actions": guidance.get("recommended_actions", []),
-                    "audio_url": audio_url,
-                    "comfort_audio_url": comfort_audio_url,
-                    "comfort_text": comfort_text,
-                }).execute()
-            except Exception as e:
-                print(f"[supabase] save analysis failed: {type(e).__name__}")
+            row = {
+                "id": request_id,
+                "user_id": auth.user_id,
+                "top_cause": top_key,
+                "probabilities": {},
+                "parent_summary": guidance.get("parent_summary", ""),
+                "confidence_level": "context",
+                "alert": "none",
+                "key_signals": [
+                    {"signal": h["why"], "source": "context", "key": h["key"], "label": h["label"], "why": h["why"]}
+                    for h in hypotheses
+                ],
+                "recommended_actions": guidance.get("recommended_actions", []),
+                "audio_url": audio_url,
+                "comfort_audio_url": comfort_audio_url,
+                "comfort_text": comfort_text,
+            }
+            persisted = _insert_analysis(sb, row, guidance.get("guidance_source", "deterministic"))
 
     return jsonify(
         {
             "id": request_id,
-            "persisted": bool(auth.verified and _get_supabase() is not None),
+            "persisted": persisted,
             "versions": VERSIONS,
             "recording": recording,
             "intensity": intensity,
@@ -316,6 +333,101 @@ def analyze():
             "comfort_text": comfort_text,
         }
     )
+
+
+def _insert_analysis(sb, row: dict, guidance_source: str) -> bool:
+    """Écrit l'analyse. Colonnes ajoutées par supabase/migrations/20260923_*.sql
+    (guidance_source) : si la migration n'est pas passée, on réécrit la ligne
+    sans elles plutôt que de perdre l'analyse."""
+    for extra in ({"guidance_source": guidance_source}, {}):
+        try:
+            sb.table("analyses").insert({**row, **extra}).execute()
+            return True
+        except Exception as e:
+            print(f"[supabase] save analysis failed{' (retry without new columns)' if extra else ''}: {type(e).__name__}")
+    return False
+
+
+@app.post("/api/analyses/<analysis_id>/soothed")
+def soothed(analysis_id: str):
+    """« Qu'est-ce qui a apaisé votre bébé ? » — la réponse du parent, rangée
+    avec l'analyse. Liste fermée (taxonomy.SOOTHED_BY) ou « skipped »."""
+    auth = verify_user(_get_supabase(), request.headers.get("Authorization"))
+    if not auth.verified:
+        return jsonify({"error": "Connexion requise.", "code": "auth_required"}), 401
+    body = request.get_json(silent=True) or {}
+    answer = body.get("answer")
+    if answer not in SOOTHED_BY and answer != "skipped":
+        return jsonify({"error": "Réponse inconnue.", "code": "bad_answer"}), 400
+    if not re.fullmatch(r"[0-9a-fA-F-]{32,36}", analysis_id or ""):
+        return jsonify({"error": "Analyse inconnue.", "code": "not_found"}), 404
+    sb = _get_supabase()
+    if sb is None:
+        return jsonify({"stored": False, "reason": "database_unavailable"}), 503
+    try:
+        resp = (sb.table("analyses")
+                .update({"soothed_by": answer, "soothed_at": datetime.now(timezone.utc).isoformat()})
+                .eq("id", analysis_id).eq("user_id", auth.user_id).execute())
+    except Exception as e:
+        # Colonne absente (migration non passée) : la réponse reste dans le téléphone.
+        print(f"[supabase] soothed update failed: {type(e).__name__}")
+        return jsonify({"stored": False, "reason": "not_stored"}), 202
+    if not getattr(resp, "data", None):
+        return jsonify({"error": "Analyse inconnue.", "code": "not_found"}), 404
+    return jsonify({"stored": True, "answer": answer})
+
+
+# Tables qui portent des données du parent, et la colonne qui les rattache.
+_USER_TABLES = (("analyses", "user_id"), ("context_logs", "user_id"), ("badges", "user_id"),
+                ("baby_baselines", "user_id"), ("profiles", "id"))
+
+
+@app.delete("/api/me")
+def delete_me():
+    """Droit à l'effacement (RGPD art. 17). Efface, dans l'ordre : la voix
+    clonée chez ElevenLabs, chaque table, puis le compte lui-même. Chaque étape
+    est rapportée ; le compte n'est supprimé que si tout le reste a réussi,
+    pour qu'un effacement partiel puisse être relancé."""
+    sb = _get_supabase()
+    auth = verify_user(sb, request.headers.get("Authorization"))
+    if not auth.verified:
+        return jsonify({"error": "Connexion requise.", "code": "auth_required"}), 401
+    uid = auth.user_id
+    report: dict[str, str] = {}
+
+    voice_ids: set[str] = set()
+    body = request.get_json(silent=True) or {}
+    if isinstance(body.get("voice_ids"), list):
+        voice_ids.update(v for v in body["voice_ids"] if isinstance(v, str) and re.fullmatch(r"[A-Za-z0-9]{8,40}", v))
+    try:
+        prof = sb.table("profiles").select("voice_id").eq("id", uid).execute()
+        voice_ids.update(r["voice_id"] for r in (prof.data or []) if r.get("voice_id"))
+    except Exception:
+        pass
+    for vid in sorted(voice_ids):
+        try:
+            report[f"voice:{vid[:6]}…"] = "deleted" if delete_voice(vid) else "failed"
+        except Exception as e:
+            report[f"voice:{vid[:6]}…"] = f"failed ({type(e).__name__})"
+
+    for table, col in _USER_TABLES:
+        try:
+            sb.table(table).delete().eq(col, uid).execute()
+            report[table] = "deleted"
+        except Exception as e:
+            report[table] = f"failed ({type(e).__name__})"
+
+    if all(v == "deleted" for v in report.values()):
+        try:
+            sb.auth.admin.delete_user(uid)
+            report["account"] = "deleted"
+        except Exception as e:
+            report["account"] = f"failed ({type(e).__name__})"
+    else:
+        report["account"] = "kept (retry: some data could not be deleted)"
+
+    ok = all(v == "deleted" for v in report.values())
+    return jsonify({"deleted": ok, "report": report}), (200 if ok else 207)
 
 
 @app.get("/api/audio/<path:filename>")

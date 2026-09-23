@@ -39,7 +39,7 @@ professionnel de santé français avant publication (SYMPTOMS.md, Méthode).
 from __future__ import annotations
 
 # Incrémenter à chaque changement de texte ou de clé. Renvoyé dans chaque réponse.
-TAXONOMY_VERSION = "2026.09.21-1"
+TAXONOMY_VERSION = "2026.09.23-1"
 
 # ─── Couche 2 : hypothèses contextuelles ────────────────────────────
 # Ordre = ordre d'affichage par défaut. `source` est toujours "context".
@@ -75,10 +75,15 @@ HYPOTHESIS_DISCLAIMER = "Le son ne permet pas de le confirmer."
 # ─── Couche 1 : observation sonore ──────────────────────────────────
 INTENSITY_LEVELS = ("faible", "modere", "intense")
 
+# Les mots décrivent ce qui est mesuré : la CONTINUITÉ du pleur (part des
+# trames voisées). Jamais sa hauteur (« aigu » : non mesuré), jamais son
+# volume (« faible » : dépend de la distance du téléphone, et un pleur faible
+# est un signe clinique que Babbl ne sait pas entendre). Les clés restent
+# « faible / modere / intense » pour la compatibilité de l'API.
 INTENSITY_OBSERVATIONS: dict[str, str] = {
-    "intense": "Sur ces {seconds} secondes, Babbl a entendu un pleur soutenu et aigu.",
-    "modere":  "Sur ces {seconds} secondes, Babbl a entendu un pleur d'intensité moyenne.",
-    "faible":  "Sur ces {seconds} secondes, le pleur était faible ou discontinu.",
+    "intense": "Sur ces {seconds} secondes, Babbl a entendu un pleur presque continu.",
+    "modere":  "Sur ces {seconds} secondes, Babbl a entendu un pleur coupé de quelques pauses.",
+    "faible":  "Sur ces {seconds} secondes, Babbl a entendu un pleur entrecoupé de longues pauses.",
 }
 
 # Toujours affiché avec l'observation. Volontairement asymétrique : on ne

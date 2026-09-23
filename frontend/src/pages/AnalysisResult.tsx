@@ -20,9 +20,10 @@ import type { SafetyCard, TransientObservation } from '@/lib/analysis';
 import { HYPOTHESIS_DISCLAIMER, INTENSITY_DISCLAIMER, SAFETY_CARDS, SAFETY_FOOTER, hypothesisFr } from '@/lib/taxonomy';
 
 const LEVEL_WORD: Record<string, string> = {
-  intense: 'Pleur intense',
-  modere: 'Pleur modéré',
-  faible: 'Pleur faible',
+  // Continuité mesurée, pas volume ni hauteur (voir backend/taxonomy.py).
+  intense: 'Pleur presque continu',
+  modere: 'Pleur coupé de pauses',
+  faible: 'Pleur entrecoupé de longues pauses',
 };
 
 export default function AnalysisResult() {

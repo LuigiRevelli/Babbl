@@ -134,6 +134,17 @@ def test_fallback_never_empty():
     assert "%" not in out["parent_summary"]
 
 
+def test_observation_words_describe_only_what_is_measured():
+    """La porte mesure une continuité (trames voisées). Les mots affichés ne
+    doivent parler ni de hauteur (« aigu »), ni de volume (« faible », « fort »),
+    ni d'intensité ou de détresse, que Babbl ne mesure pas."""
+    import re
+    from taxonomy import INTENSITY_OBSERVATIONS
+    banned = re.compile(r"aigu|grave|faible|\bfort|intens|détresse|detresse|douleur|monoton", re.IGNORECASE)
+    for level, text in INTENSITY_OBSERVATIONS.items():
+        assert not banned.search(text), (level, text)
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     for fn in fns:

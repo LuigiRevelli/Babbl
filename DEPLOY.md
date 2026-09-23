@@ -29,4 +29,4 @@ Le frontend est un site statique : `cd frontend && npm ci && VITE_API_URL=https:
 
 - Relecture des cartes par un pédiatre (`recherche/cartes-a-relire.md`). Une fois validées, mettre `BABBL_CARDS_V2=1` sur `babbl-api` : `/api/health` affiche alors `"cards": "v2"` et `GET /api/cards` sert les nouvelles cartes et menus. Retour arrière : retirer la variable.
 - Appel au conseil réglementaire (voir `LISTE-FINALE-SYMPTOMES.md`, « Ce qui reste à trancher »).
-- Pages légales : brouillon de politique de confidentialité dans `legal/politique-confidentialite-BROUILLON.md` (à faire relire, avec la liste des points à trancher). Restent CGU et mentions légales. La suppression du compte existe déjà (page Profil).
+- Pages légales : brouillon de politique de confidentialité dans `legal/politique-confidentialite-BROUILLON.md` (à faire relire, avec la liste des points à trancher). Brouillons de CGU (`legal/cgu-BROUILLON.md`) et de mentions légales (`legal/mentions-legales-BROUILLON.md`) à compléter et faire relire. La suppression du compte existe déjà (page Profil).

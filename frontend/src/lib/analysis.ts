@@ -118,7 +118,8 @@ export interface Refusal {
 
 /** Les trois cartes, mises en avant par l'âge seul — même logique que le backend. */
 export function staticSafety(ageRange?: string): { cards: SafetyCard[]; footer: string } {
-  const under3 = ageRange === '0-3';
+  // Âge inconnu = mis en avant, comme le backend : on ne tait pas une carte faute d'âge.
+  const under3 = !ageRange || ageRange === '0-3';
   const cards: SafetyCard[] = (Object.keys(SAFETY_CARDS) as SafetyCardKey[]).map(key => ({
     key,
     ...SAFETY_CARDS[key],
@@ -164,7 +165,9 @@ export { INTENSITY_DISCLAIMER };
 
 /** Âge du bébé pour le backend. La date de naissance prime ; la tranche ne sert que de repli. */
 export function babyAgeForContext(profile?: { ageRange?: string; birthDate?: string } | null): {
-  months: number;
+  /** null = âge inconnu. Jamais de valeur par défaut : un « 2 mois » inventé
+   *  éteignait la carte « nouveau-né » chez un bébé d'âge inconnu. */
+  months: number | null;
   days?: number;
   birthDate?: string;
 } {
@@ -175,12 +178,13 @@ export function babyAgeForContext(profile?: { ageRange?: string; birthDate?: str
     const days = Math.max(0, Math.floor((Date.now() - born.getTime()) / 86_400_000));
     return { months: Math.floor(days / 30.44), days, birthDate: bd };
   }
-  return { months: ageMap[profile?.ageRange ?? '0-3'] ?? 3 };
+  const range = profile?.ageRange;
+  return { months: range && range in ageMap ? ageMap[range] : null };
 }
 
 /** Tranche d'âge dérivée d'une date de naissance (cohérence avec l'ancien profil). */
 export function ageRangeFromBirthDate(bd: string): '0-3' | '3-6' | '6-12' | '1-2' | '2+' {
-  const m = babyAgeForContext({ birthDate: bd }).months;
+  const m = babyAgeForContext({ birthDate: bd }).months ?? 0;
   if (m < 3) return '0-3';
   if (m < 6) return '3-6';
   if (m < 12) return '6-12';

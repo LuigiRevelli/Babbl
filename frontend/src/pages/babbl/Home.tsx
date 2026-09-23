@@ -36,13 +36,6 @@ export default function BabblHome() {
   const chunksRef = useRef<Blob[]>([]);
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // "3 / 5" daily analyses widget
-  const todayAnalyses = useMemo(() => {
-    const data = getUserData();
-    const today = new Date().toDateString();
-    return data.analyses.filter(a => new Date(a.timestamp).toDateString() === today).length;
-  }, [phase]);
-
   // « Qu'est-ce qui l'a calmé ? » — à la réouverture, jamais par notification.
   const [soothedTarget, setSoothedTarget] = useState(() => pendingSoothedQuestion(getUserData().analyses));
   const answer = (key: SoothedKey | 'skipped') => {
@@ -117,12 +110,12 @@ export default function BabblHome() {
       const babyAgeMonths = age.months;
       if (age.days != null) ctx.babyAgeDays = age.days;
       if (age.birthDate) ctx.babyBirthDate = age.birthDate;
-      ctx.babyAgeMonths = babyAgeMonths;
+      if (babyAgeMonths != null) ctx.babyAgeMonths = babyAgeMonths;
 
       const result = (await apiAnalyze(blob, ctx, {
         voiceId: userData.voiceProfile?.voiceId,
         parentLabel: userData.voiceProfile?.role ?? userData.parentProfile?.role ?? 'father',
-        babyAgeMonths,
+        babyAgeMonths: babyAgeMonths ?? undefined,
       })) as AnalyzeResponse;
 
       // L'historique local ne garde que le contexte, le résumé et les gestes.
@@ -225,49 +218,8 @@ export default function BabblHome() {
         <Waveform active={phase === 'listening'} />
       </div>
 
-      <div style={{ padding: '0 20px 32px' }}>
-        <div
-          style={{
-            background: C.coquille,
-            borderRadius: 20,
-            padding: '16px 18px',
-            border: `1px solid ${C.ivoire}`,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: C.mono,
-              fontSize: 10,
-              color: C.cafeMute,
-              letterSpacing: '.15em',
-              textTransform: 'uppercase',
-            }}
-          >
-            aujourd'hui
-          </div>
-          <div style={{ flex: 1, display: 'flex', gap: 4, alignItems: 'flex-end', height: 28 }}>
-            {[14, 22, 18, 8, 26, 12, 6, 20, 16, 10, 24, 18].map((h, i) => (
-              <span
-                key={i}
-                style={{
-                  flex: 1,
-                  height: h,
-                  background: i === Math.min(todayAnalyses * 2, 11) ? C.terracotta : C.ocre,
-                  borderRadius: 2,
-                }}
-              />
-            ))}
-          </div>
-          <div style={{ fontFamily: C.display, fontSize: 22, letterSpacing: '-0.02em' }}>
-            {todayAnalyses}
-            <span style={{ fontSize: 13, color: C.cafeMute }}>/5</span>
-          </div>
-        </div>
-      </div>
-
+      {/* Plus de compteur « aujourd'hui 3/5 » : un nombre d'enregistrements
+          n'est pas une mesure des pleurs, et « /5 » se lisait comme un objectif. */}
       <HomeIndicator />
     </BabblShell>
   );

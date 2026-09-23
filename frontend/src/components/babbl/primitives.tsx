@@ -156,6 +156,7 @@ export function RecordButton({
     <button
       onClick={onClick}
       disabled={disabled}
+      aria-label={listening ? "Arrêter l'écoute" : 'Écouter mon bébé'}
       style={{
         width: 200,
         height: 200,

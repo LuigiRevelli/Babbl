@@ -76,3 +76,43 @@ jobs:
       - name: Logs
         if: always()
         run: docker logs api
+
+  e2e:
+    # Parcours d'un parent dans un vrai navigateur : image de production du
+    # backend (sans clé), app construite, micro simulé qui joue un pleur puis
+    # un silence. Voir frontend/e2e/smoke.mjs.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Backend (image de production)
+        run: |
+          docker build -t babbl-api backend
+          docker run -d --name api -p 5001:5001 -e WEB_CONCURRENCY=1 babbl-api
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: App
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          VITE_API_URL=http://127.0.0.1:5001 npm run build
+          (npx vite preview --host 127.0.0.1 --port 4173 --strictPort > /tmp/preview.log 2>&1 &)
+      - name: Sons
+        run: |
+          pip install -q numpy
+          python frontend/e2e/make_audio.py /tmp/e2e
+      - name: Attendre
+        run: |
+          for i in $(seq 1 90); do curl -sf http://127.0.0.1:5001/api/health > /dev/null && curl -sf http://127.0.0.1:4173/ > /dev/null && exit 0; sleep 1; done
+          docker logs api; cat /tmp/preview.log; exit 1
+      - name: Parcours
+        working-directory: frontend
+        env:
+          APP_URL: http://127.0.0.1:4173
+          AUDIO_DIR: /tmp/e2e
+        run: node e2e/smoke.mjs
+      - name: Logs
+        if: always()
+        run: docker logs api | tail -50

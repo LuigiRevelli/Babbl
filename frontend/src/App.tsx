@@ -12,8 +12,10 @@ import { lazy, Suspense } from "react";
 // nuit sur un téléphone, ne doit pas attendre les graphiques ni la berceuse.
 import BabblHome from "./pages/babbl/Home";
 import Dashboard from "./pages/Dashboard";
+// Le résultat aussi : il suit l'écoute, et ne doit pas attendre un second
+// téléchargement sur un réseau faible.
+import BabblResult from "./pages/babbl/Result";
 
-const BabblResult = lazy(() => import("./pages/babbl/Result"));
 const BabblPaywall = lazy(() => import("./pages/babbl/Paywall"));
 const Auth = lazy(() => import("./pages/Auth"));
 const History = lazy(() => import("./pages/History"));

@@ -1,6 +1,13 @@
 """
 Client LLM — rédige le résumé chaleureux et les gestes à poser.
-(Nom de fichier historique ; le modèle est Claude Sonnet via l'API Anthropic.)
+(Nom de fichier historique ; le modèle est Claude Sonnet via le SDK Anthropic.)
+
+Modèle : `claude-sonnet-5` (surcharge : ANTHROPIC_MODEL). L'ancien identifiant
+`claude-sonnet-4-20250514` a été retiré le 15/06/2026 : depuis, chaque appel
+échouait et Babbl répondait toujours avec le texte fixe, sans que rien ne le
+signale. Sonnet 5 refuse `temperature` (400) : le paramètre a disparu. La
+sortie est contrainte par un schéma JSON (`output_config.format`), la réflexion
+est coupée et l'effort réglé bas : une réponse à 3 h du matin tient en 8 s.
 
 Le LLM ne reçoit PAS les descripteurs acoustiques bruts et n'a PAS le droit de :
   - produire des pourcentages ou des probabilités,
@@ -19,12 +26,11 @@ import json
 import os
 import re
 
-import requests
+import anthropic
 
-ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
-ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
+ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5")
 
-PROMPT_VERSION = "2026.09.21-2"   # incrémenter à chaque changement de SYSTEM_PROMPT ou des cribles
+PROMPT_VERSION = "2026.09.23-1"   # incrémenter à chaque changement de SYSTEM_PROMPT ou des cribles
 MAX_ACTIONS = 3
 LLM_TIMEOUT_S = float(os.environ.get("LLM_TIMEOUT_S", "8"))
 ALLOWED_SIGNAL_SOURCES = ("context", "intensity")
@@ -61,7 +67,9 @@ _REASSURANCE = (
 # Le modèle ne recommande ni de consulter ni de ne pas consulter.
 _TRIAGE = r"consult|médecin|medecin|pédiatre|pediatre|urgence|\ble 15\b|samu"
 
-_FORBIDDEN_LLM = re.compile(f"({_MEDICAL}|{_REASSURANCE}|{_TRIAGE})", re.IGNORECASE)
+# Le sexe du bébé n'est pas connu : pas de « berce-le », « prends-la ».
+_GENDERED = r"\b[a-zàâçéèêëîïôûùüÿœ]+-(le|la)\b"
+_FORBIDDEN_LLM = re.compile(f"({_MEDICAL}|{_REASSURANCE}|{_TRIAGE}|{_GENDERED})", re.IGNORECASE)
 _FORBIDDEN_STATIC = re.compile(f"({_MEDICAL}|{_REASSURANCE})", re.IGNORECASE)
 _FORBIDDEN = _FORBIDDEN_LLM  # compat
 
@@ -93,65 +101,101 @@ def violates_static(text: str, allow_medical: bool = False) -> str | None:
     return m.group(0) if m else None
 
 
-SYSTEM_PROMPT = """Tu es Babbl, une aide pour parents épuisés, à 3 h du matin.
+SYSTEM_PROMPT = """Tu écris pour Babbl, une aide pour parents épuisés, souvent à 3 h du matin.
 
 Tu reçois :
-1. Une observation sonore EN TEXTE (ce que le micro a mesuré sur quelques secondes).
-2. Des hypothèses déduites de ce que le parent a saisi (dernière tétée, couche, âge).
+1. Une observation sonore EN TEXTE : ce que le micro a entendu sur quelques secondes.
+2. Des pistes déduites de ce que le parent a saisi (dernière tétée, couche, réveil, âge), dans l'ordre.
 3. Le contexte saisi par le parent.
 
-Ce que la science autorise (et rien de plus) : un pleur ne dit pas sa cause.
-Les hypothèses viennent du contexte, jamais du son. Tu ne devines pas.
+Un pleur ne dit pas sa cause. Les pistes viennent de la saisie du parent, jamais du son.
 
 INTERDIT, sans exception :
-- Tout chiffre de confiance ou pourcentage.
-- Tout nom de maladie ou de symptôme médical (colique, reflux, otite, dents,
-  allergie, fièvre, douleur, infection, etc.). Les repères de sécurité sont
-  affichés ailleurs, en texte fixe ; ce n'est pas ton rôle.
-- Toute phrase qui affirme que le son indique, révèle ou confirme quelque chose.
-- Tout niveau d'alerte, toute recommandation de consulter ou de ne pas consulter.
-- Rassurer sur l'état de santé du bébé. Tu ne sais pas s'il va bien.
+- Tout chiffre de confiance, pourcentage ou probabilité.
+- Tout nom de maladie ou de symptôme médical, et le mot « douleur ».
+- Toute phrase qui dit que le son indique, révèle ou confirme quelque chose.
+- Tout niveau d'alerte, toute recommandation de consulter ou de ne pas consulter :
+  les repères de sécurité sont affichés à côté, en texte fixe.
+- Rassurer sur l'état de santé du bébé : tu ne sais pas s'il va bien.
+- Supposer le sexe du bébé : écris son prénom s'il est donné, sinon « votre bébé ».
+  Jamais « il », « elle », « le », « la » pour le désigner, ni d'accord au masculin
+  ou au féminin (« réveillé », « fatigué »).
 
-Ce que tu fais :
-- Un résumé de 2 à 3 phrases, tutoiement, chaleureux, qui reprend l'hypothèse
-  principale EN DISANT qu'elle vient de ce que le parent a saisi
-  (ex. « D'après ta dernière tétée il y a 4 h, ... »).
-- 1 à 3 gestes concrets à essayer, du plus simple au suivant, chacun avec une
-  raison en une phrase.
-- key_signals : uniquement ce qui a servi, avec source "context" ou "intensity".
-
-Réponds UNIQUEMENT avec ce JSON, sans texte autour :
-{
-  "parent_summary": "2-3 phrases en français, tutoiement",
-  "recommended_actions": [
-    {"priority": 1, "action": "geste concret", "reasoning": "pourquoi, en une phrase"}
-  ],
-  "key_signals": [
-    {"signal": "ce qui a été utilisé", "source": "context|intensity"}
-  ]
-}
+Ce que tu écris :
+- parent_summary : 2 phrases, au vouvoiement, calmes et chaleureuses. La première
+  dit la piste principale ET d'où elle vient (« Vous avez noté la dernière tétée il
+  y a 3 h 20… »). Ne recopie pas mot pour mot la phrase de la piste.
+- recommended_actions : 1 à 3 gestes concrets, du plus simple au suivant, au
+  vouvoiement, chacun avec sa raison en une phrase.
+- key_signals : uniquement ce qui a servi, source "context" ou "intensity".
 """
+
+# Schéma imposé à la sortie : le modèle ne peut pas renvoyer autre chose.
+OUTPUT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "parent_summary": {"type": "string"},
+        "recommended_actions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "priority": {"type": "integer"},
+                    "action": {"type": "string"},
+                    "reasoning": {"type": "string"},
+                },
+                "required": ["priority", "action", "reasoning"],
+                "additionalProperties": False,
+            },
+        },
+        "key_signals": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "signal": {"type": "string"},
+                    "source": {"type": "string", "enum": ["context", "intensity"]},
+                },
+                "required": ["signal", "source"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    "required": ["parent_summary", "recommended_actions", "key_signals"],
+    "additionalProperties": False,
+}
+
+_client: anthropic.Anthropic | None = None
+
+
+def _get_client() -> anthropic.Anthropic:
+    """Client unique, sans nouvelle tentative : un parent n'attend pas 3 × 8 s.
+    Le repli déterministe est déjà prêt."""
+    global _client
+    if _client is None:
+        _client = anthropic.Anthropic(timeout=LLM_TIMEOUT_S, max_retries=0)
+    return _client
+
+
+def llm_configured() -> bool:
+    return bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
 
 
 def _post_anthropic(system: str, user_msg: str) -> str:
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
+    if not llm_configured():
         raise RuntimeError("ANTHROPIC_API_KEY is not set")
-    payload = {
-        "model": ANTHROPIC_MODEL,
-        "max_tokens": 700,
-        "system": system,
-        "messages": [{"role": "user", "content": user_msg}],
-        "temperature": 0.3,
-    }
-    headers = {
-        "x-api-key": api_key,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-    }
-    r = requests.post(ANTHROPIC_URL, headers=headers, json=payload, timeout=LLM_TIMEOUT_S)
-    r.raise_for_status()
-    return r.json()["content"][0]["text"]
+    response = _get_client().messages.create(
+        model=ANTHROPIC_MODEL,
+        max_tokens=1024,
+        system=system,
+        messages=[{"role": "user", "content": user_msg}],
+        thinking={"type": "disabled"},
+        output_config={"effort": "low", "format": {"type": "json_schema", "schema": OUTPUT_SCHEMA}},
+    )
+    if response.stop_reason != "end_turn":
+        # refus, coupure : on ne lit pas un texte incomplet
+        raise RuntimeError(f"stop_reason={response.stop_reason}")
+    return next(b.text for b in response.content if b.type == "text")
 
 
 def _parse_json(content: str) -> dict:
@@ -168,27 +212,27 @@ def _parse_json(content: str) -> dict:
 
 def fallback_guidance(hypotheses: list[dict], intensity: dict, baby_name: str | None = None) -> dict:
     """Résumé et gestes sans LLM. Toujours vrai, jamais personnalisé au-delà
-    de ce que le parent a saisi."""
-    name = baby_name.strip() if baby_name and baby_name.strip() else "ton bébé"
+    de ce que le parent a saisi. Vouvoiement, et aucun accord de genre : le
+    sexe du bébé n'est pas connu."""
+    name = baby_name.strip() if baby_name and baby_name.strip() else "votre bébé"
     top = hypotheses[0] if hypotheses else None
 
-    if top:
+    if top and top["key"] != "need_for_comfort":
         summary = (
-            f"{top['why']} D'après ce que tu as saisi, « {top['label'].lower()} » est "
-            f"l'hypothèse la plus simple à essayer en premier pour {name}. "
-            f"{top['disclaimer']}"
+            f"{top['why']} La piste la plus simple à essayer en premier pour {name} : "
+            f"{top['label'].lower()}. Elle vient de ce que vous avez saisi, pas du son."
         )
     else:
         summary = (
-            f"Tu n'as rien saisi sur les dernières heures de {name}, donc Babbl ne "
-            "peut pas proposer d'hypothèse. Le contact et ta voix apaisent souvent."
+            f"Rien dans ce que vous avez saisi ne désigne une piste précise pour {name}. "
+            "Le contact et votre voix sont ce qui apaise le plus souvent."
         )
 
     actions_by_key = {
-        "hunger": ("Propose le sein ou le biberon.", "Les pleurs sont un signe tardif de faim : autant essayer tout de suite."),
-        "discomfort": ("Vérifie la couche, la position et les vêtements.", "Un inconfort simple se règle en une minute."),
-        "fatigue": ("Baisse la lumière et le bruit, puis berce-le.", "Un bébé éveillé depuis longtemps a du mal à s'endormir seul."),
-        "need_for_comfort": ("Prends-le contre toi, peau contre peau, et parle-lui.", "Le contact et ta voix sont ce qui apaise le plus souvent."),
+        "hunger": ("Proposez le sein ou le biberon.", "Les pleurs sont un signe tardif de faim : autant essayer tout de suite."),
+        "discomfort": ("Vérifiez la couche, la position et les vêtements.", "Un inconfort simple se règle en une minute."),
+        "fatigue": (f"Baissez la lumière et le bruit, puis bercez {name}.", "Après une longue période d'éveil, l'endormissement est plus difficile."),
+        "need_for_comfort": (f"Prenez {name} contre vous, peau contre peau, et parlez-lui doucement.", "Le contact et votre voix sont ce qui apaise le plus souvent."),
     }
     actions = []
     for i, h in enumerate(hypotheses[:MAX_ACTIONS]):
@@ -288,6 +332,7 @@ def write_parent_guidance(
     try:
         raw = _parse_json(_post_anthropic(SYSTEM_PROMPT, user_msg))
     except Exception as e:  # réseau, clé, JSON — jamais bloquant
-        print(f"[llm] guidance failed, deterministic fallback: {e}")
+        # Le type seulement : un message d'erreur peut recopier le contexte.
+        print(f"[llm] guidance failed, deterministic fallback: {type(e).__name__}")
         return fallback_guidance(hypotheses, intensity, baby_name)
     return sanitize_llm_output(raw, hypotheses, intensity, baby_name)

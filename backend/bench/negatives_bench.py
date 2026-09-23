@@ -21,7 +21,7 @@ import tempfile
 from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
-import pandas as pd
+import pandas as pd  # requirements-research.txt
 import soundfile as sf
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

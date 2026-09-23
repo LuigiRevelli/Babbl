@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,13 +15,16 @@ import BabblLullaby from "./pages/babbl/Lullaby";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
-import Record from "./pages/Record";
-import AnalysisResult from "./pages/AnalysisResult";
 import Breathing from "./pages/Breathing";
 import VoiceSetup from "./pages/VoiceSetup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+function LegacyAnalysisRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/analysis/${id ?? ""}`} replace />;
+}
 
 // NOTE: Auth gating is intentionally OFF in this build — every route is public
 // so Luigi (and Claude Design preview viewers) can open the app directly.
@@ -47,13 +50,17 @@ const App = () => (
             <Route path="/upgrade" element={<BabblPaywall />} />
             <Route path="/lullaby" element={<BabblLullaby />} />
 
-            {/* ─── Legacy Lovable routes (kept for now as fallback) ─── */}
-            <Route path="/legacy/dashboard" element={<Dashboard />} />
-            <Route path="/legacy/history" element={<History />} />
-            <Route path="/legacy/record" element={<Record />} />
-            <Route path="/legacy/analysis/:id" element={<AnalysisResult />} />
-            <Route path="/legacy/breathing" element={<Breathing />} />
+            {/* Journal : la saisie de la tétée, de la couche et du réveil vit ici.
+                Plusieurs écrans y renvoient (connexion, bienvenue, respiration). */}
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/history" element={<History />} />
+
+            {/* Anciennes adresses : redirigées, l'ancien écran de résultat n'est plus servi. */}
+            <Route path="/legacy/dashboard" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/legacy/history" element={<Navigate to="/history" replace />} />
+            <Route path="/legacy/record" element={<Navigate to="/" replace />} />
+            <Route path="/legacy/analysis/:id" element={<LegacyAnalysisRedirect />} />
+            <Route path="/legacy/breathing" element={<Navigate to="/breathing" replace />} />
             <Route path="/breathing" element={<Breathing />} />
             <Route path="/voice-setup" element={<VoiceSetup />} />
 

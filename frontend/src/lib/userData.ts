@@ -192,25 +192,19 @@ export function addXp(data: UserData, amount: number): UserData {
 
 export function checkNewBadges(data: UserData): string[] {
   const newBadges: string[] = [];
-  const count = data.analyses.length;
   const best = data.streak.best;
-  const causes = new Set(data.analyses.map(a => a.topCause));
-  const hasNightAnalysis = data.analyses.some(a => {
-    const h = new Date(a.timestamp).getHours();
-    return h >= 2 && h < 5;
-  });
 
+  // Aucun badge ne récompense le fait d'enregistrer : ni le nombre d'analyses,
+  // ni l'heure (« night owl » à 2 h-5 h), ni le nombre de « causes » vues. Un
+  // compteur de pleurs nourrit le jugement « il pleure trop », facteur de
+  // risque mesuré du bébé secoué (ROADMAP-BACKEND.md, « À ne pas faire »).
+  // Les séries et la respiration récompensent le soin que le parent se donne.
   const checks: [string, boolean][] = [
-    ['first_cry', count >= 1],
-    ['analyses_10', count >= 10],
-    ['analyses_50', count >= 50],
     ['streak_3', best >= 3],
     ['streak_7', best >= 7],
     ['streak_30', best >= 30],
     ['streak_50', best >= 50],
-    ['all_causes', causes.size >= 6],
     ['breath_master', data.breathingSessions >= 10],
-    ['night_owl', hasNightAnalysis],
   ];
 
   for (const [id, met] of checks) {
@@ -261,4 +255,17 @@ export function formatRelativeDate(iso: string): string {
   const weeks = Math.floor(days / 7);
   if (weeks === 1) return t('weekAgo');
   return `${weeks} ${t('weeksAgo')}`;
+}
+
+/** « à l'instant », « il y a 45 min », « il y a 3 h 20 » — comme le backend
+ *  (triage_rules._fmt_delay) : arrondi à 5 minutes au-delà d'une heure. */
+export function sinceLabel(iso: string, now: number = Date.now()): string {
+  const mins = Math.round((now - new Date(iso).getTime()) / 60000);
+  if (Number.isNaN(mins) || mins < 1) return "à l'instant";
+  if (mins < 60) return `il y a ${mins} min`;
+  if (mins >= 24 * 60) return 'il y a plus d’un jour';
+  const rounded = Math.round(mins / 5) * 5;
+  const h = Math.floor(rounded / 60);
+  const m = rounded % 60;
+  return m === 0 ? `il y a ${h} h` : `il y a ${h} h ${String(m).padStart(2, '0')}`;
 }

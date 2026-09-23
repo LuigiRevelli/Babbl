@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { migrateLegacyValues, type UserData } from '@/lib/userData';
+import { checkNewBadges, migrateLegacyValues, sinceLabel, type UserData } from '@/lib/userData';
 
 function legacy(): UserData {
   return {
@@ -28,5 +28,32 @@ describe('migrateLegacyValues', () => {
     delete d.parentProfile;
     delete d.voiceProfile;
     expect(() => migrateLegacyValues(d)).not.toThrow();
+  });
+});
+
+describe('sinceLabel', () => {
+  const now = Date.parse('2026-09-23T10:00:00Z');
+  const ago = (m: number) => new Date(now - m * 60000).toISOString();
+  it('parle comme le backend', () => {
+    expect(sinceLabel(ago(0), now)).toBe("à l'instant");
+    expect(sinceLabel(ago(45), now)).toBe('il y a 45 min');
+    expect(sinceLabel(ago(120), now)).toBe('il y a 2 h');
+    expect(sinceLabel(ago(200), now)).toBe('il y a 3 h 20');
+    expect(sinceLabel(ago(26 * 60), now)).toBe('il y a plus d’un jour');
+  });
+});
+
+describe('checkNewBadges', () => {
+  it("ne récompense jamais le fait d'enregistrer", () => {
+    const d = legacy();
+    d.analyses = Array.from({ length: 60 }, (_, i) => ({
+      id: String(i), timestamp: '2026-09-23T03:00:00Z', topCause: ['hunger', 'fatigue', 'a', 'b', 'c', 'd'][i % 6],
+      probabilities: {}, parent_summary: '', confidence_level: '', alert: '', feedback: null, actualCause: null, sosModeUsed: false,
+    }));
+    d.badges = [];
+    const got = checkNewBadges(d);
+    for (const id of ['first_cry', 'analyses_10', 'analyses_50', 'all_causes', 'night_owl']) {
+      expect(got).not.toContain(id);
+    }
   });
 });

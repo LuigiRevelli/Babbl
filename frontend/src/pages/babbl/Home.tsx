@@ -17,7 +17,7 @@ import {
   BabblShell,
 } from '@/components/babbl/primitives';
 import { analyzeAudio as apiAnalyze, sendSoothed } from '@/lib/api';
-import { getUserData, saveUserData } from '@/lib/userData';
+import { getUserData, saveUserData, sinceLabel } from '@/lib/userData';
 import { CRY_AUDIO_CONSTRAINTS, CRY_RECORD_MS, createRecorder, chunksToBlob } from '@/lib/recorder';
 import { SOOTHED_BY, SOOTHED_QUESTION, type SoothedKey } from '@/lib/taxonomy';
 import { answerSoothed, pendingSoothedQuestion } from '@/lib/soothed';
@@ -206,6 +206,8 @@ export default function BabblHome() {
         </div>
       </div>
 
+      {phase === 'idle' && <ContextStrip onOpenJournal={() => navigate('/dashboard')} />}
+
       {soothedTarget && phase === 'idle' && <SoothedCard onAnswer={answer} />}
 
       <div
@@ -268,6 +270,64 @@ export default function BabblHome() {
 
       <HomeIndicator />
     </BabblShell>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Contexte en un geste : c'est la SEULE source des pistes (le son ne dit pas
+// la cause). Sans ce bandeau, la saisie n'existait que dans le journal, et
+// les pistes se réduisaient à « besoin de réconfort ».
+// ─────────────────────────────────────────────────────────────
+type ContextKey = 'lastMeal' | 'lastDiaper' | 'lastWake';
+const CONTEXT_ITEMS: { key: ContextKey; label: string; action: string }[] = [
+  { key: 'lastMeal', label: 'Tétée', action: 'Noter une tétée maintenant' },
+  { key: 'lastDiaper', label: 'Couche', action: 'Noter un change maintenant' },
+  { key: 'lastWake', label: 'Réveil', action: 'Noter un réveil maintenant' },
+];
+
+function ContextStrip({ onOpenJournal }: { onOpenJournal: () => void }) {
+  const [data, setData] = useState(() => getUserData());
+  const log = (key: ContextKey) => {
+    const fresh = getUserData();
+    fresh[key] = new Date().toISOString();
+    saveUserData(fresh);
+    setData(fresh);
+  };
+  return (
+    <div style={{ padding: '18px 20px 0' }}>
+      <div style={{ display: 'flex', gap: 8 }}>
+        {CONTEXT_ITEMS.map(({ key, label, action }) => {
+          const when = data[key];
+          return (
+            <button
+              key={key}
+              onClick={() => log(key)}
+              aria-label={action}
+              style={{
+                flex: 1, padding: '10px 8px', borderRadius: 16, border: `1px solid ${C.ivoire}`,
+                background: C.coquille, cursor: 'pointer', textAlign: 'left',
+              }}
+            >
+              <div style={{ fontFamily: C.body, fontSize: 13, color: C.cafe, fontWeight: 600 }}>{label}</div>
+              <div style={{ fontFamily: C.mono, fontSize: 10, color: C.cafeMute, marginTop: 2 }}>
+                {when ? sinceLabel(when) : '+ maintenant'}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+        <span style={{ fontFamily: C.body, fontSize: 11, color: C.cafeMute }}>
+          Les pistes viennent de ce que vous notez ici, pas du son.
+        </span>
+        <button
+          onClick={onOpenJournal}
+          style={{ background: 'none', border: 'none', padding: 0, fontFamily: C.body, fontSize: 11, color: C.cafeSoft, textDecoration: 'underline', cursor: 'pointer' }}
+        >
+          Journal
+        </button>
+      </div>
+    </div>
   );
 }
 

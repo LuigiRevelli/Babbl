@@ -25,6 +25,10 @@ L'image `backend/Dockerfile` suffit : `docker build -t babbl-api backend && dock
 
 Le frontend est un site statique : `cd frontend && npm ci && VITE_API_URL=https://… npm run build`, puis servir `frontend/dist` avec une réécriture de toutes les routes vers `index.html`.
 
+## Durée de conservation (quand elle est décidée)
+
+`backend/purge.py` efface les analyses et le journal plus vieux que `BABBL_RETENTION_DAYS` jours. Profils et comptes ne sont pas touchés. Sans cette variable, le script ne fait rien. Sur Render : **New → Cron Job**, même dépôt, dossier `backend`, commande `python purge.py`, planning `0 4 * * *`, mêmes variables que `babbl-api` (plus `BABBL_RETENTION_DAYS`). Essai sans rien effacer : `python purge.py --dry-run`.
+
 ## Avant d'ouvrir au public
 
 - Relecture des cartes par un pédiatre (`recherche/cartes-a-relire.md`). Une fois validées, mettre `BABBL_CARDS_V2=1` sur `babbl-api` : `/api/health` affiche alors `"cards": "v2"` et `GET /api/cards` sert les nouvelles cartes et menus. Retour arrière : retirer la variable.

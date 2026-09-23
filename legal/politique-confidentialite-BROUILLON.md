@@ -95,6 +95,6 @@ Nous vous préviendrons dans l'application de tout changement important. Version
 4. **Google Fonts : réglé.** Les polices sont servies par l'application (paquets `@fontsource`). Vérifié dans un navigateur : aucune requête externe au chargement. Les maquettes de conception, qui chargent encore Google Fonts, ont été déplacées dans `design/prototype/` et ne sont plus publiées avec le site.
 5. **Statut réglementaire :** la politique ne doit rien promettre qui fasse de Babbl un dispositif médical (voir `LISTE-FINALE-SYMPTOMES.md`, « Ce qui reste à trancher »). Le texte ci-dessus s'en tient à « pistes tirées de ce que vous avez noté ».
 6. **Portabilité : réglé.** L'export JSON existe (`GET /api/me/export` et le bouton du Profil). Reste à valider que le JSON est un « format couramment utilisé et lisible par machine » au sens de l'art. 20.
-7. **Conservation de l'historique :** aujourd'hui, jusqu'à la suppression du compte. Faut-il une durée maximale, par exemple 2 ans après la dernière connexion, avec une purge automatique ?
+7. **Conservation de l'historique :** aujourd'hui, jusqu'à la suppression du compte. La purge automatique est prête (`backend/purge.py`, variable `BABBL_RETENTION_DAYS`) mais reste désactivée tant qu'une durée n'est pas fixée. Quelle durée retenir, par exemple 2 ans ? Une fois décidée, mettre à jour les tableaux 3.2 de ce document.
 8. **Registre des traitements** et, le cas échéant, **AIPD** : à tenir. Ce brouillon peut en servir de base.
 9. **Mentions légales et CGU :** documents séparés, à écrire.

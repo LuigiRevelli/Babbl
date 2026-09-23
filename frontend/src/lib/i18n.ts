@@ -132,7 +132,6 @@ const fr = {
   historyTitle: "Historique",
   totalAnalyses: "analyses au total",
   mostFrequentCauses: "Hypothèses les plus fréquentes",
-  patternDetected: "📊 Tendance dans vos saisies",
   thisWeek: "Cette semaine",
   thisMonth: "Ce mois",
   all: "Tout",

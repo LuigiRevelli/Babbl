@@ -29,21 +29,9 @@ export default function History() {
     return Object.entries(counts).sort(([, a], [, b]) => b - a);
   }, [data.analyses]);
 
-  // Pattern detection
-  const pattern = useMemo(() => {
-    if (data.analyses.length < 5) return null;
-    const nightAnalyses = data.analyses.filter(a => {
-      const h = new Date(a.timestamp).getHours();
-      return h >= 2 && h < 5;
-    });
-    if (nightAnalyses.length >= 2) {
-      const nightCauses: Record<string, number> = {};
-      nightAnalyses.forEach(a => { nightCauses[a.topCause] = (nightCauses[a.topCause] || 0) + 1; });
-      const topNight = Object.entries(nightCauses).sort(([, a], [, b]) => b - a)[0];
-      return `Les pleurs sont plus fréquents entre 2h et 5h du matin. Hypothèse la plus fréquente la nuit (d'après vos saisies) : ${translateCause(topNight[0])}.`;
-    }
-    return null;
-  }, [data.analyses]);
+  // Pas de « tendance » : un nombre d'enregistrements n'est pas une fréquence
+  // de pleurs (on enregistre quand on est réveillé), et « il pleure plus la
+  // nuit » est un jugement de quantité (LISTE-FINALE-SYMPTOMES.md, n°1).
 
   return (
       <MobileLayout>
@@ -69,14 +57,6 @@ export default function History() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Pattern */}
-        {pattern && (
-          <div className="bg-primary-soft rounded-lg p-4 mb-4">
-            <p className="text-sm font-semibold mb-1">{t('patternDetected')}</p>
-            <p className="text-sm text-foreground">{pattern}</p>
           </div>
         )}
 

@@ -130,3 +130,11 @@ export async function deleteAccount(voiceIds: string[] = []) {
   }
   return body as { deleted: boolean; report: Record<string, string> };
 }
+
+/** Tout ce que le serveur garde du compte (RGPD art. 20). */
+export async function exportAccount(): Promise<Record<string, unknown>> {
+  const res = await fetch(apiUrl('/api/me/export'), { headers: await authHeaders() });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError(res.status, body, body?.error ?? "L'export n'a pas pu être fait.");
+  return body;
+}

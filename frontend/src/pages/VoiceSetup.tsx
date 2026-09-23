@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mic, Square, Check, Play, Volume2, Loader2 } from 'lucide-react';
 import MobileLayout from '@/components/MobileLayout';
 import { getUserData, saveUserData, clearUserData, ParentRole, AgeRange } from '@/lib/userData';
-import { cloneVoice, deleteAccount } from '@/lib/api';
+import { cloneVoice, deleteAccount, exportAccount } from '@/lib/api';
+import { buildExport, downloadJson, exportFileName, type ServerExport } from '@/lib/export';
 import { t } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { updateProfile } from '@/lib/supabaseData';
@@ -371,6 +372,7 @@ export default function VoiceSetup() {
         </div>
       )}
 
+      {step !== 'recording' && <ExportData signedIn={!!user} />}
       {user && step !== 'recording' && <DeleteAccount />}
     </MobileLayout>
   );
@@ -378,6 +380,37 @@ export default function VoiceSetup() {
 
 
 /** Droit à l'effacement (RGPD) : compte, analyses, profil, voix clonée. */
+function ExportData({ signedIn }: { signedIn: boolean }) {
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  const onExport = async () => {
+    setBusy(true);
+    setNote(null);
+    let server: ServerExport = null;
+    if (signedIn) {
+      try {
+        server = await exportAccount();
+      } catch (e) {
+        // Le fichier part quand même avec ce qui est sur le téléphone, et le dit.
+        server = { unavailable: e instanceof Error ? e.message : 'Serveur injoignable.' };
+        setNote("Les données du serveur n'ont pas pu être jointes. Réessayez plus tard.");
+      }
+    }
+    downloadJson(buildExport(getUserData(), server), exportFileName());
+    setBusy(false);
+  };
+
+  return (
+    <div className="mt-10 text-center">
+      <button onClick={onExport} disabled={busy} className="text-xs underline disabled:opacity-60">
+        {busy ? 'Préparation…' : 'Télécharger mes données'}
+      </button>
+      {note && <p className="mt-2 text-xs text-muted-foreground">{note}</p>}
+    </div>
+  );
+}
+
 function DeleteAccount() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
@@ -405,7 +438,7 @@ function DeleteAccount() {
   };
 
   return (
-    <div className="mt-10 mb-6 text-center">
+    <div className="mt-4 mb-6 text-center">
       <button onClick={onDelete} disabled={busy} className="text-xs text-destructive underline disabled:opacity-60">
         {busy ? 'Suppression…' : 'Supprimer mon compte et mes données'}
       </button>

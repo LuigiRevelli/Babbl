@@ -69,7 +69,7 @@ Babbl n'utilise **aucun outil de mesure d'audience, aucune publicité et aucun t
 Vous pouvez à tout moment accéder à vos données, les rectifier, les effacer, en limiter l'usage, vous y opposer, les récupérer dans un format lisible, et retirer votre consentement.
 
 - **Effacer tout, en un geste :** Profil → « Supprimer mon compte ». Nous effaçons dans l'ordre votre voix clonée chez ElevenLabs, votre historique, votre journal, vos badges, votre profil, puis votre compte. Si une étape échoue, le compte n'est pas supprimé : vous pouvez relancer l'effacement sans rien perdre en route. Les données de votre téléphone sont effacées au même moment.
-- **Récupérer vos données :** [à écrire : export JSON depuis le Profil (non développé à ce jour), ou sur demande à l'adresse du point 1].
+- **Récupérer vos données :** Profil → « Télécharger mes données ». Un fichier JSON contient ce qui est sur votre téléphone et, si vous avez un compte, tout ce que le serveur garde. Il marche aussi sans compte.
 - **Tout autre droit :** écrivez à [adresse du point 1]. Réponse sous un mois.
 - **Réclamation :** CNIL, 3 place de Fontenoy, 75007 Paris, www.cnil.fr.
 
@@ -94,7 +94,7 @@ Nous vous préviendrons dans l'application de tout changement important. Version
 3. **Transferts hors UE :** Anthropic et ElevenLabs (États-Unis). Vérifier l'adhésion au Data Privacy Framework ou signer les CCT. Demander la **zéro rétention** chez Anthropic. Vérifier si ElevenLabs propose un hébergement UE.
 4. **Google Fonts : réglé.** Les polices sont servies par l'application (paquets `@fontsource`). Vérifié dans un navigateur : aucune requête externe au chargement. Les maquettes de conception, qui chargent encore Google Fonts, ont été déplacées dans `design/prototype/` et ne sont plus publiées avec le site.
 5. **Statut réglementaire :** la politique ne doit rien promettre qui fasse de Babbl un dispositif médical (voir `LISTE-FINALE-SYMPTOMES.md`, « Ce qui reste à trancher »). Le texte ci-dessus s'en tient à « pistes tirées de ce que vous avez noté ».
-6. **Portabilité :** aucun export n'existe dans l'application aujourd'hui. Il faut soit le développer, soit répondre aux demandes à la main.
+6. **Portabilité : réglé.** L'export JSON existe (`GET /api/me/export` et le bouton du Profil). Reste à valider que le JSON est un « format couramment utilisé et lisible par machine » au sens de l'art. 20.
 7. **Conservation de l'historique :** aujourd'hui, jusqu'à la suppression du compte. Faut-il une durée maximale, par exemple 2 ans après la dernière connexion, avec une purge automatique ?
 8. **Registre des traitements** et, le cas échéant, **AIPD** : à tenir. Ce brouillon peut en servir de base.
 9. **Mentions légales et CGU :** documents séparés, à écrire.

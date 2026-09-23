@@ -182,3 +182,22 @@ def test_migration_lists_exactly_the_taxonomy_answers():
     sql = open(os.path.join(root, "supabase", "migrations", "20260923_soothed_and_guidance_source.sql")).read()
     block = sql[sql.index("soothed_by in ("):sql.index(")", sql.index("soothed_by in ("))]
     assert set(re.findall(r"'([a-z_]+)'", block)) == set(SOOTHED_BY) | {"skipped"}
+
+
+def test_export_requires_account():
+    assert _client(_Db()).get("/api/me/export").status_code == 401
+
+
+def test_export_reads_every_user_table_for_the_owner_only():
+    db = _Db()
+    body = _client(db).get("/api/me/export", headers=GOOD).get_json()
+    assert set(body["tables"]) == {t for t, _ in babbl_app._USER_TABLES}
+    selects = [(t, f) for t, op, _, f in db.log if op == "select"]
+    assert all(dict(f).get("user_id", dict(f).get("id")) == UID for _, f in selects)
+    assert body["account"]["id"] == UID and body["errors"] == {}
+
+
+def test_export_reports_a_failing_table_instead_of_hiding_it():
+    body = _client(_Db(fail={("badges", "select")})).get("/api/me/export", headers=GOOD).get_json()
+    assert body["errors"] == {"badges": "RuntimeError"}
+    assert "badges" not in body["tables"]

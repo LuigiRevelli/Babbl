@@ -7,6 +7,7 @@ Endpoints:
                                          422 si l'enregistrement est inexploitable
 - POST   /api/analyses/<id>/soothed    : « qu'est-ce qui a apaisé votre bébé ? » (compte vérifié)
 - DELETE /api/me                       : efface le compte, ses données et sa voix clonée (RGPD)
+- GET    /api/me/export                : toutes les données du compte en JSON (portabilité)
 - POST   /api/voice/clone              : clone la voix du parent (compte vérifié)
 - GET    /api/audio/<f>                : mp3 générés (24 h)
 - GET    /api/health                   : état + intégrations branchées + versions
@@ -430,6 +431,40 @@ def soothed(analysis_id: str):
 # Tables qui portent des données du parent, et la colonne qui les rattache.
 _USER_TABLES = (("analyses", "user_id"), ("context_logs", "user_id"), ("badges", "user_id"),
                 ("baby_baselines", "user_id"), ("profiles", "id"))
+
+
+@app.get("/api/me/export")
+def export_me():
+    """Droit à la portabilité (RGPD art. 20) : tout ce que le serveur garde du
+    compte, en JSON lisible. Ce qui est sur le téléphone est ajouté par l'app.
+    Une table illisible est signalée, jamais omise en silence."""
+    sb = _get_supabase()
+    auth = verify_user(sb, request.headers.get("Authorization"))
+    if not auth.verified:
+        return jsonify({"error": "Connexion requise.", "code": "auth_required"}), 401
+    uid = auth.user_id
+    tables: dict[str, list] = {}
+    errors: dict[str, str] = {}
+    for table, col in _USER_TABLES:
+        try:
+            tables[table] = sb.table(table).select("*").eq(col, uid).execute().data or []
+        except Exception as e:
+            errors[table] = type(e).__name__
+    email = None
+    try:
+        user = getattr(sb.auth.get_user(request.headers["Authorization"].split(" ", 1)[1].strip()), "user", None)
+        email = getattr(user, "email", None)
+    except Exception:
+        errors["account"] = "unavailable"
+    log_event("account_export", "info" if not errors else "warning", count=len(errors))
+    return jsonify({
+        "format": "babbl-export-1",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "account": {"id": uid, "email": email},
+        "tables": tables,
+        "errors": errors,
+        "not_kept": "Les enregistrements de pleurs et toute mesure chiffrée du son ne sont jamais conservés.",
+    })
 
 
 @app.delete("/api/me")

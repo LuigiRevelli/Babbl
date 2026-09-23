@@ -29,6 +29,10 @@ services:
     rootDir: frontend
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
+    headers:
+      - path: /sw.js         # le service worker doit toujours être relu, sinon une mise à jour reste bloquée
+        name: Cache-Control
+        value: no-cache
     routes:
       - type: rewrite        # application monopage : toutes les routes servent index.html
         source: /*

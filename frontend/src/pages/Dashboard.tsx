@@ -154,10 +154,10 @@ export default function Dashboard() {
         <button
           onClick={() => signOut()}
           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mt-1"
-          title="Se d\u00e9connecter"
+          title="Se déconnecter"
         >
           <LogOut className="w-4 h-4" strokeWidth={1.5} />
-          <span className="hidden sm:inline">D\u00e9connexion</span>
+          <span className="hidden sm:inline">Déconnexion</span>
         </button>
       </div>
 

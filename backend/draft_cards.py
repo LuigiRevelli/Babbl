@@ -1,7 +1,10 @@
 """
 Brouillons des cartes et repères de LISTE-FINALE-SYMPTOMES.md — NON PUBLIÉS.
 
-Ce module n'est importé par aucun code servi au parent. Il existe pour :
+Servi au parent UNIQUEMENT si BABBL_CARDS_V2=1 (triage_rules.safety_cards,
+GET /api/cards) — interrupteur à n'activer qu'après relecture pédiatrique.
+Par défaut (variable absente), les cartes v1 de triage_rules restent servies.
+Il existe aussi pour :
   1. passer chaque texte au crible des cartes de sécurité (tests/test_draft_cards.py) ;
   2. produire le document de relecture pour un pédiatre
      (`python draft_cards.py > ../recherche/cartes-a-relire.md`).

@@ -27,6 +27,6 @@ Le frontend est un site statique : `cd frontend && npm ci && VITE_API_URL=https:
 
 ## Avant d'ouvrir au public
 
-- Relecture des cartes par un pédiatre (`recherche/cartes-a-relire.md`).
+- Relecture des cartes par un pédiatre (`recherche/cartes-a-relire.md`). Une fois validées, mettre `BABBL_CARDS_V2=1` sur `babbl-api` : `/api/health` affiche alors `"cards": "v2"` et `GET /api/cards` sert les nouvelles cartes et menus. Retour arrière : retirer la variable.
 - Appel au conseil réglementaire (voir `LISTE-FINALE-SYMPTOMES.md`, « Ce qui reste à trancher »).
 - Pages légales : CGU, confidentialité, mentions légales. La suppression du compte existe déjà (page Profil).

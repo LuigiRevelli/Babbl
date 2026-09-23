@@ -33,7 +33,32 @@ def test_every_card_says_the_microphone_does_not_hear_it_or_is_advice_only():
         assert any(m in card["body"] for m in markers), key
 
 
-def test_drafts_are_not_served():
-    for name in ("app.py", "triage_rules.py", "taxonomy.py", "mistral_client.py"):
-        with open(os.path.join(BACKEND, name), encoding="utf-8") as fh:
-            assert "draft_cards" not in fh.read(), name
+def test_drafts_are_not_served_by_default(monkeypatch):
+    """Tant que BABBL_CARDS_V2 n'est pas activé (après relecture pédiatrique),
+    les parents voient les trois cartes v1 et aucun menu."""
+    from taxonomy import SAFETY_CARDS
+    from triage_rules import parent_menus, safety_cards
+    monkeypatch.delenv("BABBL_CARDS_V2", raising=False)
+    keys = {c["key"] for c in safety_cards({}, 2)["cards"]}
+    assert keys == set(SAFETY_CARDS)
+    assert parent_menus() == []
+
+
+def test_v2_switch_serves_the_drafts_with_age_emphasis(monkeypatch):
+    from triage_rules import parent_menus, safety_cards
+    monkeypatch.setenv("BABBL_CARDS_V2", "1")
+    young = {c["key"]: c["emphasized"] for c in safety_cards({}, 1)["cards"]}
+    assert {"call_15", "breathing_and_cough", "newborn_under_15_days", "never_shake"} <= set(young)
+    assert young["call_15"] and young["breathing_and_cough"]
+    older = {c["key"]: c["emphasized"] for c in safety_cards({}, 11)["cards"]}
+    assert "milestone_babbling" in older and not older["breathing_and_cough"]
+    assert "milestone_babbling" not in young
+    unknown = safety_cards({}, None)["cards"]
+    assert all(c["emphasized"] for c in unknown if c["key"] != "never_shake" or True)
+    assert {m["key"] for m in parent_menus()} >= {"cough_menu", "when_to_call_breath_holding"}
+
+
+def test_every_emphasis_rule_is_understood():
+    from triage_rules import _emphasis
+    for key, card in DRAFT_CARDS.items():
+        _emphasis(card.get("emphasize", "always" if card["trigger"] == "always" else None), 2, 60)

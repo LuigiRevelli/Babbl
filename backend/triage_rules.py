@@ -263,9 +263,33 @@ def context_hypotheses(context: dict, baby_age_months: int | None = None) -> lis
 
 
 # ─── 4. Cartes de sécurité (statiques) ───────────────────────────────
+# Deux jeux. v1 (défaut) : les trois cartes de taxonomy.SAFETY_CARDS. v2 : les
+# cartes de draft_cards.py, à activer par BABBL_CARDS_V2=1 SEULEMENT après
+# relecture par un pédiatre (recherche/cartes-a-relire.md). Même règle pour
+# les deux : la mise en avant dépend de l'ÂGE SEUL, jamais du son, et un âge
+# inconnu met en avant plutôt que de taire.
+
+def cards_v2_enabled() -> bool:
+    import os
+    return os.environ.get("BABBL_CARDS_V2") == "1"
+
+
+def _emphasis(rule: str | None, age_m: int | None, age_d: int | None) -> bool:
+    if rule in (None, "always"):
+        return rule == "always"
+    if rule == "age_months < 3":
+        return age_m is None or age_m < 3
+    if rule == "age_months < 6":
+        return age_m is None or age_m < 6
+    if rule == "age_days < 15":
+        return (age_d is not None and age_d < 15) or (age_d is None and (age_m is None or age_m == 0))
+    if rule == "10 <= age_months <= 12":
+        return age_m is not None and 10 <= age_m <= 12
+    raise ValueError(f"règle de mise en avant inconnue : {rule}")
+
 
 def safety_cards(context: dict, baby_age_months: int | None = None) -> dict:
-    """Les trois cartes, toujours. `emphasized` dépend de l'ÂGE SEUL — jamais
+    """Les cartes toujours affichées. `emphasized` dépend de l'ÂGE SEUL — jamais
     du son, et plus d'une température saisie : une règle qui transforme une
     mesure physiologique individuelle en « consultez » est un algorithme de
     triage (MDCG 2019-11). Le texte de la carte fièvre reste, statique."""
@@ -273,19 +297,29 @@ def safety_cards(context: dict, baby_age_months: int | None = None) -> dict:
     age_d = _age_days(context)
 
     cards = []
-    for key, meta in SAFETY_CARDS.items():
-        rule = meta["emphasize_when"]
-        if rule == "always":
-            emphasized = True
-        elif rule == "age_months < 3":
-            # Âge inconnu → mise en avant : ne jamais taire une carte faute de date.
-            emphasized = age_m is None or age_m < 3
-        elif rule == "age_days < 15":
-            emphasized = (age_d is not None and age_d < 15) or (age_d is None and (age_m is None or age_m == 0))
-        else:
-            emphasized = False
-        cards.append({"key": key, "title": meta["title"], "body": meta["body"], "emphasized": emphasized})
+    if cards_v2_enabled():
+        from draft_cards import DRAFT_CARDS
+        for key, meta in DRAFT_CARDS.items():
+            if meta["trigger"] == "always":
+                cards.append({"key": key, "title": meta["title"], "body": meta["body"],
+                              "emphasized": _emphasis(meta.get("emphasize", "always"), age_m, age_d)})
+            elif meta["trigger"] == "age" and _emphasis(meta.get("emphasize"), age_m, age_d):
+                cards.append({"key": key, "title": meta["title"], "body": meta["body"], "emphasized": False})
+    else:
+        for key, meta in SAFETY_CARDS.items():
+            cards.append({"key": key, "title": meta["title"], "body": meta["body"],
+                          "emphasized": _emphasis(meta["emphasize_when"], age_m, age_d)})
 
     # Les cartes mises en avant d'abord, ordre stable ensuite.
     cards.sort(key=lambda c: 0 if c["emphasized"] else 1)
     return {"cards": cards, "footer": SAFETY_FOOTER}
+
+
+def parent_menus() -> list[dict]:
+    """Cartes ouvertes par le parent (Toux, Nez bouché, Voix enrouée, Quand
+    appeler, conseils). Vide tant que BABBL_CARDS_V2 n'est pas activé."""
+    if not cards_v2_enabled():
+        return []
+    from draft_cards import DRAFT_CARDS
+    return [{"key": k, "title": m["title"], "body": m["body"]}
+            for k, m in DRAFT_CARDS.items() if m["trigger"] == "parent_opens"]

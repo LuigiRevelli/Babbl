@@ -31,7 +31,7 @@ from elevenlabs_client import clone_voice, delete_voice, text_to_speech, tts_con
 from mistral_client import ANTHROPIC_MODEL, PROMPT_VERSION, llm_configured, write_parent_guidance
 from security import RateLimiter, client_ip, is_safe_audio_name, safe_remove, sweep_old_files, verify_user
 from taxonomy import NO_CRY_HINT, NO_CRY_REMINDER, SOOTHED_BY, TAXONOMY_VERSION, TOO_SHORT_HINT
-from triage_rules import RULES_VERSION, context_hypotheses, intensity_observation, recording_gate, safety_cards
+from triage_rules import RULES_VERSION, cards_v2_enabled, context_hypotheses, intensity_observation, parent_menus, recording_gate, safety_cards
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Load .env from project root (one level up from backend/)
@@ -120,6 +120,7 @@ def health():
             "voice": tts_configured(),
             "database": _get_supabase() is not None,
             "baseline_collection": BASELINE_ENABLED,
+            "cards": "v2" if cards_v2_enabled() else "v1",
         },
     })
 
@@ -352,6 +353,25 @@ def _insert_analysis(sb, row: dict, guidance_source: str) -> bool:
         except Exception as e:
             print(f"[supabase] save analysis failed{' (retry without new columns)' if extra else ''}: {type(e).__name__}")
     return False
+
+
+@app.get("/api/cards")
+def cards():
+    """Cartes et repères, sans enregistrement : l'écran « Quand appeler » les
+    affiche à tout moment. `?age_months=` et `?birth_date=` règlent la mise en
+    avant ; rien d'autre n'entre en compte."""
+    ctx = {}
+    if request.args.get("birth_date"):
+        ctx["babyBirthDate"] = request.args["birth_date"]
+    try:
+        age = int(request.args["age_months"]) if request.args.get("age_months") else None
+    except ValueError:
+        age = None
+    return jsonify({
+        "version": "v2" if cards_v2_enabled() else "v1",
+        "safety": safety_cards(ctx, age),
+        "menus": parent_menus(),
+    })
 
 
 @app.post("/api/analyses/<analysis_id>/soothed")

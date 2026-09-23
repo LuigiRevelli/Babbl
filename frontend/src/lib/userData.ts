@@ -37,6 +37,28 @@ export interface DiaperEntry {
   type: 'pee' | 'stool';
 }
 
+export type ContextKind = 'meal' | 'diaper' | 'wake';
+export interface ContextEvent {
+  kind: ContextKind;
+  timestamp: string;
+}
+
+export const CONTEXT_LOG_DAYS = 14;
+const LAST_FIELD: Record<ContextKind, 'lastMeal' | 'lastDiaper' | 'lastWake'> = {
+  meal: 'lastMeal',
+  diaper: 'lastDiaper',
+  wake: 'lastWake',
+};
+
+/** Note une tétée, un change ou un réveil : met à jour la dernière valeur
+ *  (lue par l'analyse) et l'historique de 14 jours (lu par le résumé). */
+export function logContext(data: UserData, kind: ContextKind, at: Date = new Date()): UserData {
+  const iso = at.toISOString();
+  const cutoff = at.getTime() - CONTEXT_LOG_DAYS * 86400000;
+  const log = (data.contextLog ?? []).filter((e) => new Date(e.timestamp).getTime() >= cutoff);
+  return { ...data, [LAST_FIELD[kind]]: iso, contextLog: [...log, { kind, timestamp: iso }] };
+}
+
 export type ParentRole = 'mother' | 'father';
 export type AgeRange = '0-3' | '3-6' | '6-12' | '1-2' | '2+';
 
@@ -72,6 +94,9 @@ export interface UserData {
   /** Dernier réveil — alimente l'hypothèse « fatigue », d'après la saisie du parent. */
   lastWake?: string;
   diaperHistory: DiaperEntry[];
+  /** Saisies du parent (tétée, change, réveil), gardées 14 jours dans le
+   *  téléphone. Source du résumé pour le médecin. */
+  contextLog?: ContextEvent[];
   parentProfile?: ParentProfile;
   nightMode: boolean;
   babyphoneConnected: boolean;

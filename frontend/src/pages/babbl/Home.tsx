@@ -17,7 +17,7 @@ import {
   BabblShell,
 } from '@/components/babbl/primitives';
 import { analyzeAudio as apiAnalyze, sendSoothed } from '@/lib/api';
-import { getUserData, saveUserData, sinceLabel } from '@/lib/userData';
+import { getUserData, logContext, saveUserData, sinceLabel, type ContextKind } from '@/lib/userData';
 import { CRY_AUDIO_CONSTRAINTS, CRY_RECORD_MS, createRecorder, chunksToBlob } from '@/lib/recorder';
 import { SOOTHED_BY, SOOTHED_QUESTION, type SoothedKey } from '@/lib/taxonomy';
 import { answerSoothed, pendingSoothedQuestion } from '@/lib/soothed';
@@ -279,29 +279,28 @@ export default function BabblHome() {
 // les pistes se réduisaient à « besoin de réconfort ».
 // ─────────────────────────────────────────────────────────────
 type ContextKey = 'lastMeal' | 'lastDiaper' | 'lastWake';
-const CONTEXT_ITEMS: { key: ContextKey; label: string; action: string }[] = [
-  { key: 'lastMeal', label: 'Tétée', action: 'Noter une tétée maintenant' },
-  { key: 'lastDiaper', label: 'Couche', action: 'Noter un change maintenant' },
-  { key: 'lastWake', label: 'Réveil', action: 'Noter un réveil maintenant' },
+const CONTEXT_ITEMS: { key: ContextKey; kind: ContextKind; label: string; action: string }[] = [
+  { key: 'lastMeal', kind: 'meal', label: 'Tétée', action: 'Noter une tétée maintenant' },
+  { key: 'lastDiaper', kind: 'diaper', label: 'Couche', action: 'Noter un change maintenant' },
+  { key: 'lastWake', kind: 'wake', label: 'Réveil', action: 'Noter un réveil maintenant' },
 ];
 
 function ContextStrip({ onOpenJournal }: { onOpenJournal: () => void }) {
   const [data, setData] = useState(() => getUserData());
-  const log = (key: ContextKey) => {
-    const fresh = getUserData();
-    fresh[key] = new Date().toISOString();
+  const log = (kind: ContextKind) => {
+    const fresh = logContext(getUserData(), kind);
     saveUserData(fresh);
     setData(fresh);
   };
   return (
     <div style={{ padding: '18px 20px 0' }}>
       <div style={{ display: 'flex', gap: 8 }}>
-        {CONTEXT_ITEMS.map(({ key, label, action }) => {
+        {CONTEXT_ITEMS.map(({ key, kind, label, action }) => {
           const when = data[key];
           return (
             <button
               key={key}
-              onClick={() => log(key)}
+              onClick={() => log(kind)}
               aria-label={action}
               style={{
                 flex: 1, padding: '10px 8px', borderRadius: 16, border: `1px solid ${C.ivoire}`,

@@ -2,10 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Droplets, Utensils, Baby, Flame, Clock, Plus, Droplet, Mic, LogOut, Sun } from 'lucide-react';
 import MobileLayout from '@/components/MobileLayout';
-import {
-  getUserData, getGreeting, isStreakInDanger, formatRelativeDate, saveUserData,
-  DiaperEntry,
-} from '@/lib/userData';
+import { getUserData, getGreeting, isStreakInDanger, formatRelativeDate, saveUserData, DiaperEntry, logContext } from '@/lib/userData';
 import { t } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { fetchAnalyses, fetchProfile } from '@/lib/supabaseData';
@@ -96,8 +93,7 @@ export default function Dashboard() {
     : null;
 
   const handleLogMeal = () => {
-    const now = new Date().toISOString();
-    const updated = { ...data, lastMeal: now };
+    const updated = logContext(data, 'meal');
     saveUserData(updated);
     setData(updated);
     setMealPulse(true);
@@ -105,8 +101,7 @@ export default function Dashboard() {
   };
 
   const handleLogWake = () => {
-    const now = new Date().toISOString();
-    const updated = { ...data, lastWake: now };
+    const updated = logContext(data, 'wake');
     saveUserData(updated);
     setData(updated);
     setWakePulse(true);
@@ -114,13 +109,9 @@ export default function Dashboard() {
   };
 
   const handleLogDiaper = (type: 'pee' | 'stool') => {
-    const now = new Date().toISOString();
-    const entry: DiaperEntry = { timestamp: now, type };
-    const updated = {
-      ...data,
-      lastDiaper: now,
-      diaperHistory: [...data.diaperHistory, entry],
-    };
+    const logged = logContext(data, 'diaper');
+    const entry: DiaperEntry = { timestamp: logged.lastDiaper!, type };
+    const updated = { ...logged, diaperHistory: [...data.diaperHistory, entry] };
     saveUserData(updated);
     setData(updated);
     setShowDiaperMenu(false);
@@ -294,6 +285,13 @@ export default function Dashboard() {
           <p className="text-sm font-bold leading-tight">{t('customize')}</p>
         </div>
       </div>
+
+      <button
+        onClick={() => navigate('/report')}
+        className="w-full mt-4 py-3 rounded-2xl border border-border text-sm font-semibold"
+      >
+        Résumé pour le médecin (7 jours)
+      </button>
 
       {showDiaperMenu && (
         <>

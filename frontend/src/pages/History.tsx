@@ -38,6 +38,7 @@ export default function History() {
       <MobileLayout>
         <BackButton to="/dashboard" />
         <h1 className="font-serif text-2xl font-bold mb-4">{t('historyTitle')}</h1>
+        <a href="/report" className="block text-sm underline text-muted-foreground mb-4">Résumé pour le médecin (7 jours)</a>
 
         {/* Stats */}
         <div className="bg-card rounded-lg p-4 shadow-sm mb-4 text-center">

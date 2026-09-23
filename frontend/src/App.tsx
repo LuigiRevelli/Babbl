@@ -17,6 +17,7 @@ import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
 import Breathing from "./pages/Breathing";
 import VoiceSetup from "./pages/VoiceSetup";
+import Report from "./pages/Report";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
                 Plusieurs écrans y renvoient (connexion, bienvenue, respiration). */}
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/history" element={<History />} />
+            <Route path="/report" element={<Report />} />
 
             {/* Anciennes adresses : redirigées, l'ancien écran de résultat n'est plus servi. */}
             <Route path="/legacy/dashboard" element={<Navigate to="/dashboard" replace />} />

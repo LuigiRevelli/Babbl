@@ -39,7 +39,7 @@ professionnel de santé français avant publication (SYMPTOMS.md, Méthode).
 from __future__ import annotations
 
 # Incrémenter à chaque changement de texte ou de clé. Renvoyé dans chaque réponse.
-TAXONOMY_VERSION = "2026.09.23-1"
+TAXONOMY_VERSION = "2026.09.23-2"
 
 # ─── Couche 2 : hypothèses contextuelles ────────────────────────────
 # Ordre = ordre d'affichage par défaut. `source` est toujours "context".
@@ -127,6 +127,23 @@ SAFETY_CARDS: dict[str, dict] = {
 
 SAFETY_FOOTER = "En cas de doute, appelez le 15 (SAMU). Babbl n'est pas un dispositif médical."
 
+
+# ─── « Qu'est-ce qui l'a calmé ? » (ROADMAP-BACKEND.md, item 7) ─────
+# Posée au parent à la réouverture de l'app, jamais par notification la nuit.
+# Liste FERMÉE, aucune clé de maladie. C'est la seule étiquette honnête que
+# Babbl peut collecter : elle vient du parent, pas du son. Elle ne sert à
+# entraîner aucun modèle (plafond 36 % contre 33 % de hasard sur le son) ;
+# elle sert au parent et, plus tard, au résumé pour le médecin.
+SOOTHED_QUESTION = "Tout à l'heure, qu'est-ce qui a apaisé votre bébé ?"
+SOOTHED_BY: dict[str, str] = {
+    "feeding": "Une tétée ou un biberon",
+    "diaper_or_position": "La couche ou une autre position",
+    "sleep": "Votre bébé s'est endormi",
+    "arms_or_voice": "Les bras, votre voix",
+    "babbl_voice": "Votre voix Babbl",
+    "nothing_yet": "Rien pour l'instant",
+    "dont_know": "Je ne sais pas",
+}
 
 # ─── Refus d'enregistrement ──────────────────────────────────────────
 # Quand Babbl n'entend pas de pleur, c'est potentiellement le cas le plus

@@ -33,6 +33,9 @@ def _backend_strings():
     # Les cartes de sécurité sont testées à part (mots médicaux autorisés, rien d'autre).
     for name in ("SAFETY_FOOTER", "HYPOTHESIS_DISCLAIMER", "INTENSITY_DISCLAIMER", "NO_CRY_REMINDER", "NO_CRY_HINT", "TOO_SHORT_HINT"):
         out.append((f"taxonomy.{name}", getattr(taxonomy, name)))
+    out.append(("taxonomy.SOOTHED_QUESTION", taxonomy.SOOTHED_QUESTION))
+    for key, label in taxonomy.SOOTHED_BY.items():
+        out.append((f"taxonomy.SOOTHED_BY[{key}]", label))
     for bucket, msgs in comfort_messages.MESSAGES.items():
         for key, text in msgs.items():
             out.append((f"comfort_messages[{bucket}][{key}]", text))
@@ -96,6 +99,15 @@ def test_frontend_taxonomy_is_clean():
     front = {t for _, t in _frontend_strings("taxonomy.ts", min_len=3)}
     missing = [t[:60] for t in cards if t not in front]
     assert not missing, f"taxonomy.ts n'est plus synchronisé avec taxonomy.py : {missing}"
+
+
+def test_soothed_list_is_mirrored_in_frontend():
+    """Même question, mêmes clés, mêmes libellés des deux côtés."""
+    front = open(os.path.join(FRONT, "taxonomy.ts"), encoding="utf-8").read()
+    assert taxonomy.SOOTHED_QUESTION.replace("'", "\\'") in front or taxonomy.SOOTHED_QUESTION in front
+    for key, label in taxonomy.SOOTHED_BY.items():
+        assert f"{key}:" in front, key
+        assert label in front.replace("\\'", "'"), label
 
 
 def test_frontend_i18n_is_clean():

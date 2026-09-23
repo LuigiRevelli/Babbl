@@ -19,6 +19,8 @@ import {
 import { analyzeAudio as apiAnalyze } from '@/lib/api';
 import { getUserData, saveUserData } from '@/lib/userData';
 import { CRY_AUDIO_CONSTRAINTS, CRY_RECORD_MS, createRecorder, chunksToBlob } from '@/lib/recorder';
+import { SOOTHED_BY, SOOTHED_QUESTION, type SoothedKey } from '@/lib/taxonomy';
+import { answerSoothed, pendingSoothedQuestion } from '@/lib/soothed';
 import { toStoredAnalysis, transientObservation, refusalFromError, babyAgeForContext, type AnalyzeResponse, type Refusal } from '@/lib/analysis';
 
 const RECORD_MS = CRY_RECORD_MS; // durée fixe, définie dans lib/recorder.ts
@@ -40,6 +42,16 @@ export default function BabblHome() {
     const today = new Date().toDateString();
     return data.analyses.filter(a => new Date(a.timestamp).toDateString() === today).length;
   }, [phase]);
+
+  // « Qu'est-ce qui l'a calmé ? » — à la réouverture, jamais par notification.
+  const [soothedTarget, setSoothedTarget] = useState(() => pendingSoothedQuestion(getUserData().analyses));
+  const answer = (key: SoothedKey | 'skipped') => {
+    if (!soothedTarget) return;
+    const data = getUserData();
+    data.analyses = answerSoothed(data.analyses, soothedTarget.id, key);
+    saveUserData(data);
+    setSoothedTarget(null);
+  };
 
   // Time-of-day greeting
   const greeting = useMemo(() => {
@@ -189,9 +201,11 @@ export default function BabblHome() {
           <span style={{ fontStyle: 'italic', fontWeight: 300, color: C.terracotta }}>On est là.</span>
         </div>
         <div style={{ fontSize: 14, color: C.cafeSoft, marginTop: 14, lineHeight: 1.5, maxWidth: 280 }}>
-          Posez le téléphone à 50 cm du bébé. Babbl écoute 8 à 12 secondes.
+          Tenez le téléphone à 20-30 cm du bébé. Babbl écoute 10 secondes.
         </div>
       </div>
+
+      {soothedTarget && phase === 'idle' && <SoothedCard onAnswer={answer} />}
 
       <div
         style={{
@@ -253,6 +267,48 @@ export default function BabblHome() {
 
       <HomeIndicator />
     </BabblShell>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// « Qu'est-ce qui l'a calmé ? » — liste fermée, une réponse ou « plus tard ».
+// ─────────────────────────────────────────────────────────────
+function SoothedCard({ onAnswer }: { onAnswer: (key: SoothedKey | 'skipped') => void }) {
+  return (
+    <div style={{ padding: '20px 20px 0' }}>
+      <div
+        role="group"
+        aria-label={SOOTHED_QUESTION}
+        style={{ background: C.coquille, borderRadius: 20, padding: '16px 18px', border: `1px solid ${C.ivoire}` }}
+      >
+        <div style={{ fontFamily: C.display, fontSize: 18, letterSpacing: '-0.01em', color: C.cafe, marginBottom: 12 }}>
+          {SOOTHED_QUESTION}
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {(Object.keys(SOOTHED_BY) as SoothedKey[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => onAnswer(key)}
+              style={{
+                padding: '8px 12px', borderRadius: 99, border: `1px solid ${C.ivoire}`,
+                background: C.lait, color: C.cafe, fontFamily: C.body, fontSize: 13, cursor: 'pointer',
+              }}
+            >
+              {SOOTHED_BY[key]}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => onAnswer('skipped')}
+          style={{
+            marginTop: 10, background: 'none', border: 'none', padding: 0, color: C.cafeMute,
+            fontFamily: C.body, fontSize: 12, cursor: 'pointer', textDecoration: 'underline',
+          }}
+        >
+          Plus tard
+        </button>
+      </div>
+    </div>
   );
 }
 

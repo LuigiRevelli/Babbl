@@ -76,6 +76,23 @@ export const SAFETY_CARDS: Record<SafetyCardKey, SafetyCardMeta> = {
   },
 };
 
+/**
+ * « Qu'est-ce qui l'a calmé ? » — miroir de SOOTHED_BY (backend/taxonomy.py).
+ * Posée à la réouverture de l'app, jamais par notification. Liste fermée,
+ * aucune clé de maladie. Elle vient du parent, pas du son.
+ */
+export const SOOTHED_QUESTION = "Tout à l'heure, qu'est-ce qui a apaisé votre bébé ?";
+export const SOOTHED_BY = {
+  feeding: 'Une tétée ou un biberon',
+  diaper_or_position: 'La couche ou une autre position',
+  sleep: "Votre bébé s'est endormi",
+  arms_or_voice: 'Les bras, votre voix',
+  babbl_voice: 'Votre voix Babbl',
+  nothing_yet: "Rien pour l'instant",
+  dont_know: 'Je ne sais pas',
+} as const;
+export type SoothedKey = keyof typeof SOOTHED_BY;
+
 export const SAFETY_FOOTER = "En cas de doute, appelez le 15 (SAMU). Babbl n'est pas un dispositif médical.";
 
 /** Libellé français d'une hypothèse (ou de toute clé héritée de l'historique). */

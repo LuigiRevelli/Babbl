@@ -1,5 +1,6 @@
 import { t } from '@/lib/i18n';
 import type { Hypothesis, SafetyCard } from '@/lib/analysis';
+import type { SoothedKey } from '@/lib/taxonomy';
 
 const STORAGE_KEY = 'babbl_user_data_v1';
 
@@ -26,6 +27,9 @@ export interface Analysis {
   audio_url?: string;
   comfort_audio_url?: string;
   comfort_text?: string;
+  /** « Qu'est-ce qui l'a calmé ? » — réponse du parent, ou 'skipped' s'il a fermé la question. */
+  soothedBy?: SoothedKey | 'skipped';
+  soothedAt?: string;
 }
 
 export interface DiaperEntry {

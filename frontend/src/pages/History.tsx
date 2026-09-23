@@ -5,6 +5,7 @@ import BackButton from '@/components/BackButton';
 import { getUserData, formatRelativeDate } from '@/lib/userData';
 import { CAUSE_EMOJIS } from '@/lib/constants';
 import { t, translateCause } from '@/lib/i18n';
+import { SOOTHED_BY } from '@/lib/taxonomy';
 
 type Period = 'week' | 'month' | 'all';
 
@@ -102,6 +103,9 @@ export default function History() {
                       {a.feedback === 'negative' && <span className="text-xs">❌</span>}
                     </div>
                     <p className="text-xs text-muted-foreground">{formatRelativeDate(a.timestamp)}</p>
+                    {a.soothedBy && a.soothedBy !== 'skipped' && (
+                      <p className="text-xs text-foreground mt-0.5">Ce qui a apaisé : {SOOTHED_BY[a.soothedBy]}</p>
+                    )}
                   </div>
                 </div>
                 {expandedId === a.id && (

@@ -42,6 +42,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Typecheck
         run: npx tsc -p tsconfig.app.json --noEmit
+      - name: Lint
+        run: npm run lint
       - name: Tests
         run: npm test
       - name: Build

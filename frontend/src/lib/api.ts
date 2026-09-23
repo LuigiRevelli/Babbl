@@ -11,7 +11,9 @@ import { supabase } from './supabase';
 /** Erreur API avec le statut et le corps JSON — un 422 porte les cartes de sécurité. */
 export class ApiError extends Error {
   status: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- corps JSON libre, lu champ par champ
   body: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(status: number, body: any, message: string) {
     super(message);
     this.name = 'ApiError';

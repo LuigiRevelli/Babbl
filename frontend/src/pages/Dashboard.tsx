@@ -2,11 +2,30 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Droplets, Utensils, Baby, Flame, Clock, Plus, Droplet, Mic, LogOut, Sun } from 'lucide-react';
 import MobileLayout from '@/components/MobileLayout';
-import { getUserData, getGreeting, isStreakInDanger, formatRelativeDate, saveUserData, DiaperEntry, logContext } from '@/lib/userData';
+import { getUserData, getGreeting, isStreakInDanger, formatRelativeDate, saveUserData, DiaperEntry, logContext, type Analysis } from '@/lib/userData';
 import { t } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { fetchAnalyses, fetchProfile } from '@/lib/supabaseData';
 import { HYPOTHESIS_DISCLAIMER } from '@/lib/taxonomy';
+
+/** Ligne `analyses` telle que Supabase la renvoie (colonnes lues ici seulement). */
+type SignalRow = { key: string; label?: string; why?: string; signal?: string };
+type AnalysisRow = {
+  id: string;
+  created_at: string;
+  top_cause?: string | null;
+  probabilities?: Record<string, number> | null;
+  parent_summary?: string | null;
+  confidence_level?: string | null;
+  alert?: string | null;
+  key_signals?: unknown[] | null;
+  recommended_actions?: unknown[] | null;
+  audio_url?: string | null;
+  comfort_audio_url?: string | null;
+  comfort_text?: string | null;
+  soothed_by?: Analysis['soothedBy'] | null;
+  soothed_at?: string | null;
+};
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -35,7 +54,7 @@ export default function Dashboard() {
 
         // Merge Supabase analyses into local data (Supabase is source of truth when available)
         if (sbAnalyses && sbAnalyses.length > 0) {
-          const mapped = sbAnalyses.map((a: any) => ({
+          const mapped = (sbAnalyses as AnalysisRow[]).map(a => ({
             id: a.id,
             timestamp: a.created_at,
             topCause: a.top_cause ?? 'unknown',
@@ -49,7 +68,7 @@ export default function Dashboard() {
             key_signals: a.key_signals ?? [],
             recommended_actions: a.recommended_actions ?? [],
             // Le backend persiste les hypothèses dans key_signals (objets {key,label,why}).
-            hypotheses: (a.key_signals ?? []).filter((s: any) => s && typeof s === 'object' && s.key).map((s: any) => ({
+            hypotheses: (a.key_signals ?? []).filter((s): s is SignalRow => !!s && typeof s === 'object' && !!(s as SignalRow).key).map(s => ({
               key: s.key, label: s.label ?? '', why: s.why ?? s.signal ?? '', source: 'context' as const,
               disclaimer: HYPOTHESIS_DISCLAIMER,
             })),

@@ -15,8 +15,8 @@ export interface Analysis {
   feedback: null | 'positive' | 'negative';
   actualCause: null | string;
   sosModeUsed: boolean;
-  key_signals?: any[];
-  recommended_actions?: any[];
+  key_signals?: unknown[];
+  recommended_actions?: unknown[];
   /** Couche 2 — d'après ce que le parent a saisi. Absent sur les anciennes entrées. */
   hypotheses?: Hypothesis[];
   /** Cartes de sécurité telles qu'affichées. Absent sur les anciennes entrées. */

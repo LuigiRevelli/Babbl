@@ -79,7 +79,7 @@ export default function BabblResult() {
   const footer = analysis.safety_footer ?? SAFETY_FOOTER;
 
   const actionsRaw: string[] = (analysis.recommended_actions ?? [])
-    .map((a: any) => (typeof a === 'string' ? a : a?.action ?? ''))
+    .map(a => (typeof a === 'string' ? a : (a as { action?: string } | null)?.action ?? ''))
     .filter(Boolean);
   const firstAction = actionsRaw[0] ?? 'Prenez votre bébé contre vous et parlez-lui doucement.';
 

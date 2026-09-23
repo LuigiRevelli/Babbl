@@ -138,8 +138,8 @@ export default function VoiceSetup() {
       }
 
       setStep('result');
-    } catch (err: any) {
-      setCloneError(err?.message ?? t('voiceCloneFailed'));
+    } catch (err) {
+      setCloneError(err instanceof Error ? err.message : t('voiceCloneFailed'));
     } finally {
       setCloning(false);
     }
@@ -148,7 +148,7 @@ export default function VoiceSetup() {
   const handlePreview = () => {
     setPlaying(true);
     const utt = new SpeechSynthesisUtterance(
-      `${role === 'mother' ? t('mom') : t('dad')} est là, tout va bien bébé.`
+      `${role === 'mother' ? t('mom') : t('dad')} est là, je suis avec toi.`
     );
     utt.lang = 'fr-FR';
     utt.rate = 0.85;
@@ -158,7 +158,7 @@ export default function VoiceSetup() {
 
   // Auto-cleanup
   useEffect(() => {
-    return () => { mediaRef.current?.state === 'recording' && mediaRef.current.stop(); };
+    return () => { if (mediaRef.current?.state === 'recording') mediaRef.current.stop(); };
   }, []);
 
   return (

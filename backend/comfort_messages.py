@@ -24,28 +24,32 @@ def age_bucket(age_months: int) -> str:
 
 
 MESSAGES = {
+    # Aucune phrase n'affirme un état ou un besoin (« tu es fatigué », « c'est
+    # l'heure de dormir », « tu as faim ») : l'hypothèse vient de ce que le
+    # parent a saisi, pas du bébé, et la voix clonée la ferait entendre comme
+    # un constat. Les clés suivent la taxonomie pour garder un ton adapté.
     "newborn": {
         "hunger": "Chut, mon tout petit. Papa arrive. Chut. Je suis là.",
-        "fatigue": "Doucement, mon amour. Chut. Ferme tes petits yeux. Papa est là.",
+        "fatigue": "Doucement, mon amour. Chut. Papa est là, tout près.",
         "discomfort": "Chut. Papa te tient. Je suis là. Chut.",
         "need_for_comfort": "Je suis là, bébé. Je suis là. Chut. Papa te tient.",
     },
     "infant": {
-        "hunger": "Mon bébé, Papa arrive tout de suite avec ce qu'il te faut. Je suis là.",
-        "fatigue": "Doucement, mon amour. C'est l'heure de dormir. Ferme tes yeux, Papa est là.",
+        "hunger": "Mon bébé, Papa arrive tout de suite. Je suis là.",
+        "fatigue": "Doucement, mon amour. Chut. Papa est là, on se pose ensemble.",
         "discomfort": "Je suis là, mon cœur. Papa s'occupe de toi. Là, là, bébé.",
         "need_for_comfort": "Mon petit, Papa est là. Je te tiens dans mes bras. Je suis là.",
     },
     "older_infant": {
-        "hunger": "Mon amour, Papa arrive avec à manger. Un petit moment, je suis là. Je t'aime.",
-        "fatigue": "Tu es fatigué, bébé. Viens contre Papa, on se repose ensemble.",
-        "discomfort": "Papa est là, mon cœur. On regarde ensemble ce qui te gêne.",
+        "hunger": "Mon amour, Papa arrive. Un petit moment, je suis là. Je t'aime.",
+        "fatigue": "Doucement, bébé. Viens contre Papa, on se pose ensemble.",
+        "discomfort": "Papa est là, mon cœur. On regarde ensemble.",
         "need_for_comfort": "Papa est là, mon amour. Tu n'es pas tout seul. Je te serre fort.",
     },
     "toddler": {
-        "hunger": "Mon amour, Papa arrive avec quelque chose à manger. Je suis là, respire doucement.",
-        "fatigue": "Tu es fatigué, mon grand bébé. Viens, on fait un gros câlin et on se repose. Papa est là.",
-        "discomfort": "Papa est là. Dis-moi ce qui te gêne, on regarde ensemble.",
+        "hunger": "Mon amour, Papa arrive. Je suis là, respire doucement.",
+        "fatigue": "Doucement, mon grand bébé. Viens, on fait un gros câlin. Papa est là.",
+        "discomfort": "Papa est là. On regarde ensemble, doucement.",
         "need_for_comfort": "Papa est là, mon grand. Je te tiens. Je t'aime tellement.",
     },
 }

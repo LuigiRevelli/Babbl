@@ -113,6 +113,17 @@ def test_allowlist_is_exact():
     assert violates_static("une poussée de dents") is not None
 
 
+def test_comfort_messages_never_state_a_need_or_state():
+    """La voix clonée ne dit jamais au bébé ce qu'il ressent : l'hypothèse vient
+    de la saisie du parent, entendue dans sa propre voix elle devient un constat."""
+    import re
+    from comfort_messages import MESSAGES
+    banned = re.compile(r"tu es |t'es |tu as |fatigu|sommeil|dormir|faim|manger|à boire|te gêne|mal\b", re.IGNORECASE)
+    for bucket, msgs in MESSAGES.items():
+        for key, text in msgs.items():
+            assert not banned.search(text), (bucket, key, text)
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     for fn in fns:

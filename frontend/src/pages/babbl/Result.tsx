@@ -210,41 +210,22 @@ export default function BabblResult() {
           </div>
         </div>
 
-        {/* Paywall: ce que le micro a mesuré */}
-        <div
-          onClick={() => navigate('/upgrade')}
-          style={{ background: `linear-gradient(135deg, ${C.creme}, #EAD9BA)`, borderRadius: 24, padding: 22, marginBottom: 12, cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-            {label('↳ ce que le micro a mesuré')}
-            <div style={{ fontFamily: C.mono, fontSize: 9, letterSpacing: '.1em', textTransform: 'uppercase', background: C.cafe, color: C.ocre, padding: '4px 10px', borderRadius: 99 }}>
-              Babbl+
-            </div>
-          </div>
-          <div style={{ fontFamily: C.display, fontSize: 22, letterSpacing: '-0.02em', filter: 'blur(4px)', opacity: 0.6 }}>
-            8,4 s — pleur continu — 487 Hz
-          </div>
-          <div style={{ fontSize: 13, color: C.cafeSoft, marginTop: 8 }}>
-            Durée, continuité, hauteur — <span style={{ fontStyle: 'italic' }}>sans interprétation.</span>
-          </div>
-        </div>
-
-        {/* Paywall: voice clone */}
-        <div onClick={() => navigate('/upgrade')} style={{ background: C.cafe, color: C.lait, borderRadius: 24, padding: 22, cursor: 'pointer', marginBottom: 24 }}>
+        {/* Voix du parent : la fonction existe, elle est facultative. */}
+        <div onClick={() => navigate('/voice-setup')} style={{ background: C.cafe, color: C.lait, borderRadius: 24, padding: 22, cursor: 'pointer', marginBottom: 24 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
             <div style={{ fontFamily: C.mono, fontSize: 10, letterSpacing: '.15em', textTransform: 'uppercase', color: 'rgba(243,234,218,.5)' }}>
               ↳ réconforter avec votre voix
             </div>
             <div style={{ fontFamily: C.mono, fontSize: 9, letterSpacing: '.1em', textTransform: 'uppercase', background: C.ocre, color: C.cafe, padding: '4px 10px', borderRadius: 99 }}>
-              Babbl Voice
+              Facultatif
             </div>
           </div>
           <div style={{ fontFamily: C.display, fontSize: 28, letterSpacing: '-0.02em', lineHeight: 1.05 }}>
-            Laissez-le entendre
+            Un message lu
             <br />
-            <span style={{ fontStyle: 'italic', color: C.ocre }}>votre voix.</span>
+            <span style={{ fontStyle: 'italic', color: C.ocre }}>avec votre voix.</span>
           </div>
-          <div style={{ fontSize: 13, color: 'rgba(243,234,218,.7)', marginTop: 10 }}>Même si vous n'êtes pas dans la pièce. Voix synthétique, générée à partir de votre enregistrement.</div>
+          <div style={{ fontSize: 13, color: 'rgba(243,234,218,.7)', marginTop: 10 }}>Pendant que vous tenez votre bébé contre vous. Voix synthétique, créée à partir de votre enregistrement.</div>
         </div>
       </div>
 

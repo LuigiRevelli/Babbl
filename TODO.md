@@ -14,7 +14,7 @@
 |---|---|---|
 | Structure projet (frontend React + backend Flask) | ✅ | Avril 2026 |
 | Backend Flask API (/api/analyze, /api/voice/clone, /api/health) | ✅ | Avril 2026 |
-| Modèle ML XGBoost entraîné sur Donate-a-Cry (457 samples) | ✅ | Avril 2026 |
+| Modèle ML XGBoost entraîné sur Donate-a-Cry (457 samples) — débranché en septembre 2026 | ✅ | Avril 2026 |
 | Extraction features audio (librosa, 19 features acoustiques) | ✅ | Avril 2026 |
 | Intégration Claude Sonnet (raisonnement IA sur features + contexte) | ✅ | Avril 2026 |
 | Intégration ElevenLabs (TTS résumé vocal) | ✅ | Avril 2026 |
@@ -133,7 +133,7 @@
 - Le frontend est sync avec Lovable via GitHub (repo baby-s-lullaby-lab)
 - Le backend tourne sur localhost:5001, le frontend sur localhost:8080
 - Les clés API sont dans `.env` (non commitées sur GitHub)
-- Le modèle ML est entraîné sur le dataset Donate-a-Cry (457 échantillons annotés par pédiatres)
+- Le modèle ML (Donate-a-Cry, 457 clips étiquetés par les parents contributeurs) est débranché : il faisait moins bien que répondre toujours « faim »
 - Les messages de réconfort et l'IA répondent en français
 - L'interface est entièrement en français via le système i18n (src/lib/i18n.ts)
 - Supabase : projet "babbl" sur lttrlcemwprjmylixtee.supabase.co (région West EU Paris)

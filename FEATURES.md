@@ -2,32 +2,25 @@
 
 ## 5 Features Signature
 
-### 1. Babbl Cry — Analyse de Pleurs IA
+### 1. Babbl Cry — Ce qu'un pleur prouve, et ce qu'il ne prouve pas
 
-Le coeur de l'app. Le parent enregistre 5-15 secondes de pleurs, l'IA analyse et donne la cause en moins de 10 secondes.
+Le parent enregistre 10 secondes de pleurs. Babbl dit honnêtement ce que le son permet de dire (presque rien), propose des pistes tirées de ce que le parent a saisi, et affiche des repères de sécurité fixes. Voir `LISTE-FINALE-SYMPTOMES.md`.
 
 **Comment ça marche :**
-1. Le parent appuie sur Record et approche le téléphone du bébé
-2. L'audio est envoyé au backend qui extrait 19 descripteurs acoustiques avec librosa :
-   - Hauteur du son (pitch/F0)
-   - Énergie (RMS)
-   - Taux de passages par zéro (ZCR)
-   - Caractéristiques spectrales (centroïde, bandwidth, rolloff)
-   - 13 coefficients MFCC (le "timbre" du cri)
-   - Durée et ratio de silence
-3. Ces features passent dans un classifieur XGBoost entraîné sur 457 échantillons annotés par des pédiatres
-4. Claude Sonnet reçoit les features audio + probabilités ML + contexte parent (dernière tétée, état de la couche, posture du bébé) et affine le diagnostic
-5. Des règles de triage contextuel ajustent les probabilités (ex : bébé a mangé il y a 4h → probabilité faim monte)
+1. Le parent appuie sur Record et approche le téléphone du bébé. Micro brut : réduction de bruit, réglage automatique du volume et annulation d'écho désactivés.
+2. Le backend extrait des descripteurs avec librosa, dont la hauteur (pyin) et la part des trames voisées.
+3. **Porte d'entrée** : si Babbl n'entend pas de pleur net, il refuse de répondre, rappelle qu'un bébé qui pleure peu n'est jamais rassurant en soi, et affiche les cartes de sécurité.
+4. **Observation** : une phrase sur la continuité du pleur pendant le clip (presque continu, coupé de pauses, entrecoupé de longues pauses). Jamais un chiffre, jamais stockée.
+5. **Pistes** tirées du contexte saisi (dernière tétée, couche, durée d'éveil, âge), jamais du son, jamais en pourcentage.
+6. Claude Sonnet rédige le résumé à partir de ces deux couches, sous garde-fou : aucun pourcentage, aucun nom de maladie, aucune réassurance.
 
 **Ce que le parent reçoit :**
-- Cause principale avec pourcentage de confiance
-- Barres de probabilité pour chaque cause (faim, fatigue, inconfort, douleur, overstimulation, besoin de réconfort)
-- Explication des signaux audio qui ont pesé dans la décision (pas une boîte noire)
-- Actions recommandées hiérarchisées
-- Résumé vocal chaleureux (ElevenLabs)
-- Niveau de confiance et alerte médicale si nécessaire
+- L'observation en une phrase, et ce que le son ne permet pas de dire
+- Les pistes à essayer, avec leur provenance
+- Trois cartes de sécurité fixes, toujours affichées
+- Un résumé vocal (ElevenLabs) et un message de réconfort dans la voix du parent
 
-**Précision actuelle :** 82.6% sur le dataset Donate-a-Cry. Outil de triage, pas un diagnostic clinique.
+**Ce que Babbl ne donne plus :** cause du pleur, pourcentage de confiance, alerte médicale. L'ancien classifieur XGBoost (Donate-a-Cry, 457 clips **étiquetés par les parents contributeurs**, pas par des pédiatres) obtenait 82,6 % de justesse, moins que répondre toujours « faim » (83,6 %). Il est débranché.
 
 ---
 
@@ -478,7 +471,7 @@ Babbl couvre l'intégralité du parcours : de la compréhension du pleur jusqu'�
 | IA raisonnement | Claude Sonnet (Anthropic API) |
 | Voix / TTS | ElevenLabs (eleven_multilingual_v2 + Instant Voice Cloning) |
 | Berceuses | ElevenLabs Music + Claude Sonnet (paroles) |
-| Dataset | Donate-a-Cry corpus (457 échantillons annotés) |
+| Dataset | Donate-a-Cry corpus (457 clips étiquetés par les parents ; modèle débranché) |
 
 ---
 

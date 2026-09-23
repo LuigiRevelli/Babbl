@@ -56,7 +56,7 @@ os.makedirs(TMP_DIR, exist_ok=True)
 # après l'extraction des descripteurs (voir `finally` dans analyze / voice_clone).
 MP3_TTL_S = 24 * 3600
 # Aucune écriture du profil acoustique tant que la migration « clé bébé +
-# feature_version » n'est pas faite : les descripteurs v2 (pyin) sont
+# feature_version » n'est pas faite : les descripteurs v2 et v3 (pyin) sont
 # incompatibles avec les lignes existantes, et une collecte par défaut sans
 # finalité visible pour le parent n'est pas défendable.
 BASELINE_ENABLED = os.environ.get("BABBL_BASELINE_ENABLED", "0") == "1"

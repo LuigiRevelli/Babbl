@@ -17,7 +17,7 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 
 # Incrémenter à chaque changement de seuil ou de règle. Renvoyé dans chaque réponse.
-RULES_VERSION = "2026.09.21-2"
+RULES_VERSION = "2026.09.23-1"
 
 from taxonomy import (
     CONTEXT_HYPOTHESES,
@@ -129,38 +129,35 @@ def _fmt_delay(minutes: float) -> str:
 
 
 # ─── 1. Porte d'entrée : enregistrement exploitable ? ────────────────
-# Seuils posés sur des MESURES (pyin, 21/09/2026, voir ROADMAP-BACKEND.md) :
-#   cri synthétique 450 Hz → voiced_fraction 0,81 à 0 / −12 / −26 dB, f0 449 Hz ;
-#   bruit blanc (télé) → 0,00 ; musique 220 Hz → voisée mais 221 Hz ;
-#   voix grave 120 Hz → plancher pyin 200 Hz ; bruit rose à 10 dB → 0,82.
-# Une continuité de trames voisées ne dépend ni du volume ni de la distance.
+# Seuils posés sur 366 VRAIS pleurs de 0-6 mois enregistrés au téléphone par
+# des parents (Donate-a-Cry), le 23/09/2026 — `bench/gate_bench.py` :
+#   ancienne porte (≥ 20 % de trames voisées ET hauteur médiane 250-800 Hz)
+#     → 21 % de vrais pleurs rejetés « pas de pleur net » ;
+#   porte actuelle (≥ 5 % du clip voisé dans la bande 255-1000 Hz, pyin
+#   borné à la bande, voir audio_analysis.py) → 1,9 % rejetés.
+# Toujours refusés : bruit blanc (télé), musique 220 Hz, voix d'homme 130 Hz,
+# voix de femme 210 Hz, silence. Toujours acceptés à tort : babillage et voix
+# adressée au bébé dans la bande du pleur (tests « échec attendu »).
+# Un rejet à tort n'est pas neutre : le parent peut croire que le micro a
+# échoué. C'est le critère de sécurité, d'où un seuil bas.
 
 MIN_DURATION_S = 3.0
-MIN_VOICED_FRACTION = 0.20
-CRY_F0_MIN_HZ = 250.0   # sous 250 : voix adulte, musique grave, plancher de pyin
-CRY_F0_MAX_HZ = 800.0   # au-delà : sifflement, harmonique, artefact
+MIN_CRY_BAND_FRACTION = 0.05
 
 
-def _voiced_fraction(features: dict) -> float:
-    return float(features.get("voiced_fraction", 0.0) or 0.0)
-
-
-def _pitch_median(features: dict) -> float:
-    return float(features.get("pitch_median_hz", 0.0) or 0.0)
+def _cry_band_fraction(features: dict) -> float:
+    return float(features.get("cry_band_fraction", 0.0) or 0.0)
 
 
 def recording_gate(features: dict) -> tuple[bool, str | None, str | None]:
     """Retourne (ok, code, message_fr). Babbl refuse de répondre plutôt que de
-    répondre sur rien : dans l'étude de référence, 79,6 % des séquences ont été
-    écartées pour bruit avant analyse. La porte reconnaît un PLEUR (trames
-    voisées dans la bande d'un nourrisson), pas un volume."""
+    répondre sur rien. La porte reconnaît une voix dans la bande d'un pleur,
+    pas un volume."""
     duration = float(features.get("duration_seconds", 0.0) or 0.0)
-    voiced = _voiced_fraction(features)
-    f0 = _pitch_median(features)
 
     if duration < MIN_DURATION_S:
         return False, "too_short", f"L'enregistrement dure {duration:.1f} s."
-    if voiced < MIN_VOICED_FRACTION or not (CRY_F0_MIN_HZ <= f0 <= CRY_F0_MAX_HZ):
+    if _cry_band_fraction(features) < MIN_CRY_BAND_FRACTION:
         # Le message ne dit PAS « rapprochez le téléphone » : le silence peut
         # être le bébé, pas le micro. Le rappel et l'indice sont dans app.py.
         return False, "no_cry_detected", "Babbl n'a pas entendu de pleur net sur cet enregistrement."
@@ -168,25 +165,26 @@ def recording_gate(features: dict) -> tuple[bool, str | None, str | None]:
 
 
 # ─── 2. Couche 1 : observation sonore (texte, jamais chiffré) ────────
+# Tertiles de `cry_band_fraction` sur les 359 vrais pleurs acceptés du banc :
+# 0,355 et 0,578. Les trois mots se répartissent donc en tiers sur de vrais
+# pleurs — ce sont des descriptions du clip, pas des niveaux de détresse.
 
-INTENSE_VOICED_FRACTION = 0.60
-FAIBLE_VOICED_FRACTION = 0.30
+CONTINUOUS_BAND_FRACTION = 0.58
+PAUSED_BAND_FRACTION = 0.35
 
 
 def intensity_observation(features: dict) -> dict:
-    """Observation coarse, en trois niveaux, à partir d'une seule grandeur
-    invariante au volume capté : la continuité du pleur (part des trames
-    voisées). La hauteur ne décide plus rien — elle est spécifique au bébé,
-    pas à son état (Corvin 2024, Lockhart-Bouron 2023). Ce n'est pas une échelle
-    validée — c'est le maximum que SYMPTOMS.md autorise (« observation
-    textuelle non stockée ») en attendant le banc d'essai (ROADMAP item 6).
-    Le résultat ne doit être ni stocké, ni historisé, ni chiffré au parent."""
+    """Observation en trois mots, à partir d'une seule grandeur invariante au
+    volume capté : la part du clip où l'on entend une voix dans la bande d'un
+    pleur. La hauteur ne décide rien — elle est spécifique au bébé, pas à son
+    état (Corvin 2024, Lockhart-Bouron 2023). Le résultat ne doit être ni
+    stocké, ni historisé, ni chiffré au parent."""
     duration = float(features.get("duration_seconds", 0.0) or 0.0)
-    continuity = max(0.0, min(1.0, _voiced_fraction(features)))
+    continuity = max(0.0, min(1.0, _cry_band_fraction(features)))
 
-    if continuity < FAIBLE_VOICED_FRACTION:
+    if continuity < PAUSED_BAND_FRACTION:
         level = "faible"
-    elif continuity >= INTENSE_VOICED_FRACTION:
+    elif continuity >= CONTINUOUS_BAND_FRACTION:
         level = "intense"
     else:
         level = "modere"

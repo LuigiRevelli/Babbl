@@ -126,7 +126,7 @@ def test_versions_in_every_response():
     ko = _post(client, _wav_bytes(1.0), {}).get_json()
     for body in (ok, ko):
         assert {"features", "taxonomy", "rules", "prompt", "git"} <= set(body["versions"])
-    assert ok["versions"]["features"] == 2
+    assert ok["versions"]["features"] == 3
 
 
 if __name__ == "__main__":

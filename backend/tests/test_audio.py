@@ -70,8 +70,8 @@ def with_snr(y: np.ndarray, noise: np.ndarray, snr_db: float) -> np.ndarray:
 
 def test_feature_version_and_keys():
     f = _features(cry())
-    assert f["feature_version"] == FEATURE_VERSION == 2
-    for k in ("voiced_fraction", "pitch_median_hz", "duration_seconds"):
+    assert f["feature_version"] == FEATURE_VERSION == 3
+    for k in ("voiced_fraction", "cry_band_fraction", "pitch_median_hz", "duration_seconds"):
         assert k in f
 
 
@@ -88,7 +88,7 @@ def test_gain_invariance():
     for gain_db in (0, -12, -26):
         f = _features(cry(gain=10 ** (gain_db / 20)))
         ok, code, _ = recording_gate(f)
-        results.append((ok, code, intensity_observation(f)["level"], round(f["voiced_fraction"], 2)))
+        results.append((ok, code, intensity_observation(f)["level"], round(f["cry_band_fraction"], 2)))
     assert all(ok for ok, _, _, _ in results), results
     assert len({lvl for _, _, lvl, _ in results}) == 1, results
     assert max(v for *_, v in results) - min(v for *_, v in results) < 0.05, results
@@ -106,7 +106,8 @@ def test_non_cries_are_refused():
     tv = (0.02 * np.random.default_rng(1).standard_normal(int(SR * 10))).astype(np.float32)
     music = (0.4 * (np.sin(2 * np.pi * 220 * t) + 0.5 * np.sin(2 * np.pi * 440 * t) + 0.3 * np.sin(2 * np.pi * 660 * t))).astype(np.float32)
     voice = (0.4 * sum((1 / k) * np.sin(2 * np.pi * 120 * k * t) for k in range(1, 8)) * (0.6 + 0.4 * np.sin(2 * np.pi * 4 * t))).astype(np.float32)
-    for label, y in (("télé", tv), ("musique 220 Hz", music), ("voix grave", voice)):
+    female = (0.4 * sum((1 / k) * np.sin(2 * np.pi * 210 * k * t) for k in range(1, 8)) * ((t % 0.25) < 0.17)).astype(np.float32)
+    for label, y in (("télé", tv), ("musique 220 Hz", music), ("voix grave", voice), ("voix de femme 210 Hz", female)):
         ok, code, _ = recording_gate(_features(y))
         assert not ok and code == "no_cry_detected", (label, code)
 
@@ -117,6 +118,19 @@ def test_amplitude_never_reaches_a_decision():
     f2 = dict(f, amplitude_mean=0.0, amplitude_max=0.0, energy_total=0.0, silence_ratio=0.99)
     assert recording_gate(f) == recording_gate(f2)
     assert intensity_observation(f)["level"] == intensity_observation(f2)["level"]
+
+
+def test_cry_with_adult_voice_over_it_still_passes():
+    """Cas réel du banc : un pleur avec un adulte qui parle par-dessus. L'ancienne
+    porte (hauteur MÉDIANE) le rejetait ; la part de trames dans la bande du
+    pleur, elle, garde le pleur."""
+    t = np.linspace(0, 8, int(SR * 8), endpoint=False)
+    adult = (0.5 * sum((1 / k) * np.sin(2 * np.pi * 150 * k * t) for k in range(1, 8))).astype(np.float32)
+    y = cry()
+    mix = np.where(np.arange(len(y)) < int(SR * 5.5), adult * (np.arange(len(y)) >= int(SR * 3.5)) + y, adult)
+    f = _features((0.5 * mix / np.max(np.abs(mix))).astype(np.float32))
+    assert recording_gate(f)[0], f["cry_band_fraction"]
+    assert 400 <= f["pitch_median_hz"] <= 500, f["pitch_median_hz"]   # le pleur, pas un sous-multiple
 
 
 # ─── Défaut connu de la porte (LISTE-FINALE-SYMPTOMES.md, n°22) ─────────

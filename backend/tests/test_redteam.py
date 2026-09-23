@@ -15,7 +15,7 @@ from mistral_client import _FORBIDDEN_LLM, sanitize_llm_output  # noqa: E402
 from triage_rules import context_hypotheses, intensity_observation  # noqa: E402
 
 HYPS = context_hypotheses({"lastFeedingTime": "2000-01-01T00:00:00Z"}, 3)
-INTEN = intensity_observation({"duration_seconds": 9.0, "voiced_fraction": 0.7, "pitch_median_hz": 450.0})
+INTEN = intensity_observation({"duration_seconds": 9.0, "cry_band_fraction": 0.7, "pitch_median_hz": 450.0})
 
 # Mesurées comme PASSANT l'ancien regex — fausse réassurance et triage déguisé.
 ATTACKS = [

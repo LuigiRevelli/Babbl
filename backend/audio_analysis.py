@@ -12,6 +12,20 @@ FEATURE_VERSION 2 (21/09/2026) — changements mesurés, voir ROADMAP-BACKEND.md
   0,80 et s'inversait avec du bruit de fond. `silence_ratio` est conservé
   pour information, plus jamais pour décider.
 
+FEATURE_VERSION 3 (23/09/2026) — mesuré sur 366 vrais pleurs de 0-6 mois
+enregistrés au téléphone (Donate-a-Cry, `bench/gate_bench.py`) :
+
+- pyin cherche la hauteur DANS la bande d'un pleur (250-1000 Hz). Avec un
+  plancher plus bas, le lissage de pyin décode un pleur à 450 Hz comme son
+  sous-multiple (150 ou 225 Hz) dès qu'une voix grave est dans le clip : la
+  médiane tombait sous la bande et la porte rejetait 21 % de vrais pleurs.
+- Une voix plus grave que la bande (adulte, musique) se colle au plancher de
+  250 Hz : ces trames sont exclues (hauteur < 255 Hz).
+- `cry_band_fraction` = part de TOUTES les trames du clip qui sont voisées
+  avec une hauteur réellement dans la bande. Un adulte qui parle par-dessus
+  un pleur ne retire pas les trames du pleur. La porte et les trois mots de
+  continuité reposent sur elle.
+
 Les valeurs d'amplitude (`amplitude_*`, `energy_total`) sont des propriétés de
 l'enregistrement — distance, gain — pas du bébé. Elles ne servent à rien en
 aval et ne quittent jamais le serveur.
@@ -26,10 +40,12 @@ from audioread.exceptions import NoBackendError
 import librosa
 import numpy as np
 
-FEATURE_VERSION = 2
+FEATURE_VERSION = 3
 SR = 22050
-F0_MIN = 200.0
+F0_MIN = 250.0
 F0_MAX = 1000.0
+# Trames collées au plancher de pyin = voix plus grave que la bande : exclues.
+F0_FLOOR_GUARD = 255.0
 
 
 def _convert_to_wav_with_ffmpeg(audio_path: str) -> str:
@@ -81,8 +97,10 @@ def extract_features(audio_path: str) -> dict:
     # --- Fundamental frequency, voiced frames only (pyin) ---
     f0, voiced_flag, _ = librosa.pyin(y, fmin=F0_MIN, fmax=F0_MAX, sr=sr, frame_length=2048)
     voiced_flag = np.asarray(voiced_flag, dtype=bool)
-    voiced_f0 = np.nan_to_num(f0[voiced_flag]) if voiced_flag.any() else np.array([])
     voiced_fraction = float(np.mean(voiced_flag)) if len(voiced_flag) else 0.0
+    in_band = voiced_flag & (np.nan_to_num(f0) >= F0_FLOOR_GUARD)
+    cry_band_fraction = float(np.mean(in_band)) if len(in_band) else 0.0
+    voiced_f0 = f0[in_band] if in_band.any() else np.array([])
 
     if len(voiced_f0):
         pitch_median = float(np.median(voiced_f0))
@@ -110,6 +128,7 @@ def extract_features(audio_path: str) -> dict:
         "feature_version": FEATURE_VERSION,
         "duration_seconds": round(duration, 2),
         "voiced_fraction": round(voiced_fraction, 4),
+        "cry_band_fraction": round(cry_band_fraction, 4),
         "pitch_median_hz": round(pitch_median, 2),
         "pitch_mean_hz": round(pitch_mean, 2),
         "pitch_std_hz": round(pitch_std, 2),

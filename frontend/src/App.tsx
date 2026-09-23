@@ -5,20 +5,23 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/AuthContext";
 
-// ─── Claude Design pages (active production UI) ───
-import BabblHome from "./pages/babbl/Home";
-import BabblResult from "./pages/babbl/Result";
-import BabblPaywall from "./pages/babbl/Paywall";
-import BabblLullaby from "./pages/babbl/Lullaby";
+import { lazy, Suspense } from "react";
 
-// ─── Legacy Lovable pages — kept accessible for fallback / debug only ───
-import Auth from "./pages/Auth";
+// Chargés d'emblée : l'écran d'écoute et le journal (adresse de départ de
+// l'app installée). Le reste arrive à la demande — le premier affichage, la
+// nuit sur un téléphone, ne doit pas attendre les graphiques ni la berceuse.
+import BabblHome from "./pages/babbl/Home";
 import Dashboard from "./pages/Dashboard";
-import History from "./pages/History";
-import Breathing from "./pages/Breathing";
-import VoiceSetup from "./pages/VoiceSetup";
-import Report from "./pages/Report";
-import NotFound from "./pages/NotFound";
+
+const BabblResult = lazy(() => import("./pages/babbl/Result"));
+const BabblPaywall = lazy(() => import("./pages/babbl/Paywall"));
+const BabblLullaby = lazy(() => import("./pages/babbl/Lullaby"));
+const Auth = lazy(() => import("./pages/Auth"));
+const History = lazy(() => import("./pages/History"));
+const Breathing = lazy(() => import("./pages/Breathing"));
+const VoiceSetup = lazy(() => import("./pages/VoiceSetup"));
+const Report = lazy(() => import("./pages/Report"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
@@ -40,6 +43,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <Routes>
             {/* Auth still reachable for signup/signin */}
             <Route path="/auth" element={<Auth />} />
@@ -68,6 +72,7 @@ const App = () => (
 
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

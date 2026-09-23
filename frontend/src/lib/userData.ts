@@ -91,25 +91,38 @@ function defaultData(): UserData {
   };
 }
 
+// Valeurs françaises stockées par les premières versions de l'app. Le JSON
+// brut n'a pas encore le type courant : on compare des chaînes, puis on range.
+const LEGACY_ROLE: Record<string, ParentRole> = { maman: 'mother', papa: 'father' };
+const LEGACY_AGE: Record<string, AgeRange> = { '1-2ans': '1-2' };
+const LEGACY_DIAPER: Record<string, DiaperEntry['type']> = { urine: 'pee', selle: 'stool' };
+
+function fromLegacy<T extends string>(value: string | undefined, table: Record<string, T>): T | undefined {
+  if (value === undefined) return undefined;
+  return table[value] ?? (value as T);
+}
+
+/** Migre les anciennes valeurs françaises. Exporté pour les tests. */
+export function migrateLegacyValues(data: UserData): UserData {
+  for (const profile of [data.parentProfile, data.voiceProfile]) {
+    if (!profile) continue;
+    profile.role = fromLegacy(profile.role as string, LEGACY_ROLE) ?? profile.role;
+    profile.ageRange = fromLegacy(profile.ageRange as string, LEGACY_AGE) ?? profile.ageRange;
+  }
+  data.diaperHistory = (data.diaperHistory || []).map((entry) => ({
+    ...entry,
+    type: fromLegacy(entry.type as string, LEGACY_DIAPER) ?? entry.type,
+  }));
+  return data;
+}
+
 export function getUserData(): UserData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultData();
     const parsed = { ...defaultData(), ...JSON.parse(raw) } as UserData;
 
-    // Migrate legacy French enum values from earlier app versions.
-    if (parsed.parentProfile?.role === 'maman') parsed.parentProfile.role = 'mother';
-    if (parsed.parentProfile?.role === 'papa') parsed.parentProfile.role = 'father';
-    if (parsed.voiceProfile?.role === 'maman') parsed.voiceProfile.role = 'mother';
-    if (parsed.voiceProfile?.role === 'papa') parsed.voiceProfile.role = 'father';
-    if (parsed.parentProfile?.ageRange === '1-2ans') parsed.parentProfile.ageRange = '1-2';
-    if (parsed.voiceProfile?.ageRange === '1-2ans') parsed.voiceProfile.ageRange = '1-2';
-    parsed.diaperHistory = (parsed.diaperHistory || []).map((entry) => ({
-      ...entry,
-      type: entry.type === 'urine' ? 'pee' : entry.type === 'selle' ? 'stool' : entry.type,
-    }));
-
-    return parsed;
+    return migrateLegacyValues(parsed);
   } catch {
     return defaultData();
   }

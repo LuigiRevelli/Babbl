@@ -46,3 +46,31 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+
+  docker:
+    # Construit l'image de production, la démarre sans aucune clé, et lui
+    # envoie un pleur encodé comme un navigateur (WebM/Opus) : la chaîne réelle.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: docker build -t babbl-api backend
+      - name: Run
+        run: docker run -d --name api -p 5001:5001 -e WEB_CONCURRENCY=1 babbl-api
+      - name: Health
+        run: |
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:5001/api/health && exit 0; sleep 1; done
+          docker logs api; exit 1
+      - name: Analyze a browser-encoded cry
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+          # hauteur qui monte et descend de ± 12 % autour de 450 Hz, comme un pleur
+          ffmpeg -loglevel error -f lavfi -i "aevalsrc='0.5*sin(2*PI*(450*t+54*(1-cos(2*PI*0.8*t))/(2*PI*0.8)))*(0.6+0.4*sin(2*PI*3*t))':s=48000:d=8" -c:a libopus cry.webm
+          ffmpeg -loglevel error -f lavfi -i "anoisesrc=d=8:c=pink:a=0.05" -c:a libopus noise.webm
+          code=$(curl -s -o cry.json -w "%{http_code}" -F audio=@cry.webm -F 'context={"babyName":"Léa"}' http://127.0.0.1:5001/api/analyze)
+          cat cry.json; echo; test "$code" = "200"
+          code=$(curl -s -o noise.json -w "%{http_code}" -F audio=@noise.webm -F 'context={}' http://127.0.0.1:5001/api/analyze)
+          test "$code" = "422" && grep -q '"cards"' noise.json
+      - name: Logs
+        if: always()
+        run: docker logs api

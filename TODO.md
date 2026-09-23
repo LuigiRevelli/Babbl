@@ -41,7 +41,7 @@
 | Backend → Supabase | ✅ | Le backend sauvegarde chaque analyse dans Supabase côté serveur (service role key) |
 | Babbl Baseline (profil acoustique) | ✅ | Table baby_baselines, apprentissage incremental (Welford), score de deviation 0-100, escalade alerte auto si deviation > 70 apres 5+ echantillons |
 | Nom de domaine babbl.fr | ✅ | Acheté sur OVH |
-| Déploiement en ligne (Railway/Render) | ❌ | Backend + frontend accessibles publiquement. Actuellement localhost uniquement |
+| Déploiement en ligne (Railway/Render) | 🔄 | Prêt : `render.yaml`, `backend/Dockerfile`, `DEPLOY.md`. Reste à créer le service avec les clés |
 | PWA (Progressive Web App) | ❌ | Installable sur téléphone, icône sur écran d'accueil |
 | Fix preview voix clonée | ❌ | VoiceSetup utilise encore le TTS navigateur pour la preview au lieu de la vraie voix clonée ElevenLabs |
 | Onboarding amélioré | ❌ | Parcours de bienvenue guidé : profil parent, nom du bébé, âge, premier enregistrement |

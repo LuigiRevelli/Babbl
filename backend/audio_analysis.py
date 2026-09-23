@@ -150,3 +150,16 @@ def extract_features(audio_path: str) -> dict:
         "amplitude_max": round(float(np.max(rms)), 5),
         "energy_total": round(float(np.sum(y ** 2)), 4),
     }
+
+
+def warmup() -> float:
+    """Compile les fonctions numba de pyin avant la première vraie requête.
+    Sans ça, le premier parent de chaque processus attendait ~3 s de plus.
+    Retourne la durée du préchauffage en secondes."""
+    import time
+    t0 = time.monotonic()
+    t = np.arange(SR) / SR
+    y = (0.3 * np.sin(2 * np.pi * 450 * t)).astype(np.float32)
+    librosa.pyin(y, fmin=F0_MIN, fmax=F0_MAX, sr=SR, frame_length=2048)
+    librosa.feature.mfcc(y=y, sr=SR, n_mfcc=13)
+    return time.monotonic() - t0

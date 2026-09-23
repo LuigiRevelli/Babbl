@@ -1,0 +1,12 @@
+tmp/
+__pycache__/
+*.pyc
+.venv/
+venv/
+tests/
+bench/
+models/
+ml_model.py
+train_model.py
+requirements-research.txt
+.env

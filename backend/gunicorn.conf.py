@@ -2,8 +2,13 @@
 que le résultat déterministe était prêt en 2 s. Les appels externes sont
 bornés (LLM 8 s, voix 6-8 s), donc 30 s suffisent avec de la marge."""
 
-bind = "0.0.0.0:" + __import__("os").environ.get("PORT", "5001")
-workers = 2
+import os
+
+bind = "0.0.0.0:" + os.environ.get("PORT", "5001")
+# Chaque processus charge librosa (~250 Mo) : 1 sur une petite instance (512 Mo).
+workers = int(os.environ.get("WEB_CONCURRENCY", "2"))
+# Charge l'app (et le préchauffage audio) une fois, avant de dupliquer les processus.
+preload_app = True
 threads = 4
 timeout = 30
 graceful_timeout = 10

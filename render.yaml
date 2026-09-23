@@ -1,0 +1,38 @@
+# Render Blueprint — l'API Babbl et le site, en un clic (render.com → New → Blueprint).
+# Les secrets (sync: false) sont demandés à la création, jamais écrits ici.
+services:
+  - type: web
+    name: babbl-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: starter            # 512 Mo : un seul processus (WEB_CONCURRENCY=1)
+    region: frankfurt        # au plus près de la France
+    healthCheckPath: /api/health
+    envVars:
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: BABBL_ALLOWED_ORIGINS
+        sync: false          # ex. https://babbl-web.onrender.com,https://babbl.fr
+
+  - type: web
+    name: babbl-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite        # application monopage : toutes les routes servent index.html
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        sync: false          # l'adresse de babbl-api, ex. https://babbl-api.onrender.com

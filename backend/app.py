@@ -81,6 +81,12 @@ _analyze_limiter = RateLimiter(limit=int(os.environ.get("BABBL_ANALYZE_PER_10MIN
 _clone_limiter = RateLimiter(limit=int(os.environ.get("BABBL_CLONE_PER_DAY", "3")), window_s=86400)
 _executor = ThreadPoolExecutor(max_workers=4)
 
+# Préchauffage (BABBL_WARMUP=1 dans l'image Docker) : avec preload_app de
+# gunicorn, la compilation est faite une fois dans le maître puis héritée.
+if os.environ.get("BABBL_WARMUP") == "1":
+    from audio_analysis import warmup
+    print(f"[startup] audio warm-up {warmup():.1f} s")
+
 app = Flask(__name__)
 # Origines autorisées : liste séparée par des virgules (ex. « https://babbl.fr,
 # https://www.babbl.fr »). Non définie = toutes (développement local).

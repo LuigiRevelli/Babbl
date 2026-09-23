@@ -217,10 +217,11 @@ def fallback_guidance(hypotheses: list[dict], intensity: dict, baby_name: str | 
     name = baby_name.strip() if baby_name and baby_name.strip() else "votre bébé"
     top = hypotheses[0] if hypotheses else None
 
-    if top and top["key"] != "need_for_comfort":
+    with_article = {"hunger": "la faim", "discomfort": "un inconfort", "fatigue": "la fatigue"}
+    if top and top["key"] in with_article:
         summary = (
-            f"{top['why']} La piste la plus simple à essayer en premier pour {name} : "
-            f"{top['label'].lower()}. Elle vient de ce que vous avez saisi, pas du son."
+            f"{top['why']} Première piste à essayer pour {name} : {with_article[top['key']]}. "
+            "Elle vient de ce que vous avez saisi, pas du son."
         )
     else:
         summary = (

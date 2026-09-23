@@ -209,7 +209,7 @@ function ScreenAnalyzing({ go }){
             on écoute…
           </div>
           <div style={{fontSize: 14, color: C.cafeSoft, marginTop: 12, maxWidth: 260, lineHeight: 1.5}}>
-            Deux modèles, deux secondes. Vos données ne quittent pas votre téléphone.
+            D'abord : est-ce un pleur ? L'enregistrement est supprimé juste après.
           </div>
         </div>
 
@@ -217,10 +217,10 @@ function ScreenAnalyzing({ go }){
           display:'flex', flexDirection:'column', gap: 8, width: '100%', maxWidth: 280,
           fontFamily: C.mono, fontSize: 11, color: C.cafeMute, letterSpacing:'.05em',
         }}>
-          <div style={{display:'flex', justifyContent:'space-between', opacity: .8}}><span>✓ Capture · 8,4s</span><span>44.1 kHz</span></div>
-          <div style={{display:'flex', justifyContent:'space-between', opacity: .8}}><span>✓ Filtrage bruit ambiant</span><span>-18 dB</span></div>
-          <div style={{display:'flex', justifyContent:'space-between'}}><span style={{color: C.terracotta}}>▸ Classification acoustique…</span><span>…</span></div>
-          <div style={{display:'flex', justifyContent:'space-between', opacity:.4}}><span>  Contextualisation</span><span>—</span></div>
+          <div style={{display:'flex', justifyContent:'space-between', opacity: .8}}><span>✓ Capture · 10 s</span><span>micro brut</span></div>
+          <div style={{display:'flex', justifyContent:'space-between', opacity: .8}}><span>✓ Pleur net</span><span>oui</span></div>
+          <div style={{display:'flex', justifyContent:'space-between'}}><span style={{color: C.terracotta}}>▸ Lecture de vos saisies…</span><span>…</span></div>
+          <div style={{display:'flex', justifyContent:'space-between', opacity:.4}}><span>  Repères de sécurité</span><span>—</span></div>
         </div>
       </div>
       <HomeIndicator/>
@@ -254,19 +254,13 @@ function ScreenResult({ go }){
 
       <div style={{padding:'24px 28px 0'}}>
         <div style={{fontFamily: C.mono, fontSize:10, letterSpacing:'.18em', textTransform:'uppercase', color: C.cafeMute, marginBottom: 8}}>
-          cause principale
+          ce que babbl a entendu
         </div>
-        <div style={{fontFamily: C.display, fontSize: 88, lineHeight: .85, letterSpacing:'-0.04em', color: C.terracotta, fontWeight: 400}}>
-          Faim.
-        </div>
-        <div style={{display:'flex', gap: 12, alignItems:'center', marginTop: 16}}>
-          <div style={{flex:1, height: 6, borderRadius: 99, background: C.ivoire, overflow:'hidden'}}>
-            <div style={{height:'100%', width:'78%', background: `linear-gradient(90deg, ${C.terracotta}, ${C.ocre})`, borderRadius: 99}}/>
-          </div>
-          <div style={{fontFamily: C.mono, fontSize: 13, color: C.terracotta, fontWeight: 500}}>78%</div>
+        <div style={{fontFamily: C.display, fontSize: 44, lineHeight: .95, letterSpacing:'-0.03em', color: C.terracotta, fontWeight: 400}}>
+          Un pleur presque continu.
         </div>
         <div style={{fontSize: 13, color: C.cafeSoft, marginTop: 10, lineHeight:1.5}}>
-          Pleur rythmé, pitch bas, pauses régulières. <span style={{fontStyle:'italic'}}>Il y a 4h depuis la dernière tétée.</span>
+          Le son ne dit pas pourquoi il pleure. <span style={{fontStyle:'italic'}}>Piste d'après votre saisie : dernière tétée il y a 4 h.</span>
         </div>
       </div>
 
@@ -285,7 +279,7 @@ function ScreenResult({ go }){
             Proposez-lui<br/><span style={{fontStyle:'italic', color: C.terracotta}}>le biberon.</span>
           </div>
           <div style={{fontSize: 14, color: C.cafeSoft, marginTop: 12, lineHeight:1.5}}>
-            Si dans 2 minutes il ne se calme pas, Babbl vous proposera l'étape suivante.
+            Si ça ne l'apaise pas, Babbl vous propose l'étape suivante. En cas de doute, appelez le 15.
           </div>
           <button style={{
             marginTop: 18, padding:'14px 20px', borderRadius: 99,
@@ -308,7 +302,7 @@ function ScreenResult({ go }){
           <div style={{position:'relative'}}>
             <div style={{display:'flex', justifyContent:'space-between', marginBottom: 12}}>
               <div style={{fontFamily: C.mono, fontSize:10, letterSpacing:'.15em', textTransform:'uppercase', color: C.cafeMute}}>
-                ↳ signaux acoustiques détaillés
+                ↳ résumé lu à voix haute
               </div>
               <div style={{
                 display:'flex', gap:4, alignItems:'center',
@@ -320,10 +314,10 @@ function ScreenResult({ go }){
               </div>
             </div>
             <div style={{fontFamily: C.display, fontSize: 22, letterSpacing:'-0.02em', filter:'blur(4px)', opacity:.6}}>
-              Pitch 487 Hz — rythme régulier 1,2 s — 3 pauses
+              « Il est 3 h, vous avez noté une tétée à 23 h… »
             </div>
             <div style={{fontSize: 13, color: C.cafeSoft, marginTop: 8}}>
-              Comprendre <span style={{fontStyle:'italic'}}>exactement</span> ce que signale le pleur.
+              Un résumé calme, <span style={{fontStyle:'italic'}}>et votre voix</span> pour l'apaiser.
             </div>
           </div>
         </div>
@@ -376,13 +370,13 @@ function ScreenPaywall({ go }){
       name:'Babbl +',
       sub:'comprendre & agir',
       monthly: 6.99, annual: 49.99,
-      bullets:['Analyses illimitées','Explication IA détaillée','Toutes les actions','Historique complet','Mode Nuit','Sans publicité'],
+      bullets:['Analyses illimitées','Résumé lu à voix haute','Tous les gestes','Historique complet','Mode Nuit','Sans publicité'],
     },
     voice: {
       name:'Babbl Voice',
       sub:'pour l\'apaiser, même à distance',
       monthly: 9.99, annual: 69.99,
-      bullets:['Tout Babbl+ inclus','Voix clonée (maman & papa)','Babbl Lullaby — berceuse IA','Babbl Nuit — baby phone autonome','Analyse prioritaire','Alerte pédiatre'],
+      bullets:['Tout Babbl+ inclus','Voix clonée (maman & papa)','Babbl Lullaby — berceuse IA','Message de réconfort à chaque analyse','« Ce qui l\'a calmé »'],
     }
   };
   const t = tiers[tier];

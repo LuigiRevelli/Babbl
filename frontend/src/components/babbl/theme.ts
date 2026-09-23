@@ -23,8 +23,8 @@ export const BabblTheme = {
   sauge: '#A8B898',
 
   // Typography
-  display: "'Fraunces', 'Cormorant Garamond', Georgia, serif",
-  body: "'Instrument Sans', -apple-system, system-ui, sans-serif",
+  display: "'Fraunces Variable', 'Fraunces', 'Cormorant Garamond', Georgia, serif",
+  body: "'Instrument Sans Variable', 'Instrument Sans', -apple-system, system-ui, sans-serif",
   mono: "'JetBrains Mono', ui-monospace, monospace",
 } as const;
 

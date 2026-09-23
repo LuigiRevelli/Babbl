@@ -124,7 +124,7 @@ Aucun n'est attendu au-delà de « carte statique » ; ils ferment les derniers 
 | La porte laisse passer un babillage à 300 Hz et une voix à 270 Hz, puis les classe « pleur intense » | `backend/triage_rules.py` (porte) | **Oui, reproduit** sur signaux synthétiques le 22/09 |
 | L'observation dit « pleur soutenu et **aigu** » alors que la hauteur ne décide plus rien | `backend/taxonomy.py`, observation « intense » | Oui, par le critique |
 | « Les pleurs sont plus fréquents entre 2h et 5h » présente un nombre d'enregistrements comme une fréquence de pleurs | `frontend/src/pages/History.tsx` | Oui, par le critique |
-| Le prototype annonce « détection d'apnée entre pleurs » et « filtrage des bruits de fond » | `frontend/public/prototype/Babbl.html` | Oui, par le critique |
+| Le prototype annonce « détection d'apnée entre pleurs » et « filtrage des bruits de fond » | `design/prototype/Babbl.html` | Oui, par le critique |
 | Le message en voix clonée reprend l'hypothèse de contexte comme un état (« Tu es fatigué, bébé ») juste après l'analyse | `backend/comfort_messages.py` via `app.py` | Oui, vérifié le 22/09 |
 | `FEATURES.md` et `TODO.md` affirment encore « 457 échantillons annotés par des pédiatres » et « 82,6 % » ; en réalité ce sont les parents qui ont étiqueté | `FEATURES.md`, `TODO.md` | Oui, via le fichier du corpus |
 | Le filtre de mots interdits laisse passer « a mal », « bobo », « encéphalopathie », « cerveau », « asphyxié », « hypoglycémie », « sevrage » | `backend/mistral_client.py` | Oui, vérifié le 22/09 (« asphyxie » exact est bloqué, pas ses variantes) |

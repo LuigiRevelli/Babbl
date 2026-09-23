@@ -15,7 +15,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        serif: ['Fraunces', 'serif'],
+        serif: ['Fraunces Variable', 'Fraunces', 'serif'],
         sans: ['Inter', 'sans-serif'],
       },
       colors: {

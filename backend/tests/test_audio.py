@@ -46,11 +46,14 @@ def _features(y: np.ndarray) -> dict:
         os.remove(path)
 
 
-def cry(sec=8.0, f0=450.0, harmonics=5, am=3.0, gain=1.0) -> np.ndarray:
+def cry(sec=8.0, f0=450.0, harmonics=5, am=3.0, gain=1.0, melody=0.12) -> np.ndarray:
     """Cri synthétique : fondamentale + harmoniques décroissantes, salves à 3 Hz,
-    pause de 1,5 s au milieu. La 2e harmonique est volontairement forte."""
+    pause de 1,5 s au milieu. La 2e harmonique est volontairement forte. Comme
+    un vrai pleur, la hauteur monte et descend (± `melody`, en fraction)."""
     t = np.linspace(0, sec, int(SR * sec), endpoint=False)
-    y = sum((0.6 / k) * np.sin(2 * np.pi * f0 * k * t) for k in range(1, harmonics + 1))
+    contour = f0 * (1 + melody * np.sin(2 * np.pi * 0.8 * t))
+    phase = 2 * np.pi * np.cumsum(contour) / SR
+    y = sum((0.6 / k) * np.sin(k * phase) for k in range(1, harmonics + 1))
     y = y * np.clip(0.55 + 0.45 * np.sin(2 * np.pi * am * t), 0, 1)
     s, n = int(SR * 3.5), int(SR * 1.5)
     y[s:s + n] = 0
@@ -76,9 +79,9 @@ def test_feature_version_and_keys():
 
 
 def test_pitch_is_the_fundamental_not_a_harmonic():
-    f = _features(cry(f0=420.0))
+    f = _features(cry(f0=420.0, melody=0.0))
     assert 400 <= f["pitch_median_hz"] <= 440, f["pitch_median_hz"]       # piptrack renvoyait ~840
-    f = _features(cry(f0=320.0))
+    f = _features(cry(f0=320.0, melody=0.0))
     assert 300 <= f["pitch_median_hz"] <= 340, f["pitch_median_hz"]
 
 
@@ -107,7 +110,9 @@ def test_non_cries_are_refused():
     music = (0.4 * (np.sin(2 * np.pi * 220 * t) + 0.5 * np.sin(2 * np.pi * 440 * t) + 0.3 * np.sin(2 * np.pi * 660 * t))).astype(np.float32)
     voice = (0.4 * sum((1 / k) * np.sin(2 * np.pi * 120 * k * t) for k in range(1, 8)) * (0.6 + 0.4 * np.sin(2 * np.pi * 4 * t))).astype(np.float32)
     female = (0.4 * sum((1 / k) * np.sin(2 * np.pi * 210 * k * t) for k in range(1, 8)) * ((t % 0.25) < 0.17)).astype(np.float32)
-    for label, y in (("télé", tv), ("musique 220 Hz", music), ("voix grave", voice), ("voix de femme 210 Hz", female)):
+    alarm = (0.4 * sum((1 / k) * np.sin(2 * np.pi * 500 * k * t) for k in range(1, 5)) * ((t % 1.0) < 0.6)).astype(np.float32)
+    for label, y in (("télé", tv), ("musique 220 Hz", music), ("voix grave", voice), ("voix de femme 210 Hz", female),
+                     ("alarme 500 Hz fixe", alarm)):
         ok, code, _ = recording_gate(_features(y))
         assert not ok and code == "no_cry_detected", (label, code)
 

@@ -8,20 +8,31 @@
 
 ## Résultats
 
-| Porte | Vrais pleurs 0-6 mois rejetés à tort |
-|---|---|
-| Version 2 (≥ 20 % de trames voisées et hauteur médiane 250-800 Hz) | **77 / 366 = 21 %** |
-| Version 3 (≥ 5 % du clip voisé dans la bande 255-1000 Hz) | **7 / 366 = 1,9 %** |
+Trois corpus. Positifs : 366 pleurs de 0-6 mois au téléphone (Donate-a-Cry) et 40 pleurs d'une autre source (ESC-50). Négatifs : 1 960 sons réels d'ESC-50 qui ne sont pas des pleurs, et 60 clips de voix d'hommes adultes (Free Spoken Digit Dataset).
+
+| Porte | Vrais pleurs rejetés (téléphone / ESC-50) | Non-pleurs acceptés |
+|---|---|---|
+| v2 (≥ 20 % voisé, hauteur médiane 250-800 Hz) | 21 % / 12,5 % | 16,6 % |
+| v3 sans critère de variation (poussée puis corrigée le même jour) | 1,9 % / 0 % | 49 % |
+| **v3 actuelle** (≥ 5 % du clip dans la bande 255-1000 Hz, hauteur qui varie d'au moins 0,05 octave) | **2,2 % / 0 %** | **36,6 %** |
 
 | Mêmes 366 pleurs, fichiers bruts compressés | Rejetés à tort |
 |---|---|
 | Android, AMR 12 kb/s (222 pleurs) | 1,4 % |
 | iPhone, ADPCM (144 pleurs) | 2,1 % |
 
-La mesure sur fichier compressé et sur fichier propre est quasi identique (corrélation 0,998).
+*(Chiffres de codec mesurés avant l'ajout du critère de variation.)*
 
-**Toujours refusés** (signaux synthétiques, tests automatiques) : bruit blanc de télé, musique à 220 Hz, voix d'homme 120-130 Hz, voix de femme 210 Hz, silence.
-**Toujours acceptés à tort** : babillage et voix adressée au bébé dans la bande d'un pleur (270-300 Hz), mélodie au-dessus de 255 Hz. Même comportement qu'avant. Deux tests « échec attendu » le reproduisent.
+**Ce qui passe encore :** chats, sirènes, coqs, rires, alarmes, et environ un tiers des bruits de la maison. Leur son ressemble à celui d'un pleur, ou pyin y trouve des trames voisées. Le babillage et la voix adressée au bébé passent aussi (tests « échec attendu »).
+
+**Pourquoi pas mieux.** Un seuil de variation plus haut rejetterait plus de bruits, mais risquerait de refuser un pleur anormalement monotone, justement celui qui ne doit pas être refusé. Un classifieur appris (arbre de décision) atteignait 2,7 % / 7,6 % en validation croisée, mais entraîné sans les pleurs d'ESC-50, il en acceptait 0 % : il avait appris à reconnaître le micro du téléphone (platitude spectrale nulle après codec), pas le pleur. Il a été écarté.
+
+**Reproduire :**
+
+```
+python backend/bench/gate_bench.py <donateacry-corpus>
+python backend/bench/negatives_bench.py <ESC-50> <free-spoken-digit-dataset>
+```
 
 ## Pourquoi la version 2 rejetait un pleur sur cinq
 
@@ -36,7 +47,7 @@ Seuils posés sur les tertiles des 359 pleurs acceptés : 0,355 et 0,578. Sur ce
 
 ## Limites
 
-- Pas de vrais clips négatifs (babillage réel, voix réelles, télé réelle) : ils sont synthétiques. Le taux de faux pleurs acceptés n'est pas mesuré.
+- Les négatifs ne sont pas enregistrés au téléphone dans une maison : ESC-50 vient de Freesound. Aucun babillage réel, aucune voix de femme réelle, aucune vraie télé. C'est la prochaine donnée à collecter.
 - Les 671 fichiers bruts que les conservateurs n'ont pas retenus sont rejetés à 21 %. On ne sait pas lesquels sont des pleurs, donc ce chiffre ne mesure rien.
 - Le corpus date de 2015, clips de 7 s, sans distance connue. Il ne remplace pas un test sur l'app elle-même (Opus dans Chrome, AAC sur iPhone récent).
 - Environ 20 % des clips du corpus viennent d'enfants de plus de 7 mois : ils sont exclus du chiffre principal (rejet 3,3 % sur eux).

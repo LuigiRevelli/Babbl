@@ -25,6 +25,8 @@ enregistrés au téléphone (Donate-a-Cry, `bench/gate_bench.py`) :
   avec une hauteur réellement dans la bande. Un adulte qui parle par-dessus
   un pleur ne retire pas les trames du pleur. La porte et les trois mots de
   continuité reposent sur elle.
+- `cry_pitch_spread` = écart-type de la hauteur en octaves sur ces trames.
+  Un pleur module sa hauteur ; un bruit (vent, eau, aspirateur) presque pas.
 
 Les valeurs d'amplitude (`amplitude_*`, `energy_total`) sont des propriétés de
 l'enregistrement — distance, gain — pas du bébé. Elles ne servent à rien en
@@ -101,6 +103,9 @@ def extract_features(audio_path: str) -> dict:
     in_band = voiced_flag & (np.nan_to_num(f0) >= F0_FLOOR_GUARD)
     cry_band_fraction = float(np.mean(in_band)) if len(in_band) else 0.0
     voiced_f0 = f0[in_band] if in_band.any() else np.array([])
+    # Variation de hauteur (écart-type en octaves) : un pleur module sa hauteur,
+    # un bruit stationnaire, un moteur ou une alarme très peu.
+    cry_pitch_spread = float(np.std(np.log2(voiced_f0))) if len(voiced_f0) > 2 else 0.0
 
     if len(voiced_f0):
         pitch_median = float(np.median(voiced_f0))
@@ -129,6 +134,7 @@ def extract_features(audio_path: str) -> dict:
         "duration_seconds": round(duration, 2),
         "voiced_fraction": round(voiced_fraction, 4),
         "cry_band_fraction": round(cry_band_fraction, 4),
+        "cry_pitch_spread": round(cry_pitch_spread, 4),
         "pitch_median_hz": round(pitch_median, 2),
         "pitch_mean_hz": round(pitch_mean, 2),
         "pitch_std_hz": round(pitch_std, 2),

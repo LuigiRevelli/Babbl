@@ -17,7 +17,7 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 
 # Incrémenter à chaque changement de seuil ou de règle. Renvoyé dans chaque réponse.
-RULES_VERSION = "2026.09.23-1"
+RULES_VERSION = "2026.09.23-2"
 
 from taxonomy import (
     CONTEXT_HYPOTHESES,
@@ -134,7 +134,16 @@ def _fmt_delay(minutes: float) -> str:
 #   ancienne porte (≥ 20 % de trames voisées ET hauteur médiane 250-800 Hz)
 #     → 21 % de vrais pleurs rejetés « pas de pleur net » ;
 #   porte actuelle (≥ 5 % du clip voisé dans la bande 255-1000 Hz, pyin
-#   borné à la bande, voir audio_analysis.py) → 1,9 % rejetés.
+#   borné à la bande, ET hauteur qui varie d'au moins 0,05 octave) → 2,2 %
+#   rejetés ; 0 % des 40 pleurs d'ESC-50 (autre micro, autre source).
+# Sons qui ne sont pas des pleurs (2 000 sons réels d'ESC-50 + voix
+# d'hommes) : acceptés à 36,5 % (49 % sans le critère de variation, 16,6 %
+# pour l'ancienne porte). Chats, sirènes, coqs, rires passent : leur son est
+# celui d'un pleur. Le seuil de variation est volontairement bas : plus haut,
+# il rejetterait mieux les bruits mais risquerait de refuser un pleur
+# anormalement monotone, précisément celui qui ne doit pas être refusé.
+# Un classifieur appris a été essayé et écarté : il reconnaissait le micro
+# du téléphone, pas le pleur (recherche/banc-porte-2026-09.md).
 # Toujours refusés : bruit blanc (télé), musique 220 Hz, voix d'homme 130 Hz,
 # voix de femme 210 Hz, silence. Toujours acceptés à tort : babillage et voix
 # adressée au bébé dans la bande du pleur (tests « échec attendu »).
@@ -143,6 +152,7 @@ def _fmt_delay(minutes: float) -> str:
 
 MIN_DURATION_S = 3.0
 MIN_CRY_BAND_FRACTION = 0.05
+MIN_CRY_PITCH_SPREAD = 0.05   # octave
 
 
 def _cry_band_fraction(features: dict) -> float:
@@ -157,7 +167,8 @@ def recording_gate(features: dict) -> tuple[bool, str | None, str | None]:
 
     if duration < MIN_DURATION_S:
         return False, "too_short", f"L'enregistrement dure {duration:.1f} s."
-    if _cry_band_fraction(features) < MIN_CRY_BAND_FRACTION:
+    spread = float(features.get("cry_pitch_spread", 0.0) or 0.0)
+    if _cry_band_fraction(features) < MIN_CRY_BAND_FRACTION or spread < MIN_CRY_PITCH_SPREAD:
         # Le message ne dit PAS « rapprochez le téléphone » : le silence peut
         # être le bébé, pas le micro. Le rappel et l'indice sont dans app.py.
         return False, "no_cry_detected", "Babbl n'a pas entendu de pleur net sur cet enregistrement."

@@ -33,8 +33,10 @@ FORBIDDEN_KEYS = {
 
 def _wav_bytes(seconds: float, freq: float = 450.0, sr: int = 22050, silent_tail: float = 0.0) -> bytes:
     t = np.linspace(0, seconds, int(sr * seconds), endpoint=False)
-    # Pleur synthétique : porteuse + modulation d'amplitude, puis silence.
-    y = 0.6 * np.sin(2 * np.pi * freq * t) * (0.6 + 0.4 * np.sin(2 * np.pi * 3 * t))
+    # Pleur synthétique : hauteur qui monte et descend (± 12 %), modulation
+    # d'amplitude, puis silence. Une hauteur figée n'est pas un pleur.
+    contour = freq * (1 + 0.12 * np.sin(2 * np.pi * 0.8 * t))
+    y = 0.6 * np.sin(2 * np.pi * np.cumsum(contour) / sr) * (0.6 + 0.4 * np.sin(2 * np.pi * 3 * t))
     if silent_tail > 0:
         n = int(sr * silent_tail)
         y[-n:] = 0.0

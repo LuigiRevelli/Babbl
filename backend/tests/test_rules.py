@@ -21,7 +21,7 @@ def _iso_ago(minutes: float) -> str:
     return (datetime.now(timezone.utc) - timedelta(minutes=minutes)).isoformat()
 
 
-GOOD = {"duration_seconds": 9.8, "voiced_fraction": 0.75, "cry_band_fraction": 0.72, "pitch_median_hz": 480.0}
+GOOD = {"duration_seconds": 9.8, "voiced_fraction": 0.75, "cry_band_fraction": 0.72, "cry_pitch_spread": 0.15, "pitch_median_hz": 480.0}
 
 
 def test_gate_recognises_a_cry_not_a_volume():
@@ -30,7 +30,9 @@ def test_gate_recognises_a_cry_not_a_volume():
     assert recording_gate({"duration_seconds": 8.0, "cry_band_fraction": 0.0, "voiced_fraction": 1.0})[1] == "no_cry_detected"  # voisé hors bande
     assert recording_gate({"duration_seconds": 8.0})[1] == "no_cry_detected"
     # un vrai pleur haché (pleur rauque, pauses) doit passer : 5 % suffisent
-    assert recording_gate({"duration_seconds": 8.0, "cry_band_fraction": 0.06})[0]
+    assert recording_gate({"duration_seconds": 8.0, "cry_band_fraction": 0.06, "cry_pitch_spread": 0.06})[0]
+    # voix dans la bande mais hauteur figée (alarme, moteur) : refusé
+    assert recording_gate({"duration_seconds": 8.0, "cry_band_fraction": 0.9, "cry_pitch_spread": 0.01})[1] == "no_cry_detected"
     ok, code, msg = recording_gate(GOOD)
     assert ok and code is None and msg is None
 

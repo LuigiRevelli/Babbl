@@ -111,7 +111,7 @@ Aucun n'est attendu au-delà de « carte statique » ; ils ferment les derniers 
 
 | Défaut | Corrigé |
 |---|---|
-| Porte : babillage et voix adulte acceptés | Non, tests écrits (`backend/tests/test_audio.py`) |
+| Porte : babillage et voix adulte acceptés ; 21 % de vrais pleurs rejetés | Rejets de vrais pleurs corrigés (1,9 %). Babillage et voix au bébé toujours acceptés, tests écrits |
 | « aigu » et « faible » dans l'observation | Oui : les mots décrivent la continuité mesurée |
 | Tendance « 2h-5h » dans l'historique | Oui, retirée |
 | Prototype : apnée, filtrage, modèle, comité de pédiatres | Oui pour ce bloc. Le reste de la page d'accueil garde l'ancien discours (« 78 % de confiance », coliques, douleur) |
@@ -133,18 +133,16 @@ Aucun n'est attendu au-delà de « carte statique » ; ils ferment les derniers 
 
 ## Prochaine étape
 
-Dans cet ordre. Les durées sont des estimations d'ingénierie.
+Luigi porte tout seul. Dans cet ordre ; les durées sont des estimations d'ingénierie.
 
-| # | Étape | Qui | Durée | Dépend de |
-|---|---|---|---|---|
-| 1 | **Corriger les défauts en production** du tableau ci-dessus : retirer « aigu », la phrase « 2h-5h » de l'historique et la phrase « apnée » du prototype ; rendre le message en voix clonée neutre vis-à-vis de l'état ; étendre le filtre de mots interdits ; corriger « 457 annotés par des pédiatres » et « 82,6 % » dans `FEATURES.md` et `TODO.md` | Luigi | ~1 jour | Rien |
-| 2 | **Durcir la porte d'entrée** : écrire d'abord les tests qui échouent (babillage 300 Hz, voix 270 Hz), puis le correctif, puis le banc de vrais clips téléphone | Luigi | ~1-2 semaines | Rien |
-| 3 | **Faire relire les cartes par un pédiatre** : une seule carte « Respiration et toux » avec un seul jeu de seuils d'âge, carte 15 « cri faible », carte anti-secouement, repères babillage et audition | Jérémie | 1 rendez-vous | Rien |
-| 4 | **Appel au conseil réglementaire**, avec deux questions précises : une carte déclenchée par une case cochée reste-t-elle hors dispositif médical, et l'enregistrement d'une toux pour le médecin impose-t-il un hébergement HDS ? | Jérémie | 1 appel | Rien |
-| 5 | **Intégrer les cartes relues** dans `taxonomy.py` et `taxonomy.ts`, et les menus « Toux », « Nez bouché », « Voix enrouée », « Quand appeler » | Luigi | ~3 jours | 3 et 4 |
-| 6 | **Test A/B** : la phrase de continuité calme-t-elle ou inquiète-t-elle ? Sinon, le son ne pilote plus que la porte | Luigi | ~2 semaines | 1 |
-
-Les étapes 1 à 4 peuvent démarrer le même jour.
+| # | Étape | État | Dépend de |
+|---|---|---|---|
+| 1 | Corriger les défauts en production | **Fait** le 23/09 | — |
+| 2 | Porte d'entrée : ne plus rejeter les vrais pleurs | **Fait** le 23/09 : rejets à tort de 21 % à 1,9 % sur 366 vrais pleurs au téléphone (`recherche/banc-porte-2026-09.md`). Reste : babillage et voix au bébé acceptés | — |
+| 3 | Faire relire les cartes par un pédiatre (une seule carte « Respiration et toux », carte 15 « cri faible », anti-secouement, repères babillage et audition) | À faire | Trouver un pédiatre relecteur |
+| 4 | Appel au conseil réglementaire : carte déclenchée par une case cochée, et enregistrement de toux pour le médecin (HDS) | À faire | — |
+| 5 | Intégrer les cartes relues dans l'app | Brouillons possibles tout de suite, publication après 3 | 3 et 4 |
+| 6 | Test A/B : la phrase de continuité calme-t-elle ou inquiète-t-elle ? | À faire | Des utilisateurs |
 
 ---
 

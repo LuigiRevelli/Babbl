@@ -95,8 +95,6 @@ export default function Dashboard() {
     ? formatRelativeDate(data.analyses[data.analyses.length - 1].timestamp)
     : null;
 
-  const totalCries = data.analyses.length;
-
   const handleLogMeal = () => {
     const now = new Date().toISOString();
     const updated = { ...data, lastMeal: now };
@@ -167,10 +165,8 @@ export default function Dashboard() {
         </div>
         <p className="text-white/80 text-sm mb-1">{t('listenAnalyze')}</p>
         <h2 className="font-serif text-white text-xl font-bold mb-3 transition-transform duration-200 group-active:translate-x-0.5">{t('myBabyCrying')}</h2>
-        <div className="flex items-baseline gap-1">
-          <span className="text-white text-3xl font-bold font-serif">{totalCries}</span>
-          <span className="text-white/70 text-sm">{totalCries !== 1 ? t('recordedEpisodes') : t('recordedEpisode')}</span>
-        </div>
+        {/* Pas de compteur d'enregistrements : « il pleure trop » est le
+            facteur de risque mesuré du bébé secoué (ROADMAP-BACKEND.md). */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
       </div>
 

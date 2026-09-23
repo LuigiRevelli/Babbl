@@ -20,17 +20,15 @@ const fr = {
 
   // ─── Welcome ───────────────────────────────────────
   welcomeTitle: "Babbl",
-  welcomeSubtitle: "Comprenez les besoins de votre bébé grâce à une analyse douce et bienveillante de ses pleurs.",
+  welcomeSubtitle: "Ce qu'un pleur dit, ce qu'il ne dit pas, et des gestes simples à essayer — à partir de ce que vous savez déjà.",
   welcomeTrust: "Utilisé par des milliers de parents. Aucune donnée médicale collectée.",
   welcomeStart: "Commencer",
   welcomeFooter: "Gratuit · 30 secondes · Sans inscription",
 
   // ─── Dashboard ─────────────────────────────────────
   dashboardTitle: "Babbl",
-  listenAnalyze: "Écouter & analyser",
+  listenAnalyze: "Écouter",
   myBabyCrying: "Mon bébé pleure",
-  recordedEpisode: "épisode enregistré",
-  recordedEpisodes: "épisodes enregistrés",
   lastCry: "Dernier pleur",
   none: "Aucun",
   streak: "Série",
@@ -150,7 +148,7 @@ const fr = {
   affirmation2: "Chaque nuit difficile est une preuve d'amour.",
   affirmation3: "Vous n'avez pas besoin d'être parfait(e), juste présent(e).",
   affirmation4: "Un parent qui cherche à comprendre est déjà un bon parent.",
-  affirmation5: "Les pleurs sont un langage. Vous apprenez à le parler.",
+  affirmation5: "Vous connaissez votre bébé mieux que n'importe quelle application.",
   affirmation6: "Demander de l'aide est une force, pas une faiblesse.",
   affirmation7: "Votre bébé a de la chance de vous avoir.",
   affirmation8: "Même les sages-femmes expérimentées ont parfois des doutes.",

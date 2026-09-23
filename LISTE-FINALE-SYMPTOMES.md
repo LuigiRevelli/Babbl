@@ -141,7 +141,7 @@ Luigi porte tout seul. Dans cet ordre ; les durées sont des estimations d'ingé
 | 2 | Porte d'entrée : ne plus rejeter les vrais pleurs | **Fait** le 23/09 : rejets à tort de 21 % à 1,9 % sur 366 vrais pleurs au téléphone (`recherche/banc-porte-2026-09.md`). Reste : babillage et voix au bébé acceptés | — |
 | 3 | Faire relire les cartes par un pédiatre (une seule carte « Respiration et toux », carte 15 « cri faible », anti-secouement, repères babillage et audition) | À faire | Trouver un pédiatre relecteur |
 | 4 | Appel au conseil réglementaire : carte déclenchée par une case cochée, et enregistrement de toux pour le médecin (HDS) | À faire | — |
-| 5 | Intégrer les cartes relues dans l'app | Brouillons possibles tout de suite, publication après 3 | 3 et 4 |
+| 5 | Intégrer les cartes relues dans l'app | **Brouillons faits** le 23/09 (`backend/draft_cards.py`, document de relecture `recherche/cartes-a-relire.md`). Publication après relecture | 3 et 4 |
 | 6 | Test A/B : la phrase de continuité calme-t-elle ou inquiète-t-elle ? | À faire | Des utilisateurs |
 
 ---

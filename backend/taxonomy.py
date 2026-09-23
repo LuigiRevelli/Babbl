@@ -39,7 +39,7 @@ professionnel de santé français avant publication (SYMPTOMS.md, Méthode).
 from __future__ import annotations
 
 # Incrémenter à chaque changement de texte ou de clé. Renvoyé dans chaque réponse.
-TAXONOMY_VERSION = "2026.09.23-2"
+TAXONOMY_VERSION = "2026.09.23-3"
 
 # ─── Couche 2 : hypothèses contextuelles ────────────────────────────
 # Ordre = ordre d'affichage par défaut. `source` est toujours "context".
@@ -68,8 +68,9 @@ CONTEXT_HYPOTHESES: dict[str, dict] = {
 
 HYPOTHESIS_KEYS: list[str] = list(CONTEXT_HYPOTHESES.keys())
 
-# Phrase fixe accolée à toute hypothèse : elle vient du contexte, pas du son.
-HYPOTHESIS_DISCLAIMER = "Le son ne permet pas de le confirmer."
+# Phrase fixe accolée à toute hypothèse. L'ancienne (« Le son ne permet pas de
+# le confirmer ») laissait entendre que le son appuyait un peu la piste.
+HYPOTHESIS_DISCLAIMER = "Cette piste vient de ce que vous avez saisi, pas du son."
 
 
 # ─── Couche 1 : observation sonore ──────────────────────────────────

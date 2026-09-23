@@ -9,6 +9,7 @@ import {
 import { t } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { fetchAnalyses, fetchProfile } from '@/lib/supabaseData';
+import { HYPOTHESIS_DISCLAIMER } from '@/lib/taxonomy';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -53,12 +54,14 @@ export default function Dashboard() {
             // Le backend persiste les hypothèses dans key_signals (objets {key,label,why}).
             hypotheses: (a.key_signals ?? []).filter((s: any) => s && typeof s === 'object' && s.key).map((s: any) => ({
               key: s.key, label: s.label ?? '', why: s.why ?? s.signal ?? '', source: 'context' as const,
-              disclaimer: 'Le son ne permet pas de le confirmer.',
+              disclaimer: HYPOTHESIS_DISCLAIMER,
             })),
             safety_cards: [],
             audio_url: a.audio_url,
             comfort_audio_url: a.comfort_audio_url,
             comfort_text: a.comfort_text,
+            soothedBy: a.soothed_by ?? undefined,
+            soothedAt: a.soothed_at ?? undefined,
           }));
           local.analyses = mapped;
         }

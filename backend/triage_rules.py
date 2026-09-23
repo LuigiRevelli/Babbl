@@ -17,7 +17,7 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 
 # Incrémenter à chaque changement de seuil ou de règle. Renvoyé dans chaque réponse.
-RULES_VERSION = "2026.09.23-2"
+RULES_VERSION = "2026.09.23-3"
 
 from taxonomy import (
     CONTEXT_HYPOTHESES,
@@ -122,10 +122,13 @@ def _age_months(context: dict, fallback: int | None = None) -> int | None:
 
 
 def _fmt_delay(minutes: float) -> str:
-    if minutes < 60:
-        return f"{int(round(minutes))} min"
-    hours = minutes / 60.0
-    return f"{hours:.0f} h" if abs(hours - round(hours)) < 0.1 else f"{hours:.1f} h".replace(".", ",")
+    """« 45 min », « 2 h », « 3 h 20 » — arrondi à 5 minutes, comme on le dit."""
+    total = int(round(minutes))
+    if total < 60:
+        return f"{max(total, 1)} min"
+    total = int(round(minutes / 5.0)) * 5
+    h, m = divmod(total, 60)
+    return f"{h} h" if m == 0 else f"{h} h {m:02d}"
 
 
 # ─── 1. Porte d'entrée : enregistrement exploitable ? ────────────────
@@ -218,11 +221,11 @@ def context_hypotheses(context: dict, baby_age_months: int | None = None) -> lis
     meal = _meal_minutes(context)
     if meal is not None:
         if meal >= 180:
-            hyps.append((3, "hunger", f"Dernière tétée il y a {_fmt_delay(meal)} — proposez le sein ou le biberon sans attendre."))
+            hyps.append((3, "hunger", f"Dernière tétée il y a {_fmt_delay(meal)} : les pleurs sont un signe tardif de faim."))
         elif meal >= 120:
             hyps.append((2, "hunger", f"Dernière tétée il y a {_fmt_delay(meal)}."))
         elif meal < 60:
-            hyps.append((1, "discomfort", f"Tétée il y a {_fmt_delay(meal)} : un rot ou une position redressée peuvent aider."))
+            hyps.append((1, "discomfort", f"Tétée il y a {_fmt_delay(meal)} : un rot ou une position plus redressée peuvent aider."))
 
     diaper = _diaper_minutes(context)
     if diaper is not None and diaper >= 180:
@@ -233,7 +236,7 @@ def context_hypotheses(context: dict, baby_age_months: int | None = None) -> lis
     if awake is not None:
         limit = 60 if (age is not None and age < 3) else 120
         if awake >= limit:
-            hyps.append((2, "fatigue", f"Éveillé depuis {_fmt_delay(awake)}."))
+            hyps.append((2, "fatigue", f"Dernier réveil il y a {_fmt_delay(awake)}."))
 
     if age is not None and age < 3:
         hyps.append((1, "need_for_comfort", "Avant 3 mois, le contact et le portage apaisent souvent."))
@@ -275,9 +278,10 @@ def safety_cards(context: dict, baby_age_months: int | None = None) -> dict:
         if rule == "always":
             emphasized = True
         elif rule == "age_months < 3":
-            emphasized = age_m is not None and age_m < 3
+            # Âge inconnu → mise en avant : ne jamais taire une carte faute de date.
+            emphasized = age_m is None or age_m < 3
         elif rule == "age_days < 15":
-            emphasized = (age_d is not None and age_d < 15) or (age_d is None and age_m == 0)
+            emphasized = (age_d is not None and age_d < 15) or (age_d is None and (age_m is None or age_m == 0))
         else:
             emphasized = False
         cards.append({"key": key, "title": meta["title"], "body": meta["body"], "emphasized": emphasized})

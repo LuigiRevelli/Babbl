@@ -41,15 +41,17 @@ ATTACKS = [
     "Un signe de sevrage est possible.",
     "Aucun risque de mort subite.",
     "Ce pleur fait penser à une bronchiolite.",
+    # le sexe du bébé n'est pas connu
+    "Prends-la contre toi et berce-le doucement.",
 ]
 
 # Innocentes : ne doivent PAS être bloquées (faux positifs mesurés).
 INNOCENT = [
     "D'après ta dernière tétée il y a 3 h, la faim est l'hypothèse la plus simple à essayer.",
     "Les signes que tu as notés sont évidents : propose le sein en premier.",
-    "Prends-la contre toi, peau contre peau, et parle-lui doucement.",
-    "Il a du mal à se calmer : garde-le contre toi et baisse la lumière.",
-    "Il a mal dormi cette nuit ? Un moment calme dans tes bras peut aider.",
+    "Prenez votre bébé contre vous, peau contre peau, et parlez-lui doucement.",
+    "Votre bébé a du mal à se calmer : gardez-lui la lumière basse et restez tout près.",
+    "Votre bébé a mal dormi cette nuit ? Un moment calme dans vos bras peut aider.",
 ]
 
 

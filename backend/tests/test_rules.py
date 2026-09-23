@@ -60,9 +60,33 @@ def test_hypotheses_come_from_context_only():
     assert "discomfort" in keys and "need_for_comfort" in keys
     assert all(h["source"] == "context" for h in hyps)
     assert all(h["key"] in HYPOTHESIS_KEYS for h in hyps)
-    assert all("Le son ne permet pas" in h["disclaimer"] for h in hyps)
+    assert all("pas du son" in h["disclaimer"] for h in hyps)
     # sans contexte : uniquement le réconfort, jamais une cause inventée
     assert [h["key"] for h in context_hypotheses({}, None)] == ["need_for_comfort"]
+
+
+def test_delays_read_like_speech():
+    from triage_rules import _fmt_delay
+    assert _fmt_delay(45) == "45 min"
+    assert _fmt_delay(120) == "2 h"
+    assert _fmt_delay(200) == "3 h 20"
+    assert _fmt_delay(0.2) == "1 min"
+
+
+def test_unknown_age_emphasizes_every_card():
+    """Sans date de naissance ni âge, aucune carte ne doit être éteinte."""
+    assert all(_emph({}, None).values())
+
+
+def test_fallback_is_formal_and_gender_neutral():
+    import re
+    ctx = {"lastFeedingTime": _iso_ago(250), "awakeSinceAt": _iso_ago(150), "babyAgeMonths": 2}
+    out = fallback_guidance(context_hypotheses(ctx, 2), intensity_observation(GOOD), "Léa")
+    text = " ".join([out["parent_summary"]] + [a["action"] + " " + a["reasoning"] for a in out["recommended_actions"]])
+    assert not re.search(r"\btu\b|\bton\b|\bta\b|\btoi\b", text, re.I), text          # vouvoiement
+    assert not re.search(r"-le\b|-la\b|éveillé|réveillé|fatigué|calmé", text, re.I), text  # aucun genre supposé
+    assert "Léa" in text
+    assert "3 h 30" in out["parent_summary"] or "4 h" in out["parent_summary"] or "h" in out["parent_summary"]
 
 
 def _emph(ctx, age=None):

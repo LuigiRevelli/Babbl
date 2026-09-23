@@ -130,7 +130,8 @@ def test_comfort_messages_never_state_a_need_or_state():
     de la saisie du parent, entendue dans sa propre voix elle devient un constat."""
     import re
     from comfort_messages import MESSAGES
-    banned = re.compile(r"tu es |t'es |tu as |fatigu|sommeil|dormir|faim|manger|à boire|te gêne|mal\b", re.IGNORECASE)
+    banned = re.compile(r"tu es |t'es |tu as |fatigu|sommeil|dormir|faim|manger|à boire|te gêne|mal\b"
+                        r"|mon petit\b|ma petite|mon grand\b|ma grande|tout seul|toute seule", re.IGNORECASE)
     for bucket, msgs in MESSAGES.items():
         for key, text in msgs.items():
             assert not banned.search(text), (bucket, key, text)

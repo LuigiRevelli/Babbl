@@ -44,7 +44,7 @@ export const CONTEXT_HYPOTHESES: Record<HypothesisKey, HypothesisMeta> = {
   },
 };
 
-export const HYPOTHESIS_DISCLAIMER = 'Le son ne permet pas de le confirmer.';
+export const HYPOTHESIS_DISCLAIMER = "Cette piste vient de ce que vous avez saisi, pas du son.";
 
 /** Couche 1 — niveaux d'observation sonore (texte uniquement). */
 export type IntensityLevel = 'faible' | 'modere' | 'intense';

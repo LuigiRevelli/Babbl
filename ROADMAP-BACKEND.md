@@ -121,7 +121,7 @@ Aussi : pas de fièvre ni d'autre mesure physiologique collectée ; pas de « qu
 ## Réserves
 
 - **Trafic réel** : 21 fichiers en cinq mois, presque tous des tests. Toute stratégie « corpus Babbl » suppose des utilisateurs qui n'existent pas encore → le banc public (item 6) passe avant.
-- **Le conseil réglementaire** (point 10 de SYMPTOMS.md) n'est planifié nulle part ; trois items en dépendent pour être publiés (rapport médecin, métriques, catalogue). L'appel est la prochaine action de Jérémie.
+- **Le conseil réglementaire** (point 10 de SYMPTOMS.md) n'est planifié nulle part ; trois items en dépendent pour être publiés (rapport médecin, métriques, catalogue). L'appel reste à passer (Luigi).
 - **Désaccord fièvre** : l'angle produit voulait la fièvre dans la fiche contexte avec carte immédiate ; l'angle sécurité la refuse (règle de triage, données de santé → HDS). Tranché : âge seul, pas de collecte. À confirmer par le conseil.
 - **Désaccord journal** : science « conditionnel », sécurité « non » ; tranché en « cette année, sous conditions ».
 - **Semaines de gestation** = donnée de santé de l'enfant → hébergement certifié HDS. Reporté.

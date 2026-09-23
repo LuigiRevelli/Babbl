@@ -21,7 +21,7 @@
 
 *Et même ces trois informations sont étroites : la détresse est prouvée surtout en maternité à 0-7 jours et n'a rien de démontré entre 3 et 12 mois ; l'âge, le parent le connaît déjà ; l'identité du bébé n'est pas exploitée aujourd'hui. Méthode : 21 pistes confrontées à la littérature (399 sources, dont 381 réellement ouvertes — résumé ou texte intégral), puis chacune attaquée par 2 ou 3 relecteurs indépendants chargés de la démolir, puis arbitrée en rouvrant les sources contestées. Sur le premier groupe de 8 pistes : 21 verdicts, 17 réfutations, 90 erreurs de fait ou omissions documentées. Deux pistes qui se présentaient comme « prêtes à livrer » ont été réfutées 3 fois sur 3.*
 
-## Pourquoi ce résultat (ce que tu réponds à Jérémie ou à un investisseur)
+## Pourquoi ce résultat (ce que tu réponds à un investisseur)
 
 **Trois raisons, et chaque piste tombe dans l'une des trois.** C'est la colonne vertébrale à retenir.
 
@@ -31,7 +31,7 @@
 
 **C. Le signal existe, mais la maladie est trop rare pour qu'une alerte veuille dire quelque chose.** C'est le point le plus contre-intuitif et le plus important. Le drapeau neurologique — l'alerte « problème au cerveau » que l'app envoie aujourd'hui — au **meilleur résultat jamais publié** (il repère 88,7 % des malades et se trompe sur 20 % des bien-portants), à domicile : **sur 226 alertes, une seule serait vraie**. Les 225 autres familles ont passé une nuit blanche pour rien. Et un parent qui enregistre 3 fois par jour a **99 % de chances** de voir passer un drapeau neuro dans la semaine. Pour l'asphyxie : ~140 fausses alertes « lésion cérébrale » par vrai cas. Pour la surdité : sur 100 000 utilisateurs, **~23 vrais cas contre ~12 000 fausses alertes**. Pour le cri-du-chat, le seul syndrome génétique avec un vrai signal sonore : 13 à 44 cas par an dans toute la France, soit **249 familles dévastées pour un vrai cas trouvé**.
 
-> **Un test peut être bon *et* inutilisable.** C'est la phrase à retenir pour Jérémie ou un investisseur.
+> **Un test peut être bon *et* inutilisable.** C'est la phrase à retenir pour un investisseur.
 
 **Et sept faits vérifiés — quatre dans le code, trois autour :**
 
@@ -94,7 +94,7 @@
 
 ## À faire, dans l'ordre
 
-*Les durées sont mon estimation, pas un résultat de l'étude — l'étude ne chiffre que le matériel. Répartition proposée : **Luigi** = code et données ; **Jérémie** = documents publics, positionnement, appel au conseil réglementaire. Revue de ce plan : **30 septembre 2026**.*
+*Les durées sont mon estimation, pas un résultat de l'étude — l'étude ne chiffre que le matériel. Luigi porte tout depuis le 23/09/2026. Revue de ce plan : **30 septembre 2026**.*
 
 ### Aujourd'hui — c'est un risque parent, en production (Luigi, ~2 h)
 
@@ -112,7 +112,7 @@
 
 **Faut-il couper la fonctionnalité en production dès maintenant ?** Mon avis : non, si les points 1 à 8 sont faits cette semaine — le bug critique est corrigé aujourd'hui, et le reste part avec la mise à jour. Pas de message alarmiste aux utilisateurs actuels, mais cette question précise doit être posée au conseil réglementaire (point 10) en même temps que le reste. Si la semaine dérape, on coupe l'affichage des causes et des alertes.
 
-### Ce mois-ci — le discours (Jérémie)
+### Ce mois-ci — le discours
 
 9. **Réécrire `SCIENCE.md` et le pitch du `README`** sur le nouveau positionnement — **1 jour**. C'est la promesse marketing qui fixe le statut légal. Quatre erreurs à corriger précisément :
    - `SCIENCE.md` l. 18-21 : « validé en recherche et prouvé en business (cf. Ubenwa) » est faux sur les deux moitiés.

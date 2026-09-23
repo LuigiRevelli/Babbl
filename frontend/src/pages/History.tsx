@@ -23,44 +23,18 @@ export default function History() {
     }).reverse();
   }, [data.analyses, period]);
 
-  // Most frequent causes
-  const causeCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    data.analyses.forEach(a => { counts[a.topCause] = (counts[a.topCause] || 0) + 1; });
-    return Object.entries(counts).sort(([, a], [, b]) => b - a);
-  }, [data.analyses]);
-
   // Pas de « tendance » : un nombre d'enregistrements n'est pas une fréquence
   // de pleurs (on enregistre quand on est réveillé), et « il pleure plus la
   // nuit » est un jugement de quantité (LISTE-FINALE-SYMPTOMES.md, n°1).
+  // Même raison pour le total d'enregistrements et le classement des pistes :
+  // « la faim ×6 » se lit comme un profil du bébé, alors que c'est un
+  // reflet de ce que le parent a noté.
 
   return (
       <MobileLayout>
         <BackButton to="/dashboard" />
         <h1 className="font-serif text-2xl font-bold mb-4">{t('historyTitle')}</h1>
         <a href="/report" className="block text-sm underline text-muted-foreground mb-4">Résumé pour le médecin (7 jours)</a>
-
-        {/* Stats */}
-        <div className="bg-card rounded-lg p-4 shadow-sm mb-4 text-center">
-          <p className="font-serif text-4xl font-bold">{data.analyses.length}</p>
-          <p className="text-sm text-muted-foreground">{t('totalAnalyses')}</p>
-        </div>
-
-        {/* Most frequent causes */}
-        {causeCounts.length > 0 && (
-          <div className="mb-4">
-            <p className="text-sm text-muted-foreground mb-2">{t('mostFrequentCauses')}</p>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {causeCounts.map(([cause, count]) => (
-                <div key={cause} className="flex items-center gap-1 bg-primary-soft rounded-pill px-3 py-1.5 text-sm whitespace-nowrap">
-                  <span>{CAUSE_EMOJIS[cause]}</span>
-                  <span className="font-medium">{translateCause(cause)}</span>
-                  <span className="text-muted-foreground">x{count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Period filter */}
         <div className="flex gap-2 mb-4">

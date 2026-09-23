@@ -15,7 +15,6 @@ import Dashboard from "./pages/Dashboard";
 
 const BabblResult = lazy(() => import("./pages/babbl/Result"));
 const BabblPaywall = lazy(() => import("./pages/babbl/Paywall"));
-const BabblLullaby = lazy(() => import("./pages/babbl/Lullaby"));
 const Auth = lazy(() => import("./pages/Auth"));
 const History = lazy(() => import("./pages/History"));
 const Breathing = lazy(() => import("./pages/Breathing"));
@@ -53,7 +52,8 @@ const App = () => (
             <Route path="/record" element={<BabblHome />} />
             <Route path="/analysis/:id" element={<BabblResult />} />
             <Route path="/upgrade" element={<BabblPaywall />} />
-            <Route path="/lullaby" element={<BabblLullaby />} />
+            {/* L'ancienne maquette « berceuse » affichait un résultat inventé (« apaisé en 47 s »). */}
+            <Route path="/lullaby" element={<Navigate to="/voice-setup" replace />} />
 
             {/* Journal : la saisie de la tétée, de la couche et du réveil vit ici.
                 Plusieurs écrans y renvoient (connexion, bienvenue, respiration). */}

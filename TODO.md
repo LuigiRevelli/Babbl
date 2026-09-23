@@ -54,13 +54,13 @@
 |---|---|---|
 | Liste finale des symptômes (36 signaux de la voix vérifiés) | ✅ | `LISTE-FINALE-SYMPTOMES.md` |
 | Sept défauts de production corrigés | ✅ | Vocabulaire, voix clonée, filtre, historique, prototype, docs |
-| Porte d'entrée mesurée sur 366 vrais pleurs | ✅ | Rejets à tort de 21 % à 1,9 % (`recherche/banc-porte-2026-09.md`) |
+| Porte d'entrée mesurée sur 366 vrais pleurs | ✅ | Rejets à tort de 21 % à 2,2 %, non-pleurs acceptés 36,6 % (`recherche/banc-porte-2026-09.md`) |
 | Brouillons des cartes et repères | ✅ | `backend/draft_cards.py`, à faire relire par un pédiatre |
 | Page d'accueil et maquettes réécrites | ✅ | Plus de pourcentage, de faux témoignage ni de fausses statistiques |
 | « Ce qui l'a calmé » | 🔄 | Question à la réouverture, liste fermée |
 | Relecture pédiatrique des cartes | ❌ | Bloque leur publication |
 | Appel conseil réglementaire | ❌ | Case cochée → carte : hors DM ? Enregistrement de toux : HDS ? |
-| Porte : rejeter babillage et voix au bébé | ❌ | Demande de vrais enregistrements négatifs |
+| Porte : rejeter babillage, voix et bruits de la maison | ❌ | 36,6 % de non-pleurs passent encore. Demande de vrais enregistrements négatifs au téléphone |
 
 ## Phase 2 — Monétisation ❌
 

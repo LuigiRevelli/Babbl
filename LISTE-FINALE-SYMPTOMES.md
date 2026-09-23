@@ -111,7 +111,7 @@ Aucun n'est attendu au-delà de « carte statique » ; ils ferment les derniers 
 
 | Défaut | Corrigé |
 |---|---|
-| Porte : babillage et voix adulte acceptés ; 21 % de vrais pleurs rejetés | Rejets de vrais pleurs corrigés (1,9 %). Babillage et voix au bébé toujours acceptés, tests écrits |
+| Porte : babillage et voix adulte acceptés ; 21 % de vrais pleurs rejetés | Rejets de vrais pleurs corrigés (2,2 %). Babillage et voix au bébé toujours acceptés, tests écrits |
 | « aigu » et « faible » dans l'observation | Oui : les mots décrivent la continuité mesurée |
 | Tendance « 2h-5h » dans l'historique | Oui, retirée |
 | Prototype : apnée, filtrage, modèle, comité de pédiatres | Oui pour ce bloc. Le reste de la page d'accueil garde l'ancien discours (« 78 % de confiance », coliques, douleur) |
@@ -138,7 +138,7 @@ Luigi porte tout seul. Dans cet ordre ; les durées sont des estimations d'ingé
 | # | Étape | État | Dépend de |
 |---|---|---|---|
 | 1 | Corriger les défauts en production | **Fait** le 23/09 | — |
-| 2 | Porte d'entrée : ne plus rejeter les vrais pleurs | **Fait** le 23/09 : rejets à tort de 21 % à 1,9 % sur 366 vrais pleurs au téléphone (`recherche/banc-porte-2026-09.md`). Reste : babillage et voix au bébé acceptés | — |
+| 2 | Porte d'entrée : ne plus rejeter les vrais pleurs | **Fait** le 23/09 : rejets à tort de 21 % à 2,2 % sur 366 vrais pleurs au téléphone ; 36,6 % de non-pleurs acceptés (`recherche/banc-porte-2026-09.md`). Reste : babillage et voix au bébé acceptés | — |
 | 3 | Faire relire les cartes par un pédiatre (une seule carte « Respiration et toux », carte 15 « cri faible », anti-secouement, repères babillage et audition) | À faire | Trouver un pédiatre relecteur |
 | 4 | Appel au conseil réglementaire : carte déclenchée par une case cochée, et enregistrement de toux pour le médecin (HDS) | À faire | — |
 | 5 | Intégrer les cartes relues dans l'app | **Brouillons faits** le 23/09 (`backend/draft_cards.py`, document de relecture `recherche/cartes-a-relire.md`). Publication après relecture | 3 et 4 |

@@ -107,6 +107,18 @@ Aucun n'est attendu au-delà de « carte statique » ; ils ferment les derniers 
 
 À corriger **avant** d'ajouter une carte.
 
+**État au 23/09/2026 :** six défauts corrigés et poussés. La porte d'entrée reste à durcir (étape 2) ; deux tests la reproduisent et sont marqués « échec attendu ».
+
+| Défaut | Corrigé |
+|---|---|
+| Porte : babillage et voix adulte acceptés | Non, tests écrits (`backend/tests/test_audio.py`) |
+| « aigu » et « faible » dans l'observation | Oui : les mots décrivent la continuité mesurée |
+| Tendance « 2h-5h » dans l'historique | Oui, retirée |
+| Prototype : apnée, filtrage, modèle, comité de pédiatres | Oui pour ce bloc. Le reste de la page d'accueil garde l'ancien discours (« 78 % de confiance », coliques, douleur) |
+| Voix clonée qui affirme un état | Oui, messages neutres et test |
+| `FEATURES.md` et `TODO.md` | Oui |
+| Filtre de mots interdits | Oui, avec dix phrases d'attaque ajoutées |
+
 | Défaut | Où | Vérifié |
 |---|---|---|
 | La porte laisse passer un babillage à 300 Hz et une voix à 270 Hz, puis les classe « pleur intense » | `backend/triage_rules.py` (porte) | **Oui, reproduit** sur signaux synthétiques le 22/09 |

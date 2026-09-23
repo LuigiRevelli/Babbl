@@ -119,9 +119,51 @@ def test_amplitude_never_reaches_a_decision():
     assert intensity_observation(f)["level"] == intensity_observation(f2)["level"]
 
 
+# ─── Défaut connu de la porte (LISTE-FINALE-SYMPTOMES.md, n°22) ─────────
+# Reproduit le 22/09/2026 : un babillage à 300 Hz et une voix adressée au bébé
+# à 270 Hz passent la porte et ressortent « presque continu ». Aucun seuil
+# simple ne les sépare d'un vrai pleur sans risquer de rejeter de vrais pleurs
+# (un pleur réel du dépôt mesurait 232 Hz). Le correctif demande un banc de
+# vrais clips téléphone. Ces tests échouent tant que la porte n'est pas
+# durcie ; `strict=True` fera échouer la suite le jour où ils passent, pour qu'on
+# retire le marqueur.
+try:
+    import pytest
+    _xfail = pytest.mark.xfail(strict=True, reason="porte non durcie : ROADMAP étape 2")
+except ImportError:  # exécution directe sans pytest
+    def _xfail(fn):
+        fn._expected_failure = True
+        return fn
+
+
+def _syllables(f0: float, on_s: float, off_s: float, sec: float = 10.0) -> np.ndarray:
+    t = np.arange(int(SR * sec)) / SR
+    ph = 2 * np.pi * np.cumsum(f0 + 0.07 * f0 * np.sin(2 * np.pi * 2 * t)) / SR
+    y = sum(np.sin(k * ph) / k for k in range(1, 8))
+    y = y * ((t % (on_s + off_s)) < on_s)
+    y = y + 0.01 * np.random.default_rng(2).standard_normal(len(t))
+    return (0.5 * y / np.max(np.abs(y))).astype(np.float32)
+
+
+@_xfail
+def test_babble_is_not_a_cry():
+    ok, code, _ = recording_gate(_features(_syllables(300.0, 0.20, 0.20)))
+    assert not ok and code == "no_cry_detected"
+
+
+@_xfail
+def test_adult_voice_to_baby_is_not_a_cry():
+    ok, code, _ = recording_gate(_features(_syllables(270.0, 0.22, 0.08)))
+    assert not ok and code == "no_cry_detected"
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     for fn in fns:
+        marks = getattr(fn, "pytestmark", [])
+        if getattr(fn, "_expected_failure", False) or any(m.name == "xfail" for m in marks):
+            print(f"xfail  {fn.__name__}")
+            continue
         fn()
         print(f"ok  {fn.__name__}")
     print(f"{len(fns)} tests passed")

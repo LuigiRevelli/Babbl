@@ -168,7 +168,8 @@ export default function VoiceSetup() {
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => step === 'recording' ? setStep('profile') : navigate('/dashboard')}
-          className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border/50"
+          aria-label="Retour"
+          className="w-11 h-11 rounded-full bg-card flex items-center justify-center border border-border/50"
         >
           <ArrowLeft className="w-5 h-5" strokeWidth={1.5} />
         </button>
@@ -201,8 +202,9 @@ export default function VoiceSetup() {
           </div>
 
           {/* Name */}
-          <label className="text-xs font-semibold text-muted-foreground mb-2">{t('yourName')}</label>
+          <label htmlFor="parent-name" className="text-xs font-semibold text-muted-foreground mb-2">{t('yourName')}</label>
           <input
+            id="parent-name"
             value={userName}
             onChange={(e) => setUserName(e.target.value)}
             placeholder={t('namePlaceholder')}
@@ -210,8 +212,9 @@ export default function VoiceSetup() {
           />
 
           {/* Birth date — la seule source fiable de l'âge en jours */}
-          <label className="text-xs font-semibold text-muted-foreground mb-2">{t('babyBirthDate')}</label>
+          <label htmlFor="baby-birth-date" className="text-xs font-semibold text-muted-foreground mb-2">{t('babyBirthDate')}</label>
           <input
+            id="baby-birth-date"
             type="date"
             value={birthDate}
             max={todayIso}

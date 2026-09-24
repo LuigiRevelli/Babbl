@@ -8,6 +8,10 @@
  */
 import { chromium } from 'playwright-core';
 import path from 'node:path';
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+
+const AXE = fs.readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8');
 
 const APP = process.env.APP_URL ?? 'http://127.0.0.1:4173';
 const AUDIO = process.env.AUDIO_DIR ?? '/tmp/e2e';
@@ -40,6 +44,15 @@ async function page(browser) {
 
 const bodyText = (p) => p.evaluate(() => document.body.innerText);
 
+/** Accessibilité (axe-core) : aucun défaut « serious » ou « critical ». */
+async function a11y(p, where) {
+  await p.addScriptTag({ content: AXE });
+  const bad = await p.evaluate(async () => (await window.axe.run(document, { resultTypes: ['violations'] })).violations
+    .filter((v) => ['serious', 'critical'].includes(v.impact))
+    .map((v) => `${v.id} ×${v.nodes.length} (${v.nodes[0].target.join(' ')})`));
+  check(bad.length === 0, `${where} accessible${bad.length ? ' : ' + bad.join(', ') : ''}`);
+}
+
 // 1. Un pleur, après avoir noté une tétée → résultat avec la piste et les cartes.
 {
   const b = await browserFor('cry.wav');
@@ -55,6 +68,7 @@ const bodyText = (p) => p.evaluate(() => document.body.innerText);
   check(/saisi/.test(text), 'le résultat dit que la piste vient de la saisie');
   check(/Tétée/.test(text), 'la tétée notée apparaît dans la piste');
   for (const re of FORBIDDEN) check(!re.test(text), `résultat sans ${re}`);
+  await a11y(p, 'le résultat');
   check(p.errors.length === 0, `aucune erreur de page (${p.errors.join(' | ')})`);
 
   // Les autres écrans s'ouvrent sans erreur, avec l'analyse en mémoire.
@@ -64,6 +78,7 @@ const bodyText = (p) => p.evaluate(() => document.body.innerText);
     const t = await bodyText(p);
     check(t.trim().length > 20 && !/Page introuvable/.test(t), `${route} s'affiche`);
     for (const re of FORBIDDEN) check(!re.test(t), `${route} sans ${re}`);
+    await a11y(p, route);
   }
   check(p.errors.length === 0, `aucune erreur sur les autres écrans (${p.errors.join(' | ')})`);
   await b.close();
@@ -82,6 +97,7 @@ const bodyText = (p) => p.evaluate(() => document.body.innerText);
   const expectV2 = process.env.EXPECT_CARDS === 'v2';
   check(/Si vous voyez/.test(text) === expectV2, `menus v2 ${expectV2 ? 'affichés' : 'absents'} (cartes ${expectV2 ? 'v2' : 'v1'})`);
   for (const re of FORBIDDEN) check(!re.test(text), `« Quand appeler » sans ${re}`);
+  await a11y(p, '« Quand appeler »');
   check(p.errors.length === 0, `aucune erreur de page (${p.errors.join(' | ')})`);
   await b.close();
 }
@@ -97,6 +113,7 @@ const bodyText = (p) => p.evaluate(() => document.body.innerText);
   const text = await bodyText(p);
   check(!/\/analysis\//.test(p.url()), 'le silence ne mène pas à un résultat');
   check(/15/.test(text), 'le refus affiche le 15');
+  await a11y(p, 'le refus');
   check(/rassurant/i.test(text), 'le refus rappelle qu\'un bébé qui pleure peu n\'est pas rassurant');
   check(p.errors.length === 0, `aucune erreur de page (${p.errors.join(' | ')})`);
   await b.close();

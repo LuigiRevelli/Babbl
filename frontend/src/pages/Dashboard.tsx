@@ -162,23 +162,24 @@ export default function Dashboard() {
       </div>
 
       {/* CTA Card */}
-      <div
+      <button
+        type="button"
         onClick={() => navigate('/record')}
-        className="relative rounded-2xl p-6 mb-5 overflow-hidden animate-scale-in cursor-pointer group"
+        className="relative block w-full text-left rounded-2xl p-6 mb-5 overflow-hidden animate-scale-in cursor-pointer group"
         style={{
           background: 'linear-gradient(135deg, hsl(0 100% 74%), hsl(0 85% 62%))',
           animationFillMode: 'backwards',
         }}
       >
-        <div className="absolute top-3 right-3 w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
-          <Droplets className="w-6 h-6 text-white" strokeWidth={1.5} />
-        </div>
-        <p className="text-white/80 text-sm mb-1">{t('listenAnalyze')}</p>
-        <h2 className="font-serif text-white text-xl font-bold mb-3 transition-transform duration-200 group-active:translate-x-0.5">{t('myBabyCrying')}</h2>
+        <span className="absolute top-3 right-3 w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
+          <Droplets className="w-6 h-6 text-primary-foreground" strokeWidth={1.5} />
+        </span>
+        <span className="block text-primary-foreground/80 text-sm mb-1">{t('listenAnalyze')}</span>
+        <span className="block font-serif text-primary-foreground text-xl font-bold mb-3 transition-transform duration-200 group-active:translate-x-0.5">{t('myBabyCrying')}</span>
         {/* Pas de compteur d'enregistrements : « il pleure trop » est le
             facteur de risque mesuré du bébé secoué (ROADMAP-BACKEND.md). */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-      </div>
+        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+      </button>
 
       {/* Two-column grid */}
       <div className="grid grid-cols-2 gap-3 mb-5">
@@ -192,7 +193,7 @@ export default function Dashboard() {
           }}
         >
           <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mb-3">
-            <Clock className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            <Clock className="w-5 h-5 text-primary-ink" strokeWidth={1.5} />
           </div>
           <p className="text-xs text-muted-foreground mb-0.5">{t('lastCry')}</p>
           <p className="text-sm font-bold leading-tight">{lastCry || t('none')}</p>
@@ -232,7 +233,8 @@ export default function Dashboard() {
         </div>
         <button
           onClick={handleLogMeal}
-          className="w-8 h-8 rounded-full bg-muted flex items-center justify-center transition-transform duration-200 hover:scale-110 active:scale-95"
+          aria-label="Noter une tétée maintenant"
+          className="w-11 h-11 rounded-full bg-muted flex items-center justify-center transition-transform duration-200 hover:scale-110 active:scale-95"
         >
           <Plus className="w-4 h-4 text-muted-foreground" strokeWidth={2} />
         </button>
@@ -245,7 +247,7 @@ export default function Dashboard() {
       >
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center transition-transform duration-300 ${wakePulse ? 'scale-125' : ''}`}>
-            <Sun className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            <Sun className="w-5 h-5 text-primary-ink" strokeWidth={1.5} />
           </div>
           <div className="text-left">
             <p className="text-xs text-muted-foreground">{t('lastWake')}</p>
@@ -254,7 +256,8 @@ export default function Dashboard() {
         </div>
         <button
           onClick={handleLogWake}
-          className="w-8 h-8 rounded-full bg-muted flex items-center justify-center transition-transform duration-200 hover:scale-110 active:scale-95"
+          aria-label="Noter un réveil maintenant"
+          className="w-11 h-11 rounded-full bg-muted flex items-center justify-center transition-transform duration-200 hover:scale-110 active:scale-95"
         >
           <Plus className="w-4 h-4 text-muted-foreground" strokeWidth={2} />
         </button>
@@ -268,7 +271,7 @@ export default function Dashboard() {
       >
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center transition-transform duration-300 ${diaperPulse ? 'scale-125' : ''}`}>
-            <Baby className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            <Baby className="w-5 h-5 text-primary-ink" strokeWidth={1.5} />
           </div>
           <div className="text-left">
             <p className="text-xs text-muted-foreground">{t('diaperChange')}</p>
@@ -280,7 +283,8 @@ export default function Dashboard() {
             e.stopPropagation();
             setShowDiaperMenu(true);
           }}
-          className="w-8 h-8 rounded-full bg-muted flex items-center justify-center transition-transform duration-200 hover:scale-110 active:scale-95"
+          aria-label="Noter un change"
+          className="w-11 h-11 rounded-full bg-muted flex items-center justify-center transition-transform duration-200 hover:scale-110 active:scale-95"
         >
           <Plus className="w-4 h-4 text-muted-foreground" strokeWidth={2} />
         </button>
@@ -298,7 +302,7 @@ export default function Dashboard() {
           }}
         >
           <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mb-3">
-            <Mic className="w-5 h-5 text-primary" strokeWidth={1.5} />
+            <Mic className="w-5 h-5 text-primary-ink" strokeWidth={1.5} />
           </div>
           <p className="text-xs text-muted-foreground mb-0.5">{t('cloneMyVoice')}</p>
           <p className="text-sm font-bold leading-tight">{t('customize')}</p>
@@ -310,6 +314,12 @@ export default function Dashboard() {
         className="w-full mt-4 py-3 rounded-2xl border border-border text-sm font-semibold"
       >
         Résumé pour le médecin (7 jours)
+      </button>
+      <button
+        onClick={() => navigate('/quand-appeler')}
+        className="w-full mt-3 py-3 rounded-2xl text-sm font-semibold underline text-primary-ink"
+      >
+        Quand appeler le 15 ?
       </button>
 
       {showDiaperMenu && (

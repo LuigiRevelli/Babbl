@@ -93,7 +93,8 @@ export default function BabblResult() {
       <div style={{ padding: '16px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <button
           onClick={() => navigate('/')}
-          style={{ background: C.coquille, border: `1px solid ${C.ivoire}`, width: 40, height: 40, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          aria-label="Retour à l'accueil"
+          style={{ background: C.coquille, border: `1px solid ${C.ivoire}`, width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M10 2L4 8l6 6" stroke={C.cafe} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -213,7 +214,7 @@ export default function BabblResult() {
         {/* Voix du parent : la fonction existe, elle est facultative. */}
         <div onClick={() => navigate('/voice-setup')} style={{ background: C.cafe, color: C.lait, borderRadius: 24, padding: 22, cursor: 'pointer', marginBottom: 24 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-            <div style={{ fontFamily: C.mono, fontSize: 10, letterSpacing: '.15em', textTransform: 'uppercase', color: 'rgba(243,234,218,.5)' }}>
+            <div style={{ fontFamily: C.mono, fontSize: 10, letterSpacing: '.15em', textTransform: 'uppercase', color: 'rgba(243,234,218,.7)' }}>
               ↳ réconforter avec votre voix
             </div>
             <div style={{ fontFamily: C.mono, fontSize: 9, letterSpacing: '.1em', textTransform: 'uppercase', background: C.ocre, color: C.cafe, padding: '4px 10px', borderRadius: 99 }}>

@@ -14,10 +14,12 @@
     --popover-foreground: 0 20% 15%;
 
     --primary: 0 100% 74%;
-    --primary-foreground: 0 0% 100%;
+    /* Texte foncé sur corail : 6,3:1 (le blanc faisait 2,5:1). */
+    --primary-foreground: 0 20% 15%;
 
     --primary-strong: 0 85% 62%;
     --primary-soft: 0 100% 92%;
+    --primary-ink: 0 60% 45%;
 
     --secondary: 40 50% 92%;
     --secondary-foreground: 0 20% 15%;

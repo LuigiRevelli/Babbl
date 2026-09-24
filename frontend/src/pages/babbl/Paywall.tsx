@@ -36,7 +36,7 @@ export default function BabblPaywall() {
         >
           ×
         </button>
-        <div style={{ fontFamily: C.mono, fontSize: 10, color: 'rgba(243,234,218,.5)', letterSpacing: '.15em', textTransform: 'uppercase' }}>
+        <div style={{ fontFamily: C.mono, fontSize: 10, color: 'rgba(243,234,218,.7)', letterSpacing: '.15em', textTransform: 'uppercase' }}>
           Babbl · phase de test
         </div>
         <div style={{ width: 40 }} />

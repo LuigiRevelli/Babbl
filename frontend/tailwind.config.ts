@@ -29,6 +29,9 @@ export default {
           foreground: "hsl(var(--primary-foreground))",
           strong: "hsl(var(--primary-strong))",
           soft: "hsl(var(--primary-soft))",
+          // Corail foncé pour du TEXTE sur fond clair (5,9:1). Le corail de base ne
+          // sert qu'aux fonds : en texte il tombait à 2,5:1, illisible la nuit.
+          ink: "hsl(var(--primary-ink))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",

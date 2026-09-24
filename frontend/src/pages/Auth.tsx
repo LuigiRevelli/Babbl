@@ -97,9 +97,9 @@ export default function Auth() {
         className="mt-6 text-sm text-muted-foreground text-center w-full"
       >
         {isLogin ? (
-          <>Pas encore de compte ? <span className="text-primary font-semibold underline">Inscription</span></>
+          <>Pas encore de compte ? <span className="text-primary-ink font-semibold underline">Inscription</span></>
         ) : (
-          <>Déjà un compte ? <span className="text-primary font-semibold underline">Connexion</span></>
+          <>Déjà un compte ? <span className="text-primary-ink font-semibold underline">Connexion</span></>
         )}
       </button>
     </MobileLayout>

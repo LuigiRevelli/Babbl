@@ -8,7 +8,7 @@ import { t } from '@/lib/i18n';
 const PHASES = [
   { label: t('inhale'), duration: 4, scale: 1.6, color: 'text-foreground' },
   { label: t('hold'), duration: 4, scale: 1.6, color: 'text-muted-foreground' },
-  { label: t('exhale'), duration: 6, scale: 1.0, color: 'text-primary' },
+  { label: t('exhale'), duration: 6, scale: 1.0, color: 'text-primary-ink' },
   { label: t('pause'), duration: 2, scale: 1.0, color: 'text-muted-foreground' },
 ];
 
@@ -88,7 +88,7 @@ export default function Breathing() {
           <span className="text-5xl animate-badge-bounce">🌸</span>
           <h1 className="font-serif text-2xl font-bold mt-4">{t('wellDone')}</h1>
           <p className="text-muted-foreground mt-2">{t('breathingDone')}</p>
-          <p className="text-sm text-primary font-semibold mt-2">{t('xpGained')}</p>
+          <p className="text-sm text-primary-ink font-semibold mt-2">{t('xpGained')}</p>
           <button
             onClick={() => navigate('/dashboard')}
             className="w-full h-14 bg-primary text-primary-foreground rounded-pill font-semibold text-lg mt-8 hover:bg-primary-strong transition-colors"

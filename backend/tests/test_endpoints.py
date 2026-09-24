@@ -249,3 +249,19 @@ def test_limiter_memory_is_bounded():
     for i in range(1000):
         rl.allow(f"k{i}", now=float(i))
     assert len(rl) <= 100
+
+
+def test_cors_restricted_to_allowed_origins():
+    """BABBL_ALLOWED_ORIGINS définie : seul le site de Babbl reçoit l'en-tête CORS."""
+    import subprocess
+    code = (
+        "import app; c = app.app.test_client();"
+        "ok = c.get('/api/cards', headers={'Origin': 'https://babbl.fr'}).headers.get('Access-Control-Allow-Origin');"
+        "bad = c.get('/api/cards', headers={'Origin': 'https://evil.example'}).headers.get('Access-Control-Allow-Origin');"
+        "h = c.get('/api/health').get_json()['security']['cors'];"
+        "print(ok, bad, h)"
+    )
+    env = {**os.environ, "BABBL_ALLOWED_ORIGINS": "https://babbl.fr"}
+    out = subprocess.run([sys.executable, "-c", code], cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                         env=env, capture_output=True, text=True, timeout=120).stdout.split()
+    assert out[-3:] == ["https://babbl.fr", "None", "restricted"], out

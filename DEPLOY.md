@@ -17,7 +17,7 @@ Dans Supabase → SQL Editor, exécuter `supabase/migrations/20260923_soothed_an
 1. render.com → **New → Blueprint** → choisir le dépôt `LuigiRevelli/Babbl`, branche de votre choix. Render lit `render.yaml` et crée `babbl-api` et `babbl-web`.
 2. Renseigner les secrets demandés. `SUPABASE_SERVICE_KEY` est la clé *service role* (Supabase → Settings → API), jamais la clé publique.
 3. Une fois `babbl-api` en ligne, copier son adresse dans `VITE_API_URL` de `babbl-web`, et l'adresse de `babbl-web` dans `BABBL_ALLOWED_ORIGINS` de `babbl-api`. Relancer les deux.
-4. Vérifier : `https://<babbl-api>/api/health` doit afficher `"llm": true`, `"voice": true`, `"database": true`.
+4. Vérifier : `https://<babbl-api>/api/health` doit afficher `"llm": true`, `"voice": true`, `"database": true`, et `"cors": "restricted"`. `"open"` veut dire que `BABBL_ALLOWED_ORIGINS` manque : n'importe quel site pourrait appeler l'API (et consommer vos crédits).
 
 ## 3. Ailleurs (Railway, Fly.io, un serveur)
 

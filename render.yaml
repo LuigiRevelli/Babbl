@@ -20,6 +20,8 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_KEY
         sync: false
+      - key: BABBL_TRUSTED_PROXIES
+        value: "1"           # le proxy de Render ajoute l'adresse réelle du client
       - key: BABBL_ALLOWED_ORIGINS
         sync: false          # ex. https://babbl-web.onrender.com,https://babbl.fr
 

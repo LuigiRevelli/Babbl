@@ -33,7 +33,7 @@ from baseline import update_baseline
 from comfort_messages import generate_comfort_message
 from elevenlabs_client import clone_voice, delete_voice, text_to_speech, tts_configured
 from mistral_client import ANTHROPIC_MODEL, PROMPT_VERSION, llm_configured, safe_baby_name, write_parent_guidance
-from security import RateLimiter, client_ip, is_safe_audio_name, safe_remove, sweep_old_files, verify_user
+from security import RateLimiter, client_ip, trusted_proxies, is_safe_audio_name, safe_remove, sweep_old_files, verify_user
 from taxonomy import NO_CRY_HINT, NO_CRY_REMINDER, SOOTHED_BY, TAXONOMY_VERSION, TOO_SHORT_HINT
 from triage_rules import RULES_VERSION, cards_v2_enabled, context_hypotheses, intensity_observation, parent_menus, recording_gate, safety_cards
 
@@ -127,6 +127,12 @@ def health():
             "baseline_collection": BASELINE_ENABLED,
             "cards": "v2" if cards_v2_enabled() else "v1",
         },
+        # À vérifier avant d'ouvrir au public : « open » = tout site peut appeler l'API.
+        "security": {
+            "cors": "restricted" if _origins else "open",
+            "trusted_proxies": trusted_proxies(),
+            "retention_days": os.environ.get("BABBL_RETENTION_DAYS") or None,
+        },
     })
 
 
@@ -146,7 +152,7 @@ def voice_clone():
         return jsonify({"error": "Fichier audio manquant"}), 400
 
     audio_file = request.files["audio"]
-    name = request.form.get("name", "Parent Babbl")
+    name = (request.form.get("name") or "Parent Babbl")[:50]
 
     request_id = uuid.uuid4().hex
     ext = os.path.splitext(audio_file.filename or "")[1] or ".webm"
@@ -156,17 +162,13 @@ def voice_clone():
     try:
         voice_id = clone_voice(name=name, audio_path=sample_path)
     except Exception as e:
-        traceback.print_exc()
         msg = str(e) or type(e).__name__
-        if "missing_permissions" in msg or "create_instant_voice_clone" in msg:
-            return jsonify({
-                "error": (
-                    "Votre clé API ElevenLabs n'a pas la permission de cloner une voix. "
-                    "Allez sur elevenlabs.io → Settings → API Keys et activez 'Voices: Write' "
-                    "(ou 'Create Instant Voice Clone')."
-                )
-            }), 403
-        return jsonify({"error": "Le clonage vocal a échoué."}), 500
+        # Clé sans le droit de cloner : c'est un réglage de Babbl, pas du parent.
+        # Le parent lit un message simple ; l'exploitant lit le journal.
+        misconfigured = "missing_permissions" in msg or "create_instant_voice_clone" in msg
+        log_event("integration_failed", "error" if misconfigured else "warning",
+                  component="voice_clone", error_type="missing_permissions" if misconfigured else type(e).__name__)
+        return jsonify({"error": "Le clonage vocal n'est pas disponible pour le moment. Réessayez plus tard."}), 503
     finally:
         # La voix du parent ne reste pas sur le disque.
         safe_remove(sample_path)

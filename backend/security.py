@@ -67,15 +67,31 @@ class RateLimiter:
     """Fenêtre glissante par clé (adresse IP). Suffisant pour un seul
     processus ; un déploiement multi-workers partagera la limite plus tard."""
 
+    MAX_KEYS = 20_000  # au-delà, on oublie les clés inactives (mémoire bornée)
+
     def __init__(self, limit: int, window_s: float):
         self.limit = int(limit)
         self.window_s = float(window_s)
         self._hits: dict[str, deque] = {}
         self._lock = threading.Lock()
 
+    def _prune(self, now: float) -> None:
+        stale = [k for k, q in self._hits.items() if not q or now - q[-1] > self.window_s]
+        for k in stale:
+            del self._hits[k]
+        # Encore trop (attaque par adresses inventées) : on garde les plus récentes.
+        if len(self._hits) >= self.MAX_KEYS:
+            keep = sorted(self._hits.items(), key=lambda kv: kv[1][-1], reverse=True)[: self.MAX_KEYS // 2]
+            self._hits = dict(keep)
+
+    def __len__(self) -> int:
+        return len(self._hits)
+
     def allow(self, key: str, now: float | None = None) -> bool:
         now = time.monotonic() if now is None else now
         with self._lock:
+            if key not in self._hits and len(self._hits) >= self.MAX_KEYS:
+                self._prune(now)
             q = self._hits.setdefault(key, deque())
             while q and now - q[0] > self.window_s:
                 q.popleft()
@@ -85,10 +101,26 @@ class RateLimiter:
             return True
 
 
-def client_ip(request) -> str:
-    fwd = request.headers.get("X-Forwarded-For", "")
-    if fwd:
-        return fwd.split(",")[0].strip()
+def trusted_proxies(env=os.environ) -> int:
+    try:
+        return max(0, int(env.get("BABBL_TRUSTED_PROXIES", "1")))
+    except ValueError:
+        return 1
+
+
+def client_ip(request, proxies: int | None = None) -> str:
+    """Adresse du client pour la limite de débit.
+
+    X-Forwarded-For s'écrit « client, proxy1, proxy2 » : chaque proxy AJOUTE
+    à droite. Le premier élément est donc celui que le client a écrit lui-même
+    — le lire permettait de changer d'adresse à chaque requête et d'analyser
+    sans limite (chaque analyse coûte un appel payant). On lit l'élément posé
+    par le dernier proxy de confiance : BABBL_TRUSTED_PROXIES (1 par défaut,
+    l'hébergeur ; 0 si l'app est exposée directement)."""
+    n = trusted_proxies() if proxies is None else proxies
+    parts = [p.strip() for p in request.headers.get("X-Forwarded-For", "").split(",") if p.strip()]
+    if n > 0 and parts:
+        return parts[-n] if len(parts) >= n else parts[0]
     return request.remote_addr or "unknown"
 
 

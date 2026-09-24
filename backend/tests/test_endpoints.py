@@ -201,3 +201,51 @@ def test_export_reports_a_failing_table_instead_of_hiding_it():
     body = _client(_Db(fail={("badges", "select")})).get("/api/me/export", headers=GOOD).get_json()
     assert body["errors"] == {"badges": "RuntimeError"}
     assert "badges" not in body["tables"]
+
+
+# ─── Limite de débit : adresse non falsifiable, mémoire bornée ───────
+
+class _Req:
+    def __init__(self, xff="", remote="10.0.0.9"):
+        self.headers = {"X-Forwarded-For": xff} if xff else {}
+        self.remote_addr = remote
+
+
+def test_client_cannot_choose_its_address_behind_one_proxy():
+    from security import client_ip
+    # le client écrit « 1.2.3.4 », l'hébergeur ajoute la vraie adresse à droite
+    assert client_ip(_Req("1.2.3.4, 203.0.113.7"), proxies=1) == "203.0.113.7"
+    assert client_ip(_Req("203.0.113.7"), proxies=1) == "203.0.113.7"
+    assert client_ip(_Req(""), proxies=1) == "10.0.0.9"
+
+
+def test_no_proxy_ignores_the_header():
+    from security import client_ip
+    assert client_ip(_Req("1.2.3.4"), proxies=0) == "10.0.0.9"
+
+
+def test_spoofed_addresses_do_not_bypass_the_limit():
+    """Même en changeant d'adresse inventée à chaque requête, la 21e passe pas."""
+    babbl_app._get_supabase = lambda: None
+    saved = babbl_app._analyze_limiter
+    from security import RateLimiter
+    babbl_app._analyze_limiter = RateLimiter(limit=3, window_s=600)
+    try:
+        c = babbl_app.app.test_client()
+        codes = []
+        for i in range(5):
+            r = c.post("/api/analyze", data={"audio": (io.BytesIO(b"x"), "r.wav"), "context": "{}"},
+                       headers={"X-Forwarded-For": f"9.9.9.{i}, 203.0.113.7"})
+            codes.append(r.status_code)
+        assert codes[-1] == 429 and codes.count(429) == 2, codes
+    finally:
+        babbl_app._analyze_limiter = saved
+
+
+def test_limiter_memory_is_bounded():
+    from security import RateLimiter
+    rl = RateLimiter(limit=5, window_s=600)
+    rl.MAX_KEYS = 100
+    for i in range(1000):
+        rl.allow(f"k{i}", now=float(i))
+    assert len(rl) <= 100

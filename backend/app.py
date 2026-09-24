@@ -100,6 +100,16 @@ logs.install(app)
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 Mo : un clip de 10 s en pèse < 1
 
 
+# Extensions acceptées : celles des navigateurs et des tests. Tout le reste est
+# traité comme du WebM — et décodé par l'appel ffmpeg durci (audio_analysis).
+_AUDIO_EXTS = {".webm", ".ogg", ".oga", ".m4a", ".mp4", ".mp3", ".aac", ".wav", ".flac", ".3gp"}
+
+
+def _audio_ext(filename: str | None) -> str:
+    ext = os.path.splitext(filename or "")[1].lower()
+    return ext if ext in _AUDIO_EXTS else ".webm"
+
+
 def _refusal(status: int, error: str, code: str, context: dict, baby_age_months: int | None, hint: str | None = None):
     """INVARIANT : toute réponse d'échec porte les trois cartes de sécurité."""
     return jsonify({
@@ -155,7 +165,7 @@ def voice_clone():
     name = (request.form.get("name") or "Parent Babbl")[:50]
 
     request_id = uuid.uuid4().hex
-    ext = os.path.splitext(audio_file.filename or "")[1] or ".webm"
+    ext = _audio_ext(audio_file.filename)
     sample_path = os.path.join(TMP_DIR, f"voice_{request_id}{ext}")
     audio_file.save(sample_path)
 
@@ -227,7 +237,7 @@ def analyze():
         return _refusal(429, "Trop d'analyses en peu de temps. Réessayez dans quelques minutes.", "rate_limited", context, baby_age_months)
 
     request_id = uuid.uuid4().hex
-    ext = os.path.splitext(audio_file.filename or "")[1] or ".webm"
+    ext = _audio_ext(audio_file.filename)
     audio_path = os.path.join(TMP_DIR, f"{request_id}{ext}")
     audio_file.save(audio_path)
 

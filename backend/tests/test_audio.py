@@ -186,3 +186,42 @@ if __name__ == "__main__":
         fn()
         print(f"ok  {fn.__name__}")
     print(f"{len(fns)} tests passed")
+
+
+# ─── Décodage durci : le fichier vient d'Internet ────────────────────
+
+import shutil as _shutil  # noqa: E402
+
+
+@pytest.mark.skipif(_shutil.which("ffmpeg") is None, reason="ffmpeg absent")
+def test_ffmpeg_refuses_a_playlist_disguised_as_webm(tmp_path):
+    """Une playlist HLS déguisée en .webm ferait aller ffmpeg sur le réseau."""
+    from audio_analysis import _convert_to_wav_with_ffmpeg
+    evil = tmp_path / "evil.webm"
+    evil.write_text("#EXTM3U\n#EXT-X-TARGETDURATION:1\n#EXTINF:1,\nhttp://127.0.0.1:9/x.ts\n#EXT-X-ENDLIST\n")
+    with pytest.raises(RuntimeError):
+        _convert_to_wav_with_ffmpeg(str(evil))
+
+
+def test_fake_wav_never_reaches_audioread(tmp_path, monkeypatch):
+    """Un faux .wav ne retombe jamais sur audioread (ffmpeg sans restriction)."""
+    import audio_analysis
+    calls = []
+    monkeypatch.setattr(audio_analysis, "_convert_to_wav_with_ffmpeg", lambda p: calls.append(p) or (_ for _ in ()).throw(RuntimeError("decode_failed")))
+    fake = tmp_path / "x.wav"
+    fake.write_text("#EXTM3U\n")
+    with pytest.raises(RuntimeError):
+        audio_analysis._load_audio(str(fake))
+    assert calls == [str(fake)]  # le seul décodeur tenté après libsndfile : le durci
+
+
+def test_decoding_is_bounded_in_time(tmp_path):
+    """Un fichier très long n'est lu que sur MAX_DECODE_S secondes."""
+    import wave
+    import audio_analysis
+    p = tmp_path / "long.wav"
+    with wave.open(str(p), "wb") as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(8000)
+        w.writeframes(b"\x00\x00" * 8000 * 90)
+    y, sr = audio_analysis._load_audio(str(p))
+    assert len(y) <= sr * audio_analysis.MAX_DECODE_S + 1

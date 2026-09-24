@@ -38,7 +38,7 @@ import shutil
 import subprocess
 import tempfile
 
-from audioread.exceptions import NoBackendError
+import soundfile as sf
 import librosa
 import numpy as np
 
@@ -50,6 +50,17 @@ F0_MAX = 1000.0
 F0_FLOOR_GUARD = 255.0
 
 
+# Le fichier vient d'Internet. ffmpeg sait suivre des « playlists » (HLS,
+# concat) qui vont chercher des adresses réseau ou des fichiers du serveur :
+# on ne lui permet que de lire le fichier reçu, dans un format audio connu,
+# pendant au plus MAX_DECODE_S secondes de son et DECODE_TIMEOUT_S de calcul.
+MAX_DECODE_S = 30
+DECODE_TIMEOUT_S = 20
+_FFMPEG_FORMATS = "matroska,webm,mov,mp4,m4a,3gp,ogg,wav,mp3,aac,flac"
+# Lus sans ffmpeg (libsndfile) : aucun conteneur, aucune playlist possible.
+_NATIVE_EXTS = (".wav", ".flac")
+
+
 def _convert_to_wav_with_ffmpeg(audio_path: str) -> str:
     """Convert input audio to mono WAV@22050 using ffmpeg, return temp path."""
     ffmpeg_path = shutil.which("ffmpeg")
@@ -59,9 +70,17 @@ def _convert_to_wav_with_ffmpeg(audio_path: str) -> str:
     fd, wav_path = tempfile.mkstemp(suffix=".wav")
     os.close(fd)
 
-    cmd = [ffmpeg_path, "-y", "-i", audio_path, "-ac", "1", "-ar", str(SR), wav_path]
-    proc = subprocess.run(cmd, capture_output=True, text=True)
-    if proc.returncode != 0:
+    cmd = [
+        ffmpeg_path, "-nostdin", "-hide_banner", "-loglevel", "error",
+        "-protocol_whitelist", "file", "-format_whitelist", _FFMPEG_FORMATS,
+        "-t", str(MAX_DECODE_S), "-i", audio_path,
+        "-vn", "-ac", "1", "-ar", str(SR), "-y", wav_path,
+    ]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=DECODE_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        proc = None
+    if proc is None or proc.returncode != 0:
         try:
             os.remove(wav_path)
         except OSError:
@@ -71,19 +90,33 @@ def _convert_to_wav_with_ffmpeg(audio_path: str) -> str:
     return wav_path
 
 
+def _read_pcm(path: str):
+    """Lecture par libsndfile seule (jamais audioread), mono, SR, bornée."""
+    info = sf.info(path)
+    y, sr = sf.read(path, frames=int(info.samplerate * MAX_DECODE_S), dtype="float32", always_2d=True)
+    y = y.mean(axis=1)
+    if sr != SR:
+        y = librosa.resample(y, orig_sr=sr, target_sr=SR)
+    return y.astype(np.float32), SR
+
+
 def _load_audio(audio_path: str):
-    """Load audio robustly, with ffmpeg conversion fallback if decoder backend is missing."""
-    try:
-        return librosa.load(audio_path, sr=SR, mono=True)
-    except NoBackendError:
-        wav_path = _convert_to_wav_with_ffmpeg(audio_path)
+    """WAV/FLAC : lus directement. Tout le reste (WebM, M4A, Ogg… des
+    navigateurs) passe par l'appel ffmpeg durci ci-dessus — jamais par
+    audioread, qui lancerait ffmpeg sans aucune de ces restrictions."""
+    if audio_path.lower().endswith(_NATIVE_EXTS):
         try:
-            return librosa.load(wav_path, sr=SR, mono=True)
-        finally:
-            try:
-                os.remove(wav_path)
-            except OSError:
-                pass
+            return _read_pcm(audio_path)
+        except Exception:
+            pass  # extension trompeuse : on retente par ffmpeg durci
+    wav_path = _convert_to_wav_with_ffmpeg(audio_path)
+    try:
+        return _read_pcm(wav_path)
+    finally:
+        try:
+            os.remove(wav_path)
+        except OSError:
+            pass
 
 
 def extract_features(audio_path: str) -> dict:

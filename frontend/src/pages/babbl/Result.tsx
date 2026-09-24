@@ -14,7 +14,7 @@ import { BabblTheme as C } from '@/components/babbl/theme';
 import { AppStatusBar, HomeIndicator, BabblShell } from '@/components/babbl/primitives';
 import { getUserData } from '@/lib/userData';
 import type { SafetyCard, TransientObservation } from '@/lib/analysis';
-import { HYPOTHESIS_DISCLAIMER, INTENSITY_DISCLAIMER, SAFETY_CARDS, SAFETY_FOOTER, hypothesisFr } from '@/lib/taxonomy';
+import { HYPOTHESIS_DISCLAIMER, NO_CAUSE_NOTE, INTENSITY_DISCLAIMER, SAFETY_CARDS, SAFETY_FOOTER, hypothesisFr } from '@/lib/taxonomy';
 
 const LEVEL_WORD: Record<string, string> = {
   // Continuité mesurée, pas volume ni hauteur (voir backend/taxonomy.py).
@@ -149,6 +149,7 @@ export default function BabblResult() {
           </div>
         )}
         <div style={{ fontSize: 12, color: C.cafeMute, marginTop: 12, fontStyle: 'italic' }}>{HYPOTHESIS_DISCLAIMER}</div>
+        <div style={{ fontSize: 13, color: C.cafeSoft, marginTop: 10, lineHeight: 1.45 }}>{NO_CAUSE_NOTE}</div>
         {analysis.parent_summary && (
           <>
             <div style={{ fontSize: 14, color: C.cafe, marginTop: 14, lineHeight: 1.55 }}>{analysis.parent_summary}</div>

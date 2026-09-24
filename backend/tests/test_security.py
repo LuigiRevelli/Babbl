@@ -108,7 +108,7 @@ def test_forged_token_is_refused_with_cards(monkeypatch=None):
     assert r.status_code == 401
     body = r.get_json()
     assert body["code"] == "auth_invalid"
-    assert {c["key"] for c in body["safety"]["cards"]} == {"fever_under_3_months", "breathing", "newborn_under_15_days"}
+    assert {c["key"] for c in body["safety"]["cards"]} == {"fever_under_3_months", "breathing", "at_your_limit", "newborn_under_15_days"}
 
 
 def test_token_without_supabase_is_anonymous_not_blocked():

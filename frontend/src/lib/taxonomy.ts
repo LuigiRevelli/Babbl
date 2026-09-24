@@ -28,7 +28,7 @@ export interface HypothesisMeta {
 export const CONTEXT_HYPOTHESES: Record<HypothesisKey, HypothesisMeta> = {
   hunger: {
     fr: 'Faim',
-    basis: 'Délai depuis la dernière tétée, saisi par le parent. Les pleurs sont un signe tardif de faim.',
+    basis: 'Délai depuis la dernière tétée, saisi par le parent. Tous les pleurs ne sont pas de la faim.',
   },
   discomfort: {
     fr: 'Inconfort',
@@ -45,6 +45,9 @@ export const CONTEXT_HYPOTHESES: Record<HypothesisKey, HypothesisMeta> = {
 };
 
 export const HYPOTHESIS_DISCLAIMER = "Cette piste vient de ce que vous avez saisi, pas du son.";
+/** Miroir de NO_CAUSE_NOTE (backend/taxonomy.py). */
+export const NO_CAUSE_NOTE =
+  "Parfois, un pleur n'a pas de cause qu'on puisse trouver, surtout les premières semaines. Si rien ne marche tout de suite, ce n'est pas un échec de votre part.";
 
 /** Couche 1 — niveaux d'observation sonore (texte uniquement). */
 export type IntensityLevel = 'faible' | 'modere' | 'intense';
@@ -53,8 +56,8 @@ export const INTENSITY_DISCLAIMER =
   "Babbl mesure un son ; il ne détecte aucune maladie. Un pleur faible, geignard ou éteint " +
   "n'est jamais rassurant en soi : si votre bébé vous semble différent de d'habitude, consultez.";
 
-/** Cartes de sécurité — statiques, jamais déduites du son. Les trois sont toujours affichées. */
-export type SafetyCardKey = 'fever_under_3_months' | 'breathing' | 'newborn_under_15_days';
+/** Cartes de sécurité — statiques, jamais déduites du son. Toutes toujours affichées. */
+export type SafetyCardKey = 'fever_under_3_months' | 'breathing' | 'at_your_limit' | 'newborn_under_15_days';
 
 export interface SafetyCardMeta {
   title: string;
@@ -69,6 +72,10 @@ export const SAFETY_CARDS: Record<SafetyCardKey, SafetyCardMeta> = {
   breathing: {
     title: 'Respiration',
     body: 'Respiration rapide ou difficile, creux entre les côtes, lèvres ou ongles bleutés, pauses respiratoires, refus de boire : appelez le 15. Ces signes s\'observent avec les yeux, pas avec le micro.',
+  },
+  at_your_limit: {
+    title: 'Si vous êtes à bout',
+    body: "Si vous vous sentez à bout, couchez votre bébé sur le dos dans son lit, sortez de la pièce quelques minutes et appelez quelqu'un. On ne secoue jamais un bébé.",
   },
   newborn_under_15_days: {
     title: 'Nouveau-né de moins de 15 jours',

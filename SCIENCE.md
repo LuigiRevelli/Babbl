@@ -5,6 +5,10 @@ Ce que le produit fait, et pourquoi. La démonstration complète (21 pistes,
 et `SYMPTOMS-TECHNIQUE.md` (références, réglementaire, revue du code).
 À lire avant de toucher au modèle, à la taxonomie ou au discours produit.
 
+**Autre question, autre document :** est-ce que *utiliser* Babbl aide les parents, et
+peut-il leur nuire ? Ce qu'on sait, ce que ça a changé dans le produit, et
+comment le prouver (tests d'usage → essai randomisé) : `recherche/programme-recherche.md`.
+
 Code associé :
 - `backend/taxonomy.py` — taxonomie canonique (source unique de vérité backend)
 - `frontend/src/lib/taxonomy.ts` — miroir frontend (mêmes clés, mêmes textes)

@@ -113,5 +113,5 @@ def test_eval_bench_dry_run_is_clean_on_the_deterministic_text():
     import llm_eval
     rows, s = llm_eval.run(dry_run=True)
     assert s["n"] >= 30
-    bad = [(r["name"], r["forbidden"], r["tutoie"], r["leaked"]) for r in rows if r["forbidden"] or r["tutoie"] or r["leaked"]]
+    bad = [(r["name"], r["forbidden"], r["tutoie"], r["leaked"]) for r in rows if r["forbidden"] or r["tutoie"] or r["leaked"] or r["push_feed"]]
     assert not bad, bad

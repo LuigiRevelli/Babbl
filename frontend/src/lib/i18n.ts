@@ -79,7 +79,7 @@ const fr = {
 
   // ─── Voice Setup ───────────────────────────────────
   customizeVoice: "Personnaliser la voix",
-  voiceIntro: "Pour créer une voix qui vous ressemble, nous avons besoin de quelques détails.",
+  voiceIntro: "Pour créer une voix qui vous ressemble, nous avons besoin de quelques détails. Elle se joue à côté de votre bébé, jamais à votre place : restez tout près.",
   youAre: "Vous êtes",
   momLabel: "👩 Maman",
   dadLabel: "👨 Papa",

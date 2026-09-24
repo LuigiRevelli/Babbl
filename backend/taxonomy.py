@@ -47,7 +47,7 @@ CONTEXT_HYPOTHESES: dict[str, dict] = {
     "hunger": {
         "fr": "Faim",
         "basis": "Délai depuis la dernière tétée, saisi par le parent. "
-                 "Les pleurs sont un signe tardif de faim.",
+                 "Tous les pleurs ne sont pas de la faim.",
     },
     "discomfort": {
         "fr": "Inconfort",
@@ -71,6 +71,11 @@ HYPOTHESIS_KEYS: list[str] = list(CONTEXT_HYPOTHESES.keys())
 # Phrase fixe accolée à toute hypothèse. L'ancienne (« Le son ne permet pas de
 # le confirmer ») laissait entendre que le son appuyait un peu la piste.
 HYPOTHESIS_DISCLAIMER = "Cette piste vient de ce que vous avez saisi, pas du son."
+# Chercher une cause à tout prix mène à nourrir pour consoler, à médicaliser
+# des pleurs ordinaires et à s'épuiser (recherche/programme-recherche.md).
+NO_CAUSE_NOTE = (
+    "Parfois, un pleur n'a pas de cause qu'on puisse trouver, surtout les premières semaines. Si rien ne marche tout de suite, ce n'est pas un échec de votre part."
+)
 
 
 # ─── Couche 1 : observation sonore ──────────────────────────────────
@@ -116,6 +121,14 @@ SAFETY_CARDS: dict[str, dict] = {
                 "ou ongles bleutés, pauses respiratoires, refus de boire : "
                 "appelez le 15. Ces signes s'observent avec les yeux, pas avec "
                 "le micro.",
+        "emphasize_when": "always",
+    },
+    # Message du programme PURPLE (essais randomisés : Barr 2009, CMAJ et
+    # Pediatrics) : les pleurs sont le premier déclencheur du bébé secoué.
+    # Voir recherche/programme-recherche.md.
+    "at_your_limit": {
+        "title": "Si vous êtes à bout",
+        "body": "Si vous vous sentez à bout, couchez votre bébé sur le dos dans son lit, sortez de la pièce quelques minutes et appelez quelqu'un. On ne secoue jamais un bébé.",
         "emphasize_when": "always",
     },
     "newborn_under_15_days": {

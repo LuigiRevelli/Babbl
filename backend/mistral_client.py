@@ -30,7 +30,7 @@ import anthropic
 
 ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5")
 
-PROMPT_VERSION = "2026.09.23-2"   # incrémenter à chaque changement de SYSTEM_PROMPT ou des cribles
+PROMPT_VERSION = "2026.09.24-1"   # incrémenter à chaque changement de SYSTEM_PROMPT ou des cribles
 MAX_ACTIONS = 3
 LLM_TIMEOUT_S = float(os.environ.get("LLM_TIMEOUT_S", "8"))
 ALLOWED_SIGNAL_SOURCES = ("context", "intensity")
@@ -66,10 +66,13 @@ _REASSURANCE = (
 )
 # Le modèle ne recommande ni de consulter ni de ne pas consulter.
 _TRIAGE = r"consult|médecin|medecin|pédiatre|pediatre|urgence|\ble 15\b|samu"
+# Aucune méthode « laisser pleurer » : non étudiée avant 6 mois (Price 2012 et
+# Gradisar 2016 portent sur 6-16 mois), et Babbl ne connaît pas l'enfant.
+_CRY_IT_OUT = r"laiss\w* pleurer|ignor\w* (les |ses )?pleurs|pleurer seul"
 
 # Le sexe du bébé n'est pas connu : pas de « berce-le », « prends-la ».
 _GENDERED = r"\b[a-zàâçéèêëîïôûùüÿœ]+-(le|la)\b"
-_FORBIDDEN_LLM = re.compile(f"({_MEDICAL}|{_REASSURANCE}|{_TRIAGE}|{_GENDERED})", re.IGNORECASE)
+_FORBIDDEN_LLM = re.compile(f"({_MEDICAL}|{_REASSURANCE}|{_TRIAGE}|{_GENDERED}|{_CRY_IT_OUT})", re.IGNORECASE)
 _FORBIDDEN_STATIC = re.compile(f"({_MEDICAL}|{_REASSURANCE})", re.IGNORECASE)
 _FORBIDDEN = _FORBIDDEN_LLM  # compat
 
@@ -137,6 +140,11 @@ INTERDIT, sans exception :
 - Supposer le sexe du bébé : écris son prénom s'il est donné, sinon « votre bébé ».
   Jamais « il », « elle », « le », « la » pour le désigner, ni d'accord au masculin
   ou au féminin (« réveillé », « fatigué »).
+- Pousser à nourrir pour consoler (« tout de suite », « sans attendre ») : si la faim
+  est une piste, proposez une tétée si votre bébé en montre les signes, et un geste
+  qui ne passe pas par la tétée.
+- Conseiller de laisser pleurer, d'ignorer les pleurs ou d'attendre avant de répondre.
+- Promettre que le geste va marcher : un pleur peut n'avoir aucune cause trouvable.
 
 Ce que tu écris :
 - parent_summary : 2 phrases, au vouvoiement, calmes et chaleureuses. La première
@@ -247,7 +255,8 @@ def fallback_guidance(hypotheses: list[dict], intensity: dict, baby_name: str | 
         )
 
     actions_by_key = {
-        "hunger": ("Proposez le sein ou le biberon.", "Les pleurs sont un signe tardif de faim : autant essayer tout de suite."),
+        "hunger": ("Si votre bébé cherche le sein ou porte les mains à la bouche, proposez une tétée.",
+                   "Tous les pleurs ne sont pas de la faim : sans ces signes, un autre geste peut suffire."),
         "discomfort": ("Vérifiez la couche, la position et les vêtements.", "Un inconfort simple se règle en une minute."),
         "fatigue": (f"Baissez la lumière et le bruit, puis bercez {name}.", "Après une longue période d'éveil, l'endormissement est plus difficile."),
         "need_for_comfort": (f"Prenez {name} contre vous, peau contre peau, et parlez-lui doucement.", "Le contact et votre voix sont ce qui apaise le plus souvent."),
@@ -259,6 +268,12 @@ def fallback_guidance(hypotheses: list[dict], intensity: dict, baby_name: str | 
     if not actions:
         a, w = actions_by_key["need_for_comfort"]
         actions.append({"priority": 1, "action": a, "reasoning": w})
+    # La faim n'est jamais le seul geste : un geste qui ne passe pas par la
+    # tétée est toujours proposé (nourrir pour consoler : Anzman-Frasca 2013).
+    comfort = actions_by_key["need_for_comfort"][0]
+    if any(h["key"] == "hunger" for h in hypotheses[:MAX_ACTIONS]) and all(a["action"] != comfort for a in actions):
+        a, w = actions_by_key["need_for_comfort"]
+        actions = actions[: MAX_ACTIONS - 1] + [{"priority": min(len(actions) + 1, MAX_ACTIONS), "action": a, "reasoning": w}]
 
     signals = [{"signal": h["why"], "source": "context"} for h in hypotheses[:MAX_ACTIONS]]
     signals.append({"signal": intensity["observation"], "source": "intensity"})

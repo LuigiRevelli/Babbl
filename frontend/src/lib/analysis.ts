@@ -123,7 +123,7 @@ export function staticSafety(ageRange?: string): { cards: SafetyCard[]; footer: 
   const cards: SafetyCard[] = (Object.keys(SAFETY_CARDS) as SafetyCardKey[]).map(key => ({
     key,
     ...SAFETY_CARDS[key],
-    emphasized: key === 'breathing' || (key === 'fever_under_3_months' && under3),
+    emphasized: key === 'breathing' || key === 'at_your_limit' || (key === 'fever_under_3_months' && under3),
   }));
   cards.sort((a, b) => Number(b.emphasized) - Number(a.emphasized));
   return { cards, footer: SAFETY_FOOTER };

@@ -177,3 +177,42 @@ if __name__ == "__main__":
         fn()
         print(f"ok  {fn.__name__}")
     print(f"{len(fns)} tests passed")
+
+
+# ─── Recherche (recherche/programme-recherche.md) ─────────────────────
+
+def test_hunger_is_never_the_only_gesture():
+    """Nourrir pour consoler est associé à une prise de poids rapide : une piste
+    « faim » s'accompagne toujours d'un geste sans tétée, même avec 3 pistes."""
+    from datetime import datetime, timedelta, timezone
+    from mistral_client import fallback_guidance
+    from triage_rules import context_hypotheses
+    ago = lambda m: (datetime.now(timezone.utc) - timedelta(minutes=m)).isoformat()
+    for ctx in ({"lastMealAt": ago(200)},
+                {"lastMealAt": ago(200), "lastDiaperAt": ago(200), "awakeSinceAt": ago(200)}):
+        hyps = context_hypotheses(ctx, 4)
+        assert hyps[0]["key"] == "hunger"
+        actions = [a["action"] for a in fallback_guidance(hyps, {"observation": "x"}, None)["recommended_actions"]]
+        assert len(actions) <= 3
+        assert any("contre vous" in a for a in actions), actions
+        assert not any("tout de suite" in a for a in actions)
+
+
+def test_at_your_limit_card_is_always_served_and_emphasized():
+    from triage_rules import safety_cards
+    for age in (None, 1, 9):
+        cards = {c["key"]: c for c in safety_cards({}, age)["cards"]}
+        assert cards["at_your_limit"]["emphasized"] is True
+        assert "secoue" in cards["at_your_limit"]["body"]
+
+
+def test_llm_cannot_advise_letting_the_baby_cry():
+    from mistral_client import sanitize_llm_output
+    from triage_rules import context_hypotheses
+    hyps = context_hypotheses({}, 3)
+    raw = {"parent_summary": "Vous pouvez laisser pleurer votre bébé quelques minutes.",
+           "recommended_actions": [{"action": "Laissez pleurer cinq minutes.", "reasoning": "x"}],
+           "key_signals": []}
+    out = sanitize_llm_output(raw, hyps, {"observation": "x"}, None)
+    assert "pleurer" not in out["parent_summary"].lower()
+    assert all("laiss" not in a["action"].lower() for a in out["recommended_actions"])

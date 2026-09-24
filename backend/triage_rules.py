@@ -221,7 +221,7 @@ def context_hypotheses(context: dict, baby_age_months: int | None = None) -> lis
     meal = _meal_minutes(context)
     if meal is not None:
         if meal >= 180:
-            hyps.append((3, "hunger", f"Dernière tétée il y a {_fmt_delay(meal)} : les pleurs sont un signe tardif de faim."))
+            hyps.append((3, "hunger", f"Dernière tétée il y a {_fmt_delay(meal)} : la faim est possible."))
         elif meal >= 120:
             hyps.append((2, "hunger", f"Dernière tétée il y a {_fmt_delay(meal)}."))
         elif meal < 60:

@@ -71,7 +71,7 @@ def test_analyze_end_to_end():
     assert body["intensity"]["level"] in ("faible", "modere", "intense")
     assert body["hypotheses"][0]["key"] == "hunger"           # tétée il y a très longtemps
     assert all(h["source"] == "context" for h in body["hypotheses"])
-    assert {c["key"] for c in body["safety"]["cards"]} == {"fever_under_3_months", "breathing", "newborn_under_15_days"}
+    assert {c["key"] for c in body["safety"]["cards"]} == {"fever_under_3_months", "breathing", "at_your_limit", "newborn_under_15_days"}
     assert body["guidance_source"] == "deterministic"        # pas de clé → repli
     assert body["parent_summary"] and "%" not in body["parent_summary"]
     assert body["recommended_actions"][0]["action"]
@@ -81,11 +81,11 @@ def test_analyze_end_to_end():
         assert word not in text, word
 
 
-SAFETY_KEYS = {"fever_under_3_months", "breathing", "newborn_under_15_days"}
+SAFETY_KEYS = {"fever_under_3_months", "breathing", "at_your_limit", "newborn_under_15_days"}
 
 
 def _assert_refusal_invariant(body: dict):
-    """INVARIANT : un refus embarque toujours les trois cartes et le rappel."""
+    """INVARIANT : un refus embarque toujours toutes les cartes et le rappel."""
     assert {c["key"] for c in body["safety"]["cards"]} == SAFETY_KEYS
     assert body["safety"]["footer"].startswith("En cas de doute")
     assert "jamais rassurant" in body["reminder"]

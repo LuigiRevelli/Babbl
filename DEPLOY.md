@@ -12,6 +12,10 @@ Le backend fonctionne déjà sans aucune clé : il reconnaît un pleur, écrit l
 
 Dans Supabase → SQL Editor, exécuter `supabase/migrations/20260923_soothed_and_guidance_source.sql`. Sans risque : trois colonnes ajoutées, aucune donnée touchée. Le backend marche avant et après.
 
+Puis `supabase/migrations/20260924_rls_least_privilege.sql` : **à ne pas sauter**. La clé publique Supabase est dans l'application (c'est normal) ; seules les règles RLS empêchent quiconque de lire les données des autres familles avec. La migration autorise exactement ce que l'app fait (lire ses analyses, lire et modifier son profil) et ferme le reste. Elle se relance sans risque, et affiche à la fin `rls = true` pour les 5 tables.
+
+Vérifier ensuite de l'extérieur, sans être connecté : `SUPABASE_URL=… SUPABASE_ANON_KEY=… scripts/check_rls.sh` doit afficher `ok` partout. Un `FUITE` = des données lisibles par n'importe qui.
+
 ## 2. Render (le plus simple)
 
 1. render.com → **New → Blueprint** → choisir le dépôt `LuigiRevelli/Babbl`, branche de votre choix. Render lit `render.yaml` et crée `babbl-api` et `babbl-web`.

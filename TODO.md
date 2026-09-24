@@ -153,7 +153,7 @@
 - Les messages de réconfort et l'IA répondent en français
 - L'interface est entièrement en français via le système i18n (src/lib/i18n.ts)
 - Supabase : projet "babbl" sur lttrlcemwprjmylixtee.supabase.co (région West EU Paris)
-- Les données sont protégées par Row Level Security (chaque parent ne voit que ses données)
+- Les données sont protégées par Row Level Security (chaque parent ne voit que ses données) — **à vérifier** : aucune règle n'était versionnée avant `supabase/migrations/20260924_rls_least_privilege.sql` ; lancer `scripts/check_rls.sh`
 - Le backend utilise la service role key pour écrire en base côté serveur
 - Organisation Stripe "Babbl" créée (clés API test pas encore intégrées)
 - Babbl Baseline : apprentissage incrémental du profil acoustique unique de chaque bébé (algorithme de Welford)

@@ -1,9 +1,11 @@
 /**
  * Babbl — Supabase data service.
  *
- * Replaces localStorage operations with Supabase queries.
- * Each function is a thin wrapper around the supabase client.
- * Callers should catch errors and fall back to localStorage.
+ * Ce que le navigateur lit et écrit lui-même dans Supabase — rien d'autre.
+ * Le reste (analyses, journal, badges) passe par le backend. Les règles RLS
+ * de supabase/migrations/20260924_rls_least_privilege.sql n'autorisent
+ * que ces accès : en ajouter un ici exige une règle là-bas.
+ * Les appelants attrapent les erreurs et retombent sur le téléphone.
  */
 
 import { supabase } from './supabase';
@@ -37,83 +39,9 @@ export async function updateProfile(
 
 // ─── Analyses ──────────────────────────────────────────────
 
-export async function saveAnalysis(
-  userId: string,
-  analysis: Record<string, unknown>,
-) {
-  const { data, error } = await supabase
-    .from('analyses')
-    .insert({
-      user_id: userId,
-      ...analysis,
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
 export async function fetchAnalyses(userId: string) {
   const { data, error } = await supabase
     .from('analyses')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  return data ?? [];
-}
-
-// ─── Context Logs ──────────────────────────────────────────
-
-export async function saveContextLog(
-  userId: string,
-  logType: string,
-  notes?: string,
-) {
-  const { data, error } = await supabase
-    .from('context_logs')
-    .insert({
-      user_id: userId,
-      log_type: logType,
-      notes: notes ?? null,
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-export async function fetchContextLogs(userId: string) {
-  const { data, error } = await supabase
-    .from('context_logs')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  return data ?? [];
-}
-
-// ─── Badges ────────────────────────────────────────────────
-
-export async function saveBadge(userId: string, badgeName: string) {
-  const { error } = await supabase
-    .from('badges')
-    .upsert(
-      { user_id: userId, badge_name: badgeName },
-      { onConflict: 'user_id,badge_name' },
-    );
-
-  // Ignore duplicate — the upsert with onConflict handles it
-  if (error && !error.message.includes('duplicate')) throw error;
-}
-
-export async function fetchBadges(userId: string) {
-  const { data, error } = await supabase
-    .from('badges')
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });

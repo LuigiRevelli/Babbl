@@ -1,5 +1,7 @@
 # Babbl — Ce que le cri dit vraiment
 
+> Mise à jour 24/09/2026 : combien de pleurs ont une cause, test par bébés jamais entendus, marché → `recherche/pertinence-detection-cause.md`.
+
 > Le résultat de l'étude, en français simple. Le détail technique (références, analyse réglementaire, revue du code ligne à ligne) est dans `SYMPTOMS-TECHNIQUE.md`.
 >
 > **Mise à jour 22/09/2026 :** la liste finale élargie à toute la voix du bébé (toux, babillage, respiration…) est dans `LISTE-FINALE-SYMPTOMES.md`. Elle remplace les tableaux de paliers ci-dessous.
@@ -52,7 +54,7 @@
 | Prématurité / développement futur | Il dit que le bébé est prématuré (92,4 %) — le parent le sait déjà. Prédire son développement : 0,546-0,576 sur une échelle où 0,50 = pile ou face et 1,00 = parfait | Demander les semaines de grossesse à l'inscription et utiliser l'âge corrigé partout |
 | Fatigue, inconfort, surstimulation, besoin de réconfort | **Rien.** Un seul axe (calme ↔ agité) déguisé en quatre étiquettes | Une phrase à partir de la durée d'éveil que le parent a saisie, sans pourcentage |
 | Niveau de détresse / intensité | L'intensité **pendant les 10 secondes enregistrées**. Pas la douleur, pas la cause, pas comparable d'un bébé à l'autre | Une observation en texte — jamais un score, jamais un historique |
-| Faim | **Rien.** 36 % de réussite contre 33 % en tirant au hasard ; des adultes entraînés font 34,8 % | Rappeler que les pleurs sont un signe **tardif** de faim : proposer le sein ou le biberon sans attendre l'analyse |
+| Faim | **Rien.** 36 % de réussite contre 33 % en tirant au hasard ; des adultes entraînés font 34,8 % | Piste tirée du délai depuis la dernière tétée ; proposer une tétée **si le bébé en montre les signes**, et toujours un geste sans tétée (nourrir pour consoler : voir `recherche/programme-recherche.md`) |
 | Respiration / voies aériennes | **Rien de captable.** Le bruit respiratoire qui compte s'entend quand le bébé **inspire** et il est très faible ; or un enregistrement de pleur est fait presque entièrement de souffle **expiré** | Recopier la fiche parents HAS bronchiolite telle quelle, et conclure : « ces signes s'observent avec les yeux, pas avec le micro » |
 | « Cinq mots » de Dunstan | **Rien.** Aucun gabarit sonore n'a jamais été publié, nulle part | Une page de débunkage sourcée, sans condescendance — c'est du contenu, pas du risque |
 | Surdité | **Rien.** La seule étude moderne analyse le **gazouillis** et coupait l'enregistrement dès que le bébé pleurait | Demander si le test auditif de la maternité a été fait et si le rendez-vous de contrôle a eu lieu |

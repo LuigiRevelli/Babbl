@@ -23,7 +23,8 @@ D, C = 24, 3            # descripteurs acoustiques, causes (faim / inconfort / b
 TEST_PER_CAUSE = 10
 
 
-# Réalisme : ~30 % des épisodes sans cause (Aldrich 1945 ; Barr 2005) et
+# Réalisme : une part des épisodes sans besoin identifiable (maturation ; part
+# non chiffrée de façon fiable, Aldrich 1945 est trop ancien) et
 # ~25 % d'étiquettes fausses (le geste qui calme ≠ la cause, Lockhart-Bouron
 # 2023) → une étiquette sur deux environ n'est pas « la bonne cause ».
 LABEL_NOISE = 0.0

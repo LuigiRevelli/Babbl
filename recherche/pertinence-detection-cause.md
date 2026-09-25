@@ -6,7 +6,12 @@
 
 ## La réponse en 5 points
 
-1. **Environ 25 à 35 % des épisodes de pleurs des 0-3 mois n'ont aucune cause identifiable sur le moment.** Cette estimation est fragile : la seule mesure directe date de 1945 (Aldrich). La part est la plus forte vers 5-6 semaines. Entre 17 et 25 % des bébés ont des coliques avant 6 semaines, et chez ceux qui pleurent beaucoup, **moins de 5 à 10 % ont une cause médicale**.
+1. **Correction du 25/09/2026 : il ne faut PAS dire « un tiers des pleurs n'ont pas de raison ».** Le chiffre « 25 à 35 % » vient d'une seule étude de 1945 : 50 nouveau-nés observés 8 jours en pouponnière, avec des causes devinées par des infirmières. Le tableau d'origine n'a pas pu être vérifié. Ce qui est solide :
+   - les pleurs suivent une courbe qui culmine vers 6 semaines (environ 2 h/jour, Wolke 2017) puis baisse vers 3 mois (environ 1 h/jour) ;
+   - cette courbe existe dans toutes les cultures, même chez des bébés portés en permanence (!Kung, Barr 1991) ;
+   - jusqu'à 47 % des bébés ont au moins un épisode que rien ne calme vers 5 semaines. C'est une part de **bébés**, pas de pleurs (St James-Roberts 2006).
+
+   Ces pleurs ont bien une raison : **la maturation du cerveau, pas un besoin qu'on peut régler**. Moins de 5 à 10 % des bébés qui pleurent beaucoup ont une cause médicale.
 2. **Quand une cause existe, le son ne permet pas de la retrouver.** L'étude la plus rigoureuse (Saint-Étienne, 2023, 24 bébés à domicile, 39 201 cris, cause établie par le geste qui a calmé) obtient **36 % de bonnes réponses sur 3 causes, contre 33 % au hasard**. Les parents font aussi au niveau du hasard, même après entraînement.
 3. **Notre propre test donne le même résultat.** Sur Donate-a-Cry, évalué sur des bébés jamais entendus, le détecteur ne fait **pas mieux que répondre « faim » à chaque fois**. Il reconnaît 0 % des 4 autres causes. En équilibrant les causes, il est au niveau du hasard.
 4. **Les « 90 % » annoncés ailleurs viennent presque tous d'une erreur d'évaluation** : le même bébé se retrouve à la fois dans l'entraînement et dans le test. Sur Donate-a-Cry, une prépublication de 2026 passe du hasard à 85-98 % selon qu'on commet ou non cette erreur, avec le même modèle. **Aucune application n'a de validation indépendante** de la cause.
@@ -22,7 +27,7 @@
 
 | Mesure | Chiffre | Source |
 |---|---|---|
-| Épisodes sans cause déterminée, nouveau-nés à l'hôpital | environ 1/3 ; l'« inconnu » dépasse la faim en nombre d'épisodes | Aldrich, Sung & Knop 1945, *J Pediatr* 26:313 (50 nouveau-nés). Le chiffre « 1/3 » vient de citations secondaires : NON VÉRIFIÉ dans le tableau original |
+| Épisodes sans cause identifiée, nouveau-nés en pouponnière (1944) | l'« inconnu » dépasse la faim en nombre d'épisodes ; chiffre exact NON VÉRIFIÉ, non transposable aux bébés d'aujourd'hui à la maison | Aldrich, Sung & Knop 1945, *J Pediatr* 26:313 (50 nouveau-nés). Le chiffre « 1/3 » vient de citations secondaires : NON VÉRIFIÉ dans le tableau original |
 | Cause perçue par le parent ≠ geste qui a calmé | 1 cas sur 4 | Lockhart-Bouron 2023 (le geste concorde avec l'avis du parent dans 75 % des cas) |
 | Bébés avec plus de 20 min/jour de pleurs impossibles à calmer, à 5-6 semaines | 13,3 % | Radesky 2013, *Pediatrics* 131:e1857 (587 mères) |
 | Pleurs impossibles à calmer | présents surtout à 6 semaines, quasi absents à 5 mois ; peu modifiés par la façon de s'occuper du bébé | Barr 2005, *J Dev Behav Pediatr* 26:14 ; St James-Roberts 2006, *Pediatrics* 117:e1146 |
@@ -31,7 +36,7 @@
 | Cause médicale en consultation spécialisée pour pleurs excessifs | 9,8 % (dont 7,4 % d'allergie aux protéines du lait de vache) | Amsterdam UMC 2026, *Eur J Pediatr*, doi:10.1007/s00431-026-07155-3 (530 bébés) |
 | Pleurs réduits en portant davantage | −43 % à 6 semaines | Hunziker & Barr 1986, *Pediatrics* 77:641 (essai randomisé, 99 couples mère-bébé) |
 
-**Ce que ça implique :** même un détecteur parfait n'aurait rien à désigner pour environ un tiers des épisodes des premiers mois, et pour la plupart des pleurs du pic de 6 semaines. C'est aussi le moment où les parents sont le plus en détresse.
+**Ce que ça implique :** une partie des pleurs des premiers mois vient de la maturation du système nerveux, et non d'un besoin précis (faim, couche…). Elle est la plus forte au pic de 6 semaines. Un détecteur de « besoin », même parfait, n'y trouverait rien à régler. On ne sait pas mesurer cette part aujourd'hui. C'est aussi le moment où les parents sont le plus en détresse.
 
 ## 2. Le son dit-il la cause ?
 
@@ -81,6 +86,7 @@ Corpus : Donate-a-Cry, 457 extraits, 221 appareils (un appareil = un bébé), 36
 | Cry Translator (Biloop) | 5 causes, « 96 % » | aucune ; des avis « 5 résultats différents pour le même pleur » | semble arrêté (NON VÉRIFIÉ) |
 | ChatterBaby (UCLA) | douleur / faim / agacement, 71,5 % sur 3 classes | article de l'équipe elle-même (Parga 2020, *Pediatric Research*, doi:10.1038/s41390-019-0592-4) | projet de recherche |
 | Zoundream (Suisse) → Philips Avent, Maxi-Cosi | 5 causes, « 92 % » | étude financée par l'entreprise, 38 nouveau-nés (Laguna 2023, *Comput Biol Med*, PMID 37918262), découpage par bébé NON VÉRIFIÉ ; Philips publie une page d'aide « résultat inexact » | actif ; 4 M€ levés en seed (10/2025) |
+| **Nanni AI** (Ubenwa, Montréal, spin-off du Mila ; 2,5 M$ levés en 2022) | la « raison la plus probable » parmi 4 familles | aucun test indépendant. Le « 92,5 % » repris par la presse porte sur des lésions cérébrales néonatales (arXiv 2310.08338), pas sur la cause. Meilleur résultat publié par l'équipe sur la cause : AUC 0,745 sur 3 causes, chez des nouveau-nés à l'hôpital avec des étiquettes de soignants (Gorin 2023, arXiv 2305.01578 ; nombre de bébés et découpage NON VÉRIFIÉS). Conditions d'utilisation : « pas un conseil médical » | environ 380 000 téléchargements Android, 140 000 utilisateurs ; l'entreprise met désormais en avant un autre produit (Roseline AI) |
 | CryAnalyzer, dizaines d'apps « Baby Cry Translator » | « 80-96 % » | aucune ; avis « scam » | actives, 3 à 10 $/semaine |
 | Nanit, Owlet, Cradlewise, Harbor, Hatch | détectent le pleur, **sans la cause** | — | ceux qui marchent : Nanit 50 M$ levés, Owlet 105,7 M$ de chiffre d'affaires en 2025 |
 | May (France) | accompagnement par des professionnels | — | 9,90 €/mois, 80 000 utilisateurs actifs par mois, 7 M€ levés |

@@ -142,3 +142,30 @@ Corpus : Donate-a-Cry, 457 extraits, 221 appareils (un appareil = un bébé), 36
 - St James-Roberts I et al. (2006). Infant crying and sleeping in London, Copenhagen and when parents adopt a "proximal" form of care. *Pediatrics* 117:e1146. doi:10.1542/peds.2005-2387.
 - Wolke D, Bilgin A, Samara M (2017). Systematic review and meta-analysis: fussing and crying durations and prevalence of colic in infants. *J Pediatr* 185:55–61. PMID 28385295.
 - Corpus Donate-a-Cry : github.com/gveres/donateacry-corpus (étiquettes déclarées par les contributeurs).
+
+---
+
+## Annexe (25/09/2026) : cause par cause, plus de 70 % est-il possible ?
+
+Revue systématique de la littérature en anglais, en deux volets (causes du quotidien et signaux médicaux). Les textes intégraux étaient bloqués par le réseau : les chiffres viennent des résumés, et les méthodes à confirmer sont marquées NON VÉRIFIÉ.
+
+**Un « 70 % » honnête signifie :**
+- des bébés jamais vus pendant l'apprentissage ;
+- une précision équilibrée ou une AUC d'au moins 0,70, affichée à côté du score « toujours la même réponse » (84 % sur Donate-a-Cry) ;
+- des étiquettes indépendantes du son (acte médical, geste qui a calmé) ;
+- un rééquilibrage des données après le découpage entre apprentissage et test.
+
+| Cause | Meilleur résultat honnête | > 70 % ? | Pertinence |
+|---|---|---|---|
+| C'est un pleur (ou pas) | AUC ≈ 0,99 | **Oui** | Base de tout (porte v3 de Babbl) |
+| **Douleur aiguë, contre autre chose** | Salekin 2019 : 96,8 %, 31 nouveau-nés en réanimation, un bébé écarté à chaque test (NON VÉRIFIÉ) ; ChatterBaby : 90,7 % (méthode NON VÉRIFIÉE) ; Corvin 2022/2024 : mécanisme acoustique établi (rugosité, instabilité de la voix) | **Oui, probable** (à l'hôpital, sur des nouveau-nés) | Élevée ; à la maison ce serait une alerte « pleur inhabituel » = dispositif médical |
+| Niveau de détresse (fort ou faible) | Signal gradué établi | **Oui, probable** | Moyenne (intensité, pas cause) |
+| Douleur + faim + inconfort (3 causes) | Gorin/Onu 2023 : AUC 0,745, découpage par patient, nouveau-nés à l'hôpital, étiquettes de soignants | **À la limite** | Élevée, mais pas démontrée à la maison |
+| Faim | Lockhart-Bouron 2023 : 36 % pour 33 % au hasard | **Non démontré** par le son. Par le contexte (dernière tétée) : jamais testé | Élevée |
+| Fatigue, inconfort, gaz, rot, isolement, peur, colère | Au hasard ou non testé sur des bébés jamais vus | **Non / inconnu** | Moyenne |
+| Coliques (le bébé, pas un cri) | Laguna 2026 : 92 % à partir du rythme des pleurs sur plusieurs jours (22 bébés, méthode NON VÉRIFIÉE) | Probable | Moyenne ; suppose de compter les pleurs, ce qui entre en tension avec la doctrine « pas de compteur » |
+| Maladies (asphyxie, surdité, autisme, sevrage) | Onu 2023 : AUC 0,925 pour l'asphyxie à l'hôpital ; autres = petites études | Oui à l'hôpital | **Non à la maison** : sur 100 alertes, 1 à 12 seraient vraies (maladies rares), et la plupart sont déjà dépistées à la maternité |
+
+**Chiffres spectaculaires à écarter** (fuite de données entre apprentissage et test) : Donate-a-Cry > 90 % (Hammoud 2024, Li 2024), Chillanto 99,8 %, Dunstan 88-95 %. Simeone 2026 reproduit l'effet sur un même modèle : AUC 0,49 sur des bébés jamais vus, 85,2 % avec des extraits mélangés, 97,9 % en rééquilibrant avant le découpage.
+
+**Bilan :** aujourd'hui, le son permet d'identifier **une seule cause** avec des preuves raisonnables, **la douleur aiguë** (douleur ou autre chose), plus deux dimensions qui ne sont pas des causes : la présence d'un pleur et le niveau de détresse. Faim, fatigue, gaz, rot et isolement ne le sont pas, du moins par le son seul et d'un bébé à l'autre. Pour ces causes-là, un score au-dessus de 70 % ne peut venir que du **contexte** et d'un **modèle adapté à chaque bébé** : c'est à tester, rien n'est publié.
